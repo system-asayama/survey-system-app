@@ -70,5 +70,17 @@
     "generated_review": "",
     "timestamp": "2025-12-09T00:32:19.940488",
     "id": 6
+  },
+  {
+    "rating": 3,
+    "visit_purpose": "食事",
+    "atmosphere": [
+      "静か"
+    ],
+    "recommend": "どちらでもない",
+    "comment": "普通でした",
+    "generated_review": "",
+    "timestamp": "2025-12-09T02:43:46.176047",
+    "id": 7
   }
 ]
