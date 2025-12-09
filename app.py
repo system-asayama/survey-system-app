@@ -320,11 +320,16 @@ def submit_survey():
         if field not in body or not body[field]:
             return jsonify({"ok": False, "error": f"{field}は必須項目です"}), 400
     
-    # AI投稿文を生成
-    generated_review = _generate_review_text(body)
+    rating = body.get('rating', 3)
     
-    # アンケートデータに生成された投稿文を追加
-    body['generated_review'] = generated_review
+    # 星4以上の場合のみAI投稿文を生成
+    if rating >= 4:
+        generated_review = _generate_review_text(body)
+        body['generated_review'] = generated_review
+    else:
+        # 星3以下の場合はAI生成をスキップ
+        generated_review = ''
+        body['generated_review'] = ''
     
     # アンケートデータを保存
     _save_survey_response(body)
@@ -332,13 +337,23 @@ def submit_survey():
     # セッションにアンケート完了フラグと評価を設定
     session['survey_completed'] = True
     session['survey_timestamp'] = datetime.now().isoformat()
-    session['survey_rating'] = body.get('rating', 3)
+    session['survey_rating'] = rating
     session['generated_review'] = generated_review
     
+    # 星3以下の場合は直接スロットページへ
+    if rating <= 3:
+        return jsonify({
+            "ok": True, 
+            "message": "貴重なご意見をありがとうございます。社内で改善に活用させていただきます。",
+            "rating": rating,
+            "redirect_url": url_for('slot_page')
+        })
+    
+    # 星4以上の場合は口コミ確認ページへ
     return jsonify({
         "ok": True, 
         "message": "アンケートを受け付けました",
-        "rating": body.get('rating', 3),
+        "rating": rating,
         "generated_review": generated_review,
         "redirect_url": url_for('review_confirm')
     })

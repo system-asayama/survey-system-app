@@ -117,8 +117,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const result = await response.json();
 
       if (result.ok) {
-        // 成功したら口コミ確認ページへリダイレクト
-        window.location.href = result.redirect_url || '/review_confirm';
+        // 星3以下の場合はメッセージを表示してからリダイレクト
+        if (result.rating <= 3) {
+          alert(result.message);
+        }
+        // 成功したら指定されたページへリダイレクト
+        window.location.href = result.redirect_url || '/slot';
       } else {
         alert('エラーが発生しました: ' + (result.error || '不明なエラー'));
         submitBtn.disabled = false;
