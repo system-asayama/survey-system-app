@@ -278,7 +278,55 @@ def index():
 
 @app.get("/survey")
 def survey():
-    return render_template("survey.html")
+    # アンケート設定を読み込む
+    survey_config_path = os.path.join(DATA_DIR, "survey_config.json")
+    
+    if os.path.exists(survey_config_path):
+        with open(survey_config_path, "r", encoding="utf-8") as f:
+            survey_config = json.load(f)
+    else:
+        # デフォルト設定
+        survey_config = {
+            "title": "お店アンケート",
+            "description": "ご来店ありがとうございます！",
+            "questions": [
+                {
+                    "id": 1,
+                    "text": "総合評価",
+                    "type": "rating",
+                    "required": True
+                },
+                {
+                    "id": 2,
+                    "text": "訪問目的",
+                    "type": "radio",
+                    "required": True,
+                    "options": ["食事", "カフェ", "買い物", "その他"]
+                },
+                {
+                    "id": 3,
+                    "text": "お店の雰囲気（複数選択可）",
+                    "type": "checkbox",
+                    "required": False,
+                    "options": ["静か", "賑やか", "落ち着く", "おしゃれ", "カジュアル"]
+                },
+                {
+                    "id": 4,
+                    "text": "おすすめ度",
+                    "type": "radio",
+                    "required": True,
+                    "options": ["ぜひおすすめしたい", "おすすめしたい", "どちらでもない", "おすすめしない"]
+                },
+                {
+                    "id": 5,
+                    "text": "ご感想・ご意見（任意）",
+                    "type": "text",
+                    "required": False
+                }
+            ]
+        }
+    
+    return render_template("survey.html", survey_config=survey_config)
 
 @app.get("/review_confirm")
 def review_confirm():
@@ -676,6 +724,121 @@ def admin_settings():
                          google_review_url=GOOGLE_REVIEW_URL)
 
 
+@app.route("/admin/survey/editor", methods=["GET", "POST"])
+@require_admin_login
+def admin_survey_editor():
+    """アンケート作成・編集画面"""
+    admin = get_current_admin()
+    
+    # アンケート設定ファイルのパス
+    survey_config_path = os.path.join(DATA_DIR, "survey_config.json")
+    
+    if request.method == "POST":
+        # フォームデータを取得
+        survey_title = request.form.get("survey_title", "").strip()
+        survey_description = request.form.get("survey_description", "").strip()
+        
+        # 質問データを解析
+        questions = []
+        question_indices = set()
+        
+        # すべてのフォームキーから質問インデックスを抽出
+        for key in request.form.keys():
+            if key.startswith("questions["):
+                index_str = key.split("[")[1].split("]")[0]
+                try:
+                    question_indices.add(int(index_str))
+                except ValueError:
+                    continue
+        
+        # 各質問を処理
+        for idx in sorted(question_indices):
+            question_text = request.form.get(f"questions[{idx}][text]", "").strip()
+            question_type = request.form.get(f"questions[{idx}][type]", "text")
+            
+            if not question_text:
+                continue
+            
+            question = {
+                "id": idx + 1,
+                "text": question_text,
+                "type": question_type,
+                "required": True
+            }
+            
+            # 選択肢がある場合
+            if question_type in ["radio", "checkbox"]:
+                options = request.form.getlist(f"questions[{idx}][options][]")
+                question["options"] = [opt.strip() for opt in options if opt.strip()]
+            
+            questions.append(question)
+        
+        # 設定を保存
+        survey_config = {
+            "title": survey_title,
+            "description": survey_description,
+            "questions": questions,
+            "updated_at": datetime.now().isoformat()
+        }
+        
+        os.makedirs(DATA_DIR, exist_ok=True)
+        with open(survey_config_path, "w", encoding="utf-8") as f:
+            json.dump(survey_config, f, ensure_ascii=False, indent=2)
+        
+        flash("アンケート設定を保存しました", "success")
+        return redirect(url_for("admin_survey_editor"))
+    
+    # GET: 既存の設定を読み込み
+    if os.path.exists(survey_config_path):
+        with open(survey_config_path, "r", encoding="utf-8") as f:
+            survey_config = json.load(f)
+    else:
+        # デフォルト設定
+        survey_config = {
+            "title": "お店アンケート",
+            "description": "ご来店ありがとうございます！",
+            "questions": [
+                {
+                    "id": 1,
+                    "text": "総合評価",
+                    "type": "rating",
+                    "required": True
+                },
+                {
+                    "id": 2,
+                    "text": "訪問目的",
+                    "type": "radio",
+                    "required": True,
+                    "options": ["食事", "カフェ", "買い物", "その他"]
+                },
+                {
+                    "id": 3,
+                    "text": "お店の雰囲気（複数選択可）",
+                    "type": "checkbox",
+                    "required": False,
+                    "options": ["静か", "賑やか", "落ち着く", "おしゃれ", "カジュアル"]
+                },
+                {
+                    "id": 4,
+                    "text": "おすすめ度",
+                    "type": "radio",
+                    "required": True,
+                    "options": ["ぜひおすすめしたい", "おすすめしたい", "どちらでもない", "おすすめしない"]
+                },
+                {
+                    "id": 5,
+                    "text": "ご感想・ご意見（任意）",
+                    "type": "text",
+                    "required": False
+                }
+            ]
+        }
+    
+    return render_template("admin_survey_editor.html",
+                         admin=admin,
+                         survey_config=survey_config)
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=True)
+
+
