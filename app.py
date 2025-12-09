@@ -2,7 +2,9 @@
 from __future__ import annotations
 from dataclasses import dataclass, asdict
 from typing import List, Dict, Any
-from flask import Flask, jsonify, request, render_template, send_from_directory, session, redirect, url_for
+from flask import Flask, jsonify, request, render_template, send_from_directory, session, redirect, url_for, flash
+from werkzeug.security import check_password_hash, generate_password_hash
+from functools import wraps
 import os, json, secrets, time, math
 from datetime import datetime
 from decimal import Decimal, getcontext
@@ -442,6 +444,237 @@ def calc_prob():
 @app.get("/static/<path:filename>")
 def static_files(filename):
     return send_from_directory(os.path.join(APP_DIR, "static"), filename)
+
+
+# ===== 管理者認証 =====
+ADMINS_PATH = os.path.join(DATA_DIR, "admins.json")
+
+def load_admins():
+    """管理者データを読み込む"""
+    if not os.path.exists(ADMINS_PATH):
+        default_admin = [{
+            "id": 1,
+            "store_code": "default",
+            "login_id": "admin",
+            "password_hash": generate_password_hash("admin123"),
+            "name": "管理者",
+            "email": "admin@example.com",
+            "active": True,
+            "created_at": datetime.now().isoformat(),
+            "last_login": None
+        }]
+        os.makedirs(DATA_DIR, exist_ok=True)
+        with open(ADMINS_PATH, "w", encoding="utf-8") as f:
+            json.dump(default_admin, f, ensure_ascii=False, indent=2)
+        return default_admin
+    with open(ADMINS_PATH, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+def save_admins(admins):
+    """管理者データを保存"""
+    with open(ADMINS_PATH, "w", encoding="utf-8") as f:
+        json.dump(admins, f, ensure_ascii=False, indent=2)
+
+def authenticate_admin(store_code, login_id, password):
+    """管理者認証"""
+    admins = load_admins()
+    for admin in admins:
+        if (admin.get("store_code") == store_code and 
+            admin.get("login_id") == login_id and 
+            admin.get("active", True)):
+            if check_password_hash(admin["password_hash"], password):
+                admin["last_login"] = datetime.now().isoformat()
+                save_admins(admins)
+                return admin
+    return None
+
+def login_admin_session(admin):
+    """管理者セッションを確立"""
+    session.clear()
+    session["logged_in"] = True
+    session["admin_id"] = admin["id"]
+    session["admin_name"] = admin["name"]
+    session["store_code"] = admin["store_code"]
+    session["login_id"] = admin["login_id"]
+
+def logout_admin_session():
+    """管理者セッションをクリア"""
+    session.clear()
+
+def is_admin_logged_in():
+    """管理者がログインしているか確認"""
+    return session.get("logged_in", False) and session.get("admin_id") is not None
+
+def require_admin_login(f):
+    """管理者ログインが必要なルートのデコレータ"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not is_admin_logged_in():
+            flash("ログインが必要です", "error")
+            return redirect(url_for("admin_login", next=request.url))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def get_current_admin():
+    """現在ログイン中の管理者情報を取得"""
+    if not is_admin_logged_in():
+        return None
+    admin_id = session.get("admin_id")
+    admins = load_admins()
+    for admin in admins:
+        if admin["id"] == admin_id:
+            return admin
+    return None
+
+@app.route("/admin/login", methods=["GET", "POST"])
+def admin_login():
+    """管理者ログイン（POSシステムと同じ方式）"""
+    if request.method == "POST":
+        store_code = request.form.get("store_code", "").strip()
+        login_id = request.form.get("login_id", "").strip()
+        password = request.form.get("password", "")
+        
+        admin = authenticate_admin(store_code, login_id, password)
+        
+        if admin:
+            login_admin_session(admin)
+            flash(f"ようこそ、{admin['name']}さん", "success")
+            next_url = request.args.get("next") or url_for("admin_dashboard")
+            return redirect(next_url)
+        else:
+            flash("店舗コード、ログインID、またはパスワードが正しくありません", "error")
+            return render_template("admin_login.html", 
+                                 store_code=store_code, 
+                                 login_id=login_id)
+    
+    return render_template("admin_login.html")
+
+@app.route("/admin/logout")
+def admin_logout():
+    """管理者ログアウト"""
+    logout_admin_session()
+    flash("ログアウトしました", "info")
+    return redirect(url_for("admin_login"))
+
+@app.route("/admin")
+@require_admin_login
+def admin_dashboard():
+    """管理画面ダッシュボード"""
+    admin = get_current_admin()
+    
+    # アンケート回答データを読み込み
+    survey_responses = []
+    if os.path.exists(SURVEY_DATA_PATH):
+        with open(SURVEY_DATA_PATH, "r", encoding="utf-8") as f:
+            survey_responses = json.load(f)
+    
+    # 統計情報を計算
+    total_responses = len(survey_responses)
+    rating_counts = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+    
+    for response in survey_responses:
+        rating = response.get("rating", 0)
+        if rating in rating_counts:
+            rating_counts[rating] += 1
+    
+    avg_rating = 0
+    if total_responses > 0:
+        total_rating = sum(r.get("rating", 0) for r in survey_responses)
+        avg_rating = round(total_rating / total_responses, 2)
+    
+    return render_template("admin_dashboard.html",
+                         admin=admin,
+                         total_responses=total_responses,
+                         rating_counts=rating_counts,
+                         avg_rating=avg_rating,
+                         recent_responses=survey_responses[-10:][::-1])  # 最新10件を逆順
+
+
+@app.route("/admin/responses")
+@require_admin_login
+def admin_responses():
+    """全回答データを表示"""
+    admin = get_current_admin()
+    
+    survey_responses = []
+    if os.path.exists(SURVEY_DATA_PATH):
+        with open(SURVEY_DATA_PATH, "r", encoding="utf-8") as f:
+            survey_responses = json.load(f)
+    
+    # 最新順にソート
+    survey_responses.reverse()
+    
+    return render_template("admin_responses.html",
+                         admin=admin,
+                         responses=survey_responses)
+
+@app.route("/admin/export/csv")
+@require_admin_login
+def admin_export_csv():
+    """回答データをCSVでエクスポート"""
+    import csv
+    from io import StringIO
+    from flask import make_response
+    
+    survey_responses = []
+    if os.path.exists(SURVEY_DATA_PATH):
+        with open(SURVEY_DATA_PATH, "r", encoding="utf-8") as f:
+            survey_responses = json.load(f)
+    
+    # CSVデータを作成
+    output = StringIO()
+    writer = csv.writer(output)
+    
+    # ヘッダー
+    writer.writerow([
+        "ID", "評価", "訪問目的", "雰囲気", "おすすめ度", 
+        "コメント", "AI生成レビュー", "日時"
+    ])
+    
+    # データ行
+    for response in survey_responses:
+        atmosphere = ", ".join(response.get("atmosphere", []))
+        writer.writerow([
+            response.get("id", ""),
+            response.get("rating", ""),
+            response.get("visit_purpose", ""),
+            atmosphere,
+            response.get("recommend", ""),
+            response.get("comment", ""),
+            response.get("generated_review", ""),
+            response.get("timestamp", "")
+        ])
+    
+    # レスポンスを作成
+    output.seek(0)
+    response = make_response(output.getvalue())
+    response.headers["Content-Disposition"] = f"attachment; filename=survey_responses_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    response.headers["Content-Type"] = "text/csv; charset=utf-8-sig"  # Excel用にBOM付きUTF-8
+    
+    return response
+
+@app.route("/admin/settings", methods=["GET", "POST"])
+@require_admin_login
+def admin_settings():
+    """管理画面設定"""
+    admin = get_current_admin()
+    
+    if request.method == "POST":
+        # Google口コミURLの更新
+        google_url = request.form.get("google_review_url", "").strip()
+        
+        # 設定を環境変数またはファイルに保存
+        # ここでは簡易的にグローバル変数を更新
+        global GOOGLE_REVIEW_URL
+        GOOGLE_REVIEW_URL = google_url
+        
+        flash("設定を更新しました", "success")
+        return redirect(url_for("admin_settings"))
+    
+    return render_template("admin_settings.html",
+                         admin=admin,
+                         google_review_url=GOOGLE_REVIEW_URL)
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))

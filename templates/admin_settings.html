@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>設定 - 管理画面</title>
+  <link rel="stylesheet" href="/static/slot.css">
+  <style>
+    body {
+      background: #f3f4f6;
+    }
+    .admin-header {
+      background: white;
+      padding: 16px 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .admin-header h1 {
+      font-size: 20px;
+      margin: 0;
+      color: #1f2937;
+    }
+    .container {
+      max-width: 800px;
+      margin: 32px auto;
+      padding: 0 24px;
+    }
+    .section {
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin-bottom: 24px;
+    }
+    .section h2 {
+      font-size: 18px;
+      margin: 0 0 20px 0;
+      color: #1f2937;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #374151;
+      font-size: 14px;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    .form-group .help-text {
+      font-size: 13px;
+      color: #6b7280;
+      margin-top: 6px;
+    }
+    .btn-primary {
+      padding: 12px 24px;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-secondary {
+      padding: 12px 24px;
+      background: #6b7280;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      margin-left: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-header">
+    <h1>⚙️ 設定</h1>
+  </div>
+
+  <div class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}" style="margin-bottom: 20px;">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="section">
+      <h2>Google口コミ設定</h2>
+      <form method="post">
+        <div class="form-group">
+          <label for="google_review_url">Google口コミURL</label>
+          <input 
+            type="url" 
+            id="google_review_url" 
+            name="google_review_url" 
+            value="{{ google_review_url }}"
+            placeholder="https://search.google.com/local/writereview?placeid=YOUR_PLACE_ID"
+          >
+          <div class="help-text">
+            お店のGoogle Place IDを含むURLを設定してください。<br>
+            Place IDの取得方法: <a href="https://developers.google.com/maps/documentation/places/web-service/place-id" target="_blank">Google Places API ドキュメント</a>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary">保存</button>
+        <a href="{{ url_for('admin_dashboard') }}" class="btn-secondary">キャンセル</a>
+      </form>
+    </div>
+
+    <div class="section">
+      <h2>アカウント情報</h2>
+      <p><strong>店舗コード:</strong> {{ admin.store_code }}</p>
+      <p><strong>ログインID:</strong> {{ admin.login_id }}</p>
+      <p><strong>名前:</strong> {{ admin.name }}</p>
+      <p><strong>メールアドレス:</strong> {{ admin.email }}</p>
+      <p><strong>最終ログイン:</strong> {{ admin.last_login or '未記録' }}</p>
+    </div>
+  </div>
+</body>
+</html>
