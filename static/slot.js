@@ -326,5 +326,17 @@ document.addEventListener('DOMContentLoaded', ()=>{
   // プレイ
   $('#btn-spin')?.addEventListener('click', ()=>play());
 
+  // アンケートリセット
+  $('#btn-reset-survey')?.addEventListener('click', async ()=>{
+    if(confirm('アンケートをリセットして最初からやり直しますか？')){
+      try{
+        await fetchJSON('/reset_survey', { method:'POST', body: JSON.stringify({}) });
+        window.location.href = '/survey';
+      }catch(e){
+        alert('リセットに失敗しました: ' + (e.message || e));
+      }
+    }
+  });
+
   loadConfig();
 });

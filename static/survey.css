@@ -1,0 +1,224 @@
+/* アンケートページ専用スタイル */
+
+.survey-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.survey-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+}
+
+.survey-intro {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.survey-intro h2 {
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+  font-size: 1.75rem;
+}
+
+.survey-intro p {
+  color: #6b7280;
+  font-size: 1rem;
+}
+
+/* フォームグループ */
+.form-group {
+  margin-bottom: 2rem;
+}
+
+.form-label {
+  display: block;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+}
+
+.form-label.required::after {
+  content: " *";
+  color: #ef4444;
+}
+
+/* 星評価 */
+.star-rating {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.star {
+  cursor: pointer;
+  color: #d1d5db;
+  transition: color 0.2s ease;
+  user-select: none;
+}
+
+.star:hover,
+.star.active {
+  color: #fbbf24;
+}
+
+.star.hover {
+  color: #fbbf24;
+}
+
+/* ラジオボタングループ */
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.radio-label:hover {
+  border-color: #6366f1;
+  background: #f9fafb;
+}
+
+.radio-label input[type="radio"] {
+  margin-right: 0.75rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  cursor: pointer;
+  accent-color: #6366f1;
+}
+
+.radio-label input[type="radio"]:checked + span {
+  font-weight: 600;
+  color: #6366f1;
+}
+
+.radio-label span {
+  font-size: 1rem;
+  color: #374151;
+}
+
+/* チェックボックスグループ */
+.checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: white;
+  min-width: 120px;
+}
+
+.checkbox-label:hover {
+  border-color: #6366f1;
+  background: #f9fafb;
+}
+
+.checkbox-label input[type="checkbox"] {
+  margin-right: 0.5rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  cursor: pointer;
+  accent-color: #6366f1;
+}
+
+.checkbox-label input[type="checkbox"]:checked + span {
+  font-weight: 600;
+  color: #6366f1;
+}
+
+.checkbox-label span {
+  font-size: 1rem;
+  color: #374151;
+}
+
+/* テキストエリア */
+textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  resize: vertical;
+  transition: border-color 0.2s ease;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+/* エラーメッセージ */
+.error-message {
+  display: block;
+  color: #ef4444;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  min-height: 1.25rem;
+}
+
+/* フォームアクション */
+.form-actions {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+#submit-btn {
+  min-width: 300px;
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 640px) {
+  .survey-card {
+    padding: 1.5rem;
+  }
+
+  .survey-intro h2 {
+    font-size: 1.5rem;
+  }
+
+  .star-rating {
+    font-size: 2rem;
+    justify-content: center;
+  }
+
+  .checkbox-group {
+    flex-direction: column;
+  }
+
+  .checkbox-label {
+    min-width: auto;
+  }
+
+  #submit-btn {
+    min-width: auto;
+    width: 100%;
+  }
+}

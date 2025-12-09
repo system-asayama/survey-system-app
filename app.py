@@ -2,17 +2,29 @@
 from __future__ import annotations
 from dataclasses import dataclass, asdict
 from typing import List, Dict, Any
-from flask import Flask, jsonify, request, render_template, send_from_directory
+from flask import Flask, jsonify, request, render_template, send_from_directory, session, redirect, url_for
 import os, json, secrets, time, math
+from datetime import datetime
 from decimal import Decimal, getcontext
+from openai import OpenAI
 
 getcontext().prec = 28  # 小数演算の安全側
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(APP_DIR, "data")
 CONFIG_PATH = os.path.join(DATA_DIR, "config.json")
+SURVEY_DATA_PATH = os.path.join(DATA_DIR, "survey_responses.json")
+
+# Google口コミのURL（環境変数またはデフォルト値）
+# 実際のお店のPlace IDを設定してください
+# 例: https://search.google.com/local/writereview?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4
+GOOGLE_REVIEW_URL = os.environ.get('GOOGLE_REVIEW_URL', '#')
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(32))
+
+# OpenAI クライアント初期化
+openai_client = OpenAI()
 
 # ===== モデル =====
 @dataclass
@@ -194,10 +206,142 @@ def _prob_total_le(symbols: List[Symbol], spins: int, threshold: float) -> float
         pmf = nxt
     return float(sum(pmf[:thr + 1]))
 
+# ===== アンケートデータ管理 =====
+def _load_survey_responses():
+    if not os.path.exists(SURVEY_DATA_PATH):
+        return []
+    with open(SURVEY_DATA_PATH, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+def _save_survey_response(response_data):
+    os.makedirs(DATA_DIR, exist_ok=True)
+    responses = _load_survey_responses()
+    response_data['timestamp'] = datetime.now().isoformat()
+    response_data['id'] = len(responses) + 1
+    responses.append(response_data)
+    with open(SURVEY_DATA_PATH, "w", encoding="utf-8") as f:
+        json.dump(responses, f, ensure_ascii=False, indent=2)
+
+def _generate_review_text(survey_data):
+    """
+    アンケートデータからAIを使って口コミ投稿文を生成
+    """
+    rating = survey_data.get('rating', 3)
+    visit_purpose = survey_data.get('visit_purpose', '')
+    atmosphere = ', '.join(survey_data.get('atmosphere', []))
+    recommend = survey_data.get('recommend', '')
+    comment = survey_data.get('comment', '')
+    
+    # プロンプト作成
+    prompt = f"""以下のアンケート回答から、自然で読みやすいお店の口コミ投稿文を日本語で作成してください。
+
+【アンケート内容】
+- 総合評価: {rating}つ星
+- 訪問目的: {visit_purpose}
+- お店の雰囲気: {atmosphere}
+- おすすめ度: {recommend}
+- 自由コメント: {comment if comment else 'なし'}
+
+【要件】
+- 200文字程度で簡潔にまとめる
+- 自然な口語体で書く
+- 具体的な体験を含める
+- {rating}つ星の評価に相応しいトーンで書く
+- 「です・ます」調で統一する
+
+口コミ投稿文:"""
+    
+    try:
+        response = openai_client.chat.completions.create(
+            model="gpt-4.1-mini",
+            messages=[
+                {"role": "system", "content": "あなたは自然で読みやすい口コミ投稿文を作成する専門家です。"},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7,
+            max_tokens=500
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        # エラー時はデフォルトの文章を返す
+        return f"{visit_purpose}で訪問しました。{atmosphere}な雰囲気で、{recommend}と思います。{comment}"
+
 # ===== ルート =====
 @app.get("/")
 def index():
+    # アンケート未回答の場合はアンケートページへ
+    if not session.get('survey_completed'):
+        return redirect(url_for('survey'))
+    return redirect(url_for('slot_page'))
+
+@app.get("/survey")
+def survey():
+    return render_template("survey.html")
+
+@app.get("/review_confirm")
+def review_confirm():
+    # アンケート未回答の場合はアンケートページへ
+    if not session.get('survey_completed'):
+        return redirect(url_for('survey'))
+    
+    rating = session.get('survey_rating', 3)
+    generated_review = session.get('generated_review', '')
+    
+    return render_template(
+        "review_confirm.html",
+        rating=rating,
+        generated_review=generated_review,
+        google_review_url=GOOGLE_REVIEW_URL
+    )
+
+@app.get("/slot")
+def slot_page():
+    # アンケート未回答の場合はアンケートページへリダイレクト
+    if not session.get('survey_completed'):
+        return redirect(url_for('survey'))
     return render_template("slot.html")
+
+@app.post("/reset_survey")
+def reset_survey():
+    """アンケートをリセットして再度回答できるようにする"""
+    session.pop('survey_completed', None)
+    session.pop('survey_timestamp', None)
+    session.pop('survey_rating', None)
+    session.pop('generated_review', None)
+    return jsonify({"ok": True, "message": "アンケートをリセットしました"})
+
+@app.post("/submit_survey")
+def submit_survey():
+    body = request.get_json(silent=True) or {}
+    
+    # バリデーション
+    required_fields = ['rating', 'visit_purpose', 'atmosphere', 'recommend']
+    for field in required_fields:
+        if field not in body or not body[field]:
+            return jsonify({"ok": False, "error": f"{field}は必須項目です"}), 400
+    
+    # AI投稿文を生成
+    generated_review = _generate_review_text(body)
+    
+    # アンケートデータに生成された投稿文を追加
+    body['generated_review'] = generated_review
+    
+    # アンケートデータを保存
+    _save_survey_response(body)
+    
+    # セッションにアンケート完了フラグと評価を設定
+    session['survey_completed'] = True
+    session['survey_timestamp'] = datetime.now().isoformat()
+    session['survey_rating'] = body.get('rating', 3)
+    session['generated_review'] = generated_review
+    
+    return jsonify({
+        "ok": True, 
+        "message": "アンケートを受け付けました",
+        "rating": body.get('rating', 3),
+        "generated_review": generated_review,
+        "redirect_url": url_for('review_confirm')
+    })
 
 @app.get("/config")
 def get_config():
