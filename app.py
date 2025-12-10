@@ -473,11 +473,27 @@ def set_config():
 @app.post("/spin")
 def spin():
     from prize_logic import get_prize_for_score
+    import copy
     
     cfg = _load_config()
     psum = sum(float(s.prob) for s in cfg.symbols) or 100.0
+    
+    # 設定された確率を「3つ揃う確率」として扱い、
+    # 各リールでの出現確率はその3乗根を取り、正規化する
+    reel_symbols = []
+    reel_prob_sum = 0.0
+    
     for s in cfg.symbols:
-        s.prob = float(s.prob) * 100.0 / psum
+        prob_match = float(s.prob) / psum  # 3つ揃う確率
+        prob_reel = prob_match ** (1.0 / 3.0)  # 各リールでの出現確率（未正規化）
+        s_copy = copy.copy(s)
+        s_copy.prob = prob_reel
+        reel_symbols.append(s_copy)
+        reel_prob_sum += prob_reel
+    
+    # 正規化：合計が100%になるように調整
+    for s in reel_symbols:
+        s.prob = (s.prob / reel_prob_sum) * 100.0
     
     spins = []
     total_payout = 0.0
@@ -485,9 +501,9 @@ def spin():
     # 5回スピン
     for _ in range(5):
         # 各リールを独立して抽選
-        reel1 = _choice_by_prob(cfg.symbols)
-        reel2 = _choice_by_prob(cfg.symbols)
-        reel3 = _choice_by_prob(cfg.symbols)
+        reel1 = _choice_by_prob(reel_symbols)
+        reel2 = _choice_by_prob(reel_symbols)
+        reel3 = _choice_by_prob(reel_symbols)
         
         # 3つ揃ったかチェック
         if reel1.id == reel2.id == reel3.id:
