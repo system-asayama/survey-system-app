@@ -166,6 +166,42 @@
       renderPrizes();
     }
     
+    async function savePrizes() {
+      // 現在の入力値をprizeDataに反映
+      const container = document.getElementById('prize-list');
+      const rows = container.querySelectorAll('.prize-row');
+      
+      const prizes = [];
+      rows.forEach((row, index) => {
+        const minScore = parseInt(row.querySelector(`input[name^="prize_min_score_"]`).value) || 0;
+        const rank = row.querySelector(`input[name^="prize_rank_"]`).value;
+        const name = row.querySelector(`input[name^="prize_name_"]`).value;
+        prizes.push({ min_score: minScore, rank: rank, name: name });
+      });
+      
+      try {
+        const response = await fetch('/admin/save_prizes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ prizes: prizes })
+        });
+        
+        const data = await response.json();
+        
+        if (data.ok) {
+          alert('景品設定を保存しました！');
+          prizeData = prizes;
+        } else {
+          alert('景品設定の保存に失敗しました: ' + (data.error || '不明なエラー'));
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('景品設定の保存中にエラーが発生しました。');
+      }
+    }
+    
     document.addEventListener('DOMContentLoaded', function() {
       renderPrizes();
     });
@@ -375,6 +411,7 @@
         <!-- 景品設定がここに動的に追加されます -->
       </div>
       <button type="button" class="btn-secondary" onclick="addPrizeRow()">+ 景品を追加</button>
+      <button type="button" class="btn-primary" onclick="savePrizes()" style="margin-left: 10px;">景品設定を保存</button>
     </div>
 
     <div class="section">

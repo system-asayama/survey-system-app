@@ -824,6 +824,39 @@ def admin_settings():
                          slot_config=asdict(slot_config))
 
 
+@app.route("/admin/save_prizes", methods=["POST"])
+@require_admin_login
+def admin_save_prizes():
+    """景品設定を保存"""
+    try:
+        data = request.get_json()
+        prizes = data.get('prizes', [])
+        
+        # 点数で降順ソート
+        prizes.sort(key=lambda x: x["min_score"], reverse=True)
+        
+        # 設定ファイルのパス
+        settings_path = os.path.join(DATA_DIR, "settings.json")
+        
+        # 設定を読み込み
+        if os.path.exists(settings_path):
+            with open(settings_path, "r", encoding="utf-8") as f:
+                settings = json.load(f)
+        else:
+            settings = {}
+        
+        # 景品設定を更新
+        settings["prizes"] = prizes
+        
+        # ファイルに保存
+        with open(settings_path, "w", encoding="utf-8") as f:
+            json.dump(settings, f, ensure_ascii=False, indent=2)
+        
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 @app.route("/admin/save_slot_config", methods=["POST"])
 @require_admin_login
 def admin_save_slot_config():
