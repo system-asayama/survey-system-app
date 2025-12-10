@@ -579,12 +579,28 @@ def calc_prob():
     spins = max(1, spins)
 
     cfg = _load_config()
-    psum = sum(float(s.prob) for s in cfg.symbols) or 100.0
-    for s in cfg.symbols:
+    
+    # ハズレ確率を考慮するため、ハズレ（0点）をシンボルリストに追加
+    miss_rate = cfg.miss_probability
+    symbols_with_miss = list(cfg.symbols)
+    
+    # ハズレシンボルを追加
+    miss_symbol = Symbol(
+        id="miss",
+        label="ハズレ",
+        payout_3=0.0,
+        prob=miss_rate,
+        color="#000000"
+    )
+    symbols_with_miss.append(miss_symbol)
+    
+    # 確率を正規化（ハズレ確率 + シンボル確率の合計 = 100%）
+    psum = sum(float(s.prob) for s in symbols_with_miss)
+    for s in symbols_with_miss:
         s.prob = float(s.prob) * 100.0 / psum
 
-    prob_ge = _prob_total_ge(cfg.symbols, spins, tmin)
-    prob_le = 1.0 if tmax is None else _prob_total_le(cfg.symbols, spins, tmax)
+    prob_ge = _prob_total_ge(symbols_with_miss, spins, tmin)
+    prob_le = 1.0 if tmax is None else _prob_total_le(symbols_with_miss, spins, tmax)
     prob_range = max(0.0, prob_le - (1.0 - prob_ge))
 
     return jsonify({
