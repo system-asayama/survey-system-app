@@ -9,6 +9,7 @@ import os, json, secrets, time, math
 from datetime import datetime
 from decimal import Decimal, getcontext
 from openai import OpenAI
+from optimizer import optimize_symbol_probabilities as _optimize_symbol_probabilities
 
 getcontext().prec = 28  # 小数演算の安全側
 
@@ -595,6 +596,56 @@ def spin():
         result["prize"] = prize
     
     return jsonify(result)
+
+@app.route('/admin/optimize_probabilities', methods=['POST'])
+@admin_required
+def optimize_probabilities():
+    """
+    目標確率と期待値から各シンボルの確率を最適化する
+    """
+    try:
+        data = request.get_json()
+        target_probs = data.get('target_probs', {})
+        target_expected_value = data.get('target_expected_value', 100.0)
+        
+        cfg = load_config()
+        store_code = session.get('store_code', 'default')
+        
+        # 最適化アルゴリズムを実行
+        optimized_symbols = _optimize_symbol_probabilities(
+            cfg.symbols,
+            target_probs,
+            target_expected_value,
+            cfg.miss_probability
+        )
+        
+        if optimized_symbols is None:
+            return jsonify({
+                'success': False,
+                'error': '最適化に失敗しました。目標確率または期待値を調整してください。'
+            })
+        
+        # シンボルの確率を更新
+        for i, symbol in enumerate(cfg.symbols):
+            if i < len(optimized_symbols):
+                symbol.prob = optimized_symbols[i].prob
+        
+        # 期待値を更新
+        cfg.expected_total_5 = target_expected_value
+        
+        # 保存
+        save_config(cfg, store_code)
+        
+        return jsonify({
+            'success': True,
+            'message': f'最適化が完了しました。期待値: {target_expected_value:.1f}点',
+            'symbols': [{'id': s.id, 'prob': s.prob} for s in cfg.symbols]
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
 
 @app.post("/calc_prob")
 def calc_prob():
