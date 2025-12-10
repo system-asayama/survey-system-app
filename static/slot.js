@@ -2,6 +2,115 @@
 const $  = (q)=>document.querySelector(q);
 const $$ = (q)=>Array.from(document.querySelectorAll(q));
 
+/* ===== 効果音（Web Audio API） ===== */
+const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+// スピン開始音（上昇トーン）
+function playSoundSpinStart() {
+  const oscillator = audioContext.createOscillator();
+  const gainNode = audioContext.createGain();
+  
+  oscillator.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+  
+  oscillator.type = 'sine';
+  oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
+  oscillator.frequency.exponentialRampToValueAtTime(600, audioContext.currentTime + 0.2);
+  
+  gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+  gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+  
+  oscillator.start(audioContext.currentTime);
+  oscillator.stop(audioContext.currentTime + 0.2);
+}
+
+// リール停止音（クリック音）
+function playSoundReelStop() {
+  const oscillator = audioContext.createOscillator();
+  const gainNode = audioContext.createGain();
+  
+  oscillator.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+  
+  oscillator.type = 'square';
+  oscillator.frequency.setValueAtTime(150, audioContext.currentTime);
+  
+  gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+  gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+  
+  oscillator.start(audioContext.currentTime);
+  oscillator.stop(audioContext.currentTime + 0.1);
+}
+
+// 結果発表音（点数に応じた音）
+function playSoundResult(totalScore) {
+  if (totalScore >= 300) {
+    // 高得点：ファンファーレ
+    playFanfare();
+  } else if (totalScore >= 150) {
+    // 中得点：明るい音
+    playCheer();
+  } else {
+    // 低得点：シンプルな音
+    playSimple();
+  }
+}
+
+function playFanfare() {
+  const notes = [262, 330, 392, 523]; // C, E, G, C
+  notes.forEach((freq, i) => {
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.type = 'triangle';
+    oscillator.frequency.setValueAtTime(freq, audioContext.currentTime + i * 0.15);
+    
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime + i * 0.15);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + i * 0.15 + 0.3);
+    
+    oscillator.start(audioContext.currentTime + i * 0.15);
+    oscillator.stop(audioContext.currentTime + i * 0.15 + 0.3);
+  });
+}
+
+function playCheer() {
+  const oscillator = audioContext.createOscillator();
+  const gainNode = audioContext.createGain();
+  
+  oscillator.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+  
+  oscillator.type = 'sine';
+  oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+  oscillator.frequency.exponentialRampToValueAtTime(880, audioContext.currentTime + 0.3);
+  
+  gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+  gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+  
+  oscillator.start(audioContext.currentTime);
+  oscillator.stop(audioContext.currentTime + 0.3);
+}
+
+function playSimple() {
+  const oscillator = audioContext.createOscillator();
+  const gainNode = audioContext.createGain();
+  
+  oscillator.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+  
+  oscillator.type = 'sine';
+  oscillator.frequency.setValueAtTime(330, audioContext.currentTime);
+  
+  gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+  gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+  
+  oscillator.start(audioContext.currentTime);
+  oscillator.stop(audioContext.currentTime + 0.2);
+}
+
 async function fetchJSON(url,opt={}){
   const hasBody = opt && typeof opt.body !== "undefined";
   const headers = Object.assign({'Content-Type':'application/json'}, (opt.headers||{}));
@@ -291,12 +400,16 @@ async function animateFiveSpins(spins){
     const one = spins[i];
 
     startSpinVisual();
+    playSoundSpinStart(); // スピン開始音
     await new Promise(r=>setTimeout(r, 500));
     stopReelVisual(0, one.id);
+    playSoundReelStop(); // リール停止音
     await new Promise(r=>setTimeout(r, 420));
     stopReelVisual(1, one.id);
+    playSoundReelStop(); // リール停止音
     await new Promise(r=>setTimeout(r, 420));
     stopReelVisual(2, one.id);
+    playSoundReelStop(); // リール停止音
     await new Promise(r=>setTimeout(r, 700));
 
     total += one.payout;
@@ -322,6 +435,7 @@ async function play(){
   const total = await animateFiveSpins(data.spins);
 
   $('#status').textContent = `合計: ${total}`;
+  playSoundResult(total); // 結果発表音
   
   // 景品判定と表示
   if (data.prize) {
