@@ -111,6 +111,47 @@ function playSimple() {
   oscillator.stop(audioContext.currentTime + 0.2);
 }
 
+// リーチ演出音（BAR以上がリーチになったとき）
+function playSoundReach() {
+  // ドラムロール風の緊張感のある音
+  const duration = 0.6;
+  
+  // 低音のパルス
+  for (let i = 0; i < 8; i++) {
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.type = 'triangle';
+    oscillator.frequency.setValueAtTime(80 + i * 10, audioContext.currentTime + i * 0.07);
+    
+    gainNode.gain.setValueAtTime(0.15, audioContext.currentTime + i * 0.07);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + i * 0.07 + 0.05);
+    
+    oscillator.start(audioContext.currentTime + i * 0.07);
+    oscillator.stop(audioContext.currentTime + i * 0.07 + 0.05);
+  }
+  
+  // 上昇するトーン
+  const oscillator2 = audioContext.createOscillator();
+  const gainNode2 = audioContext.createGain();
+  
+  oscillator2.connect(gainNode2);
+  gainNode2.connect(audioContext.destination);
+  
+  oscillator2.type = 'sawtooth';
+  oscillator2.frequency.setValueAtTime(200, audioContext.currentTime + 0.3);
+  oscillator2.frequency.exponentialRampToValueAtTime(800, audioContext.currentTime + duration);
+  
+  gainNode2.gain.setValueAtTime(0.25, audioContext.currentTime + 0.3);
+  gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+  
+  oscillator2.start(audioContext.currentTime + 0.3);
+  oscillator2.stop(audioContext.currentTime + duration);
+}
+
 
 async function fetchJSON(url,opt={}){
   const hasBody = opt && typeof opt.body !== "undefined";
@@ -410,7 +451,18 @@ async function animateFiveSpins(spins){
     await new Promise(r=>setTimeout(r, 420));
     stopReelVisual(1, one.reels[1].id);
     playSoundReelStop(); // リール停止音
-    await new Promise(r=>setTimeout(r, 420));
+    
+    // リーチ判定（1つ目と2つ目が同じ、かつBAR以上）
+    const isReach = one.reels[0].id === one.reels[1].id;
+    const highValueSymbols = ['bar', 'seven', 'GOD'];
+    const isHighValue = highValueSymbols.includes(one.reels[0].id);
+    
+    if (isReach && isHighValue) {
+      playSoundReach(); // リーチ演出音
+      await new Promise(r=>setTimeout(r, 600)); // リーチ演出の時間
+    } else {
+      await new Promise(r=>setTimeout(r, 420));
+    }
     stopReelVisual(2, one.reels[2].id);
     playSoundReelStop(); // リール停止音
     await new Promise(r=>setTimeout(r, 700));
