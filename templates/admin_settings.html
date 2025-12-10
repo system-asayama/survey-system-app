@@ -121,6 +121,7 @@
   </style>
   <script>
     let prizeData = {{ prizes|tojson|safe }};
+    let targetProbabilities = {{ slot_config.target_probabilities|tojson|safe }};
     
     function renderPrizes() {
       const container = document.getElementById('prize-list');
@@ -427,7 +428,9 @@
         probInput.id = rangeId;
         probInput.dataset.min = range.min;
         probInput.dataset.max = range.max;
-        probInput.value = '10.0';
+        // 保存された目標確率を復元
+        const savedProb = targetProbabilities && targetProbabilities[range.min.toString()] ? targetProbabilities[range.min.toString()] : 10.0;
+        probInput.value = savedProb.toString();
         probInput.step = '0.1';
         probInput.min = '0';
         probInput.max = '100';

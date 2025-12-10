@@ -47,6 +47,7 @@ class Config:
     base_bet: int = 1
     expected_total_5: float = 2500.0
     miss_probability: float = 0.0  # ハズレ確率 [%]
+    target_probabilities: Dict[str, float] | None = None  # 目標確率設定 {"500-2500": 1.0, ...}
 
 # ===== ユーティリティ =====
 def _default_config() -> Config:
@@ -1005,13 +1006,22 @@ def admin_save_slot_config():
                     prob=symbol_prob
                 ))
         
+        # 目標確率設定を収集
+        target_probabilities = {}
+        for key in request.form:
+            if key.startswith('target_prob_'):
+                range_min = key.replace('target_prob_', '')
+                prob_value = float(request.form.get(key, 0))
+                target_probabilities[range_min] = prob_value
+        
         # Configオブジェクトを作成
         cfg = Config(
             symbols=symbols,
             reels=3,
             base_bet=1,
             expected_total_5=expected_total_5,
-            miss_probability=miss_probability
+            miss_probability=miss_probability,
+            target_probabilities=target_probabilities if target_probabilities else None
         )
         
         # 保存
