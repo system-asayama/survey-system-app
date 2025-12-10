@@ -382,18 +382,34 @@
       container.innerHTML = '';
       
       ranges.forEach((range, index) => {
-        const rangeText = range.max >= 999 ? `${range.min}点以上` : `${range.min}-${range.max}点`;
+        const rangeText = `${range.min}-${range.max}点`;
         const rangeId = `target_prob_${range.min}`;
+        
+        // 行全体のコンテナ
+        const rowDiv = document.createElement('div');
+        rowDiv.style.display = 'grid';
+        rowDiv.style.gridTemplateColumns = '1fr 1fr';
+        rowDiv.style.gap = '16px';
+        rowDiv.style.marginBottom = '12px';
         
         // 点数範囲
         const rangeDiv = document.createElement('div');
         const rangeLabel = document.createElement('label');
         rangeLabel.textContent = '点数範囲';
+        rangeLabel.style.display = 'block';
+        rangeLabel.style.marginBottom = '8px';
+        rangeLabel.style.fontWeight = '600';
+        rangeLabel.style.color = '#374151';
+        rangeLabel.style.fontSize = '14px';
         const rangeInput = document.createElement('input');
         rangeInput.type = 'text';
         rangeInput.value = rangeText;
         rangeInput.disabled = true;
         rangeInput.style.background = '#e0f2fe';
+        rangeInput.style.width = '100%';
+        rangeInput.style.padding = '10px';
+        rangeInput.style.border = '1px solid #cbd5e1';
+        rangeInput.style.borderRadius = '6px';
         rangeDiv.appendChild(rangeLabel);
         rangeDiv.appendChild(rangeInput);
         
@@ -401,6 +417,11 @@
         const probDiv = document.createElement('div');
         const probLabel = document.createElement('label');
         probLabel.textContent = '目標確率(%)';
+        probLabel.style.display = 'block';
+        probLabel.style.marginBottom = '8px';
+        probLabel.style.fontWeight = '600';
+        probLabel.style.color = '#374151';
+        probLabel.style.fontSize = '14px';
         const probInput = document.createElement('input');
         probInput.type = 'number';
         probInput.id = rangeId;
@@ -411,11 +432,15 @@
         probInput.min = '0';
         probInput.max = '100';
         probInput.style.width = '100%';
+        probInput.style.padding = '10px';
+        probInput.style.border = '1px solid #cbd5e1';
+        probInput.style.borderRadius = '6px';
         probDiv.appendChild(probLabel);
         probDiv.appendChild(probInput);
         
-        container.appendChild(rangeDiv);
-        container.appendChild(probDiv);
+        rowDiv.appendChild(rangeDiv);
+        rowDiv.appendChild(probDiv);
+        container.appendChild(rowDiv);
       });
     }
     
