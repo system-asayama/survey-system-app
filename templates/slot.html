@@ -14,8 +14,22 @@
 
   <main class="wrap">
     <!-- アンケート完了メッセージ -->
-    <div class="survey-complete-message" style="background:#10b981;color:white;padding:1rem;border-radius:8px;margin-bottom:1rem;text-align:center">
-      <p style="margin:0;font-size:1.1rem">✅ {{ survey_complete_message }}</p>
+    <div class="survey-complete-message" style="background:#10b981;color:white;padding:1rem;border-radius:8px;margin-bottom:1rem;">
+      <p style="margin:0 0 0.75rem 0;font-size:1.1rem;text-align:center">✅ {{ survey_complete_message }}</p>
+      {% if prizes %}
+      <div style="background:rgba(255,255,255,0.15);padding:0.75rem;border-radius:6px;">
+        <h3 style="margin:0 0 0.5rem 0;font-size:1rem;font-weight:bold;text-align:center">🎁 景品一覧</h3>
+        <div style="display:grid;gap:0.4rem;font-size:0.9rem;">
+          {% for prize in prizes %}
+          <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.1);padding:0.4rem 0.6rem;border-radius:4px;">
+            <span style="font-weight:bold;">🏆 {{ prize.rank }}</span>
+            <span style="flex:1;margin:0 0.5rem;text-align:left;">{{ prize.name }}</span>
+            <span style="background:rgba(255,255,255,0.25);padding:0.2rem 0.5rem;border-radius:3px;font-weight:bold;">{{ prize.min_score }}点～</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
     </div>
     <!-- スロット本体 -->
     <section class="slot">
