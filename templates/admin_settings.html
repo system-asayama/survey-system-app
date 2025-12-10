@@ -449,7 +449,7 @@
                 <th style="width: 100px;">ID</th>
                 <th style="width: 100px;">表示</th>
                 <th style="width: 120px;">配当</th>
-                <th style="width: 120px;">確率(%)</th>
+                <th style="width: 120px;">抽選確率(%)*</th>
                 <th style="width: 100px;">色</th>
                 <th style="width: 80px;"></th>
               </tr>
@@ -471,6 +471,11 @@
               {% endfor %}
             </tbody>
           </table>
+        </div>
+        
+        <div class="help-text" style="margin-top: 12px;">
+          * 抽選確率：ハズレでなかった場合の各シンボルの抽選確率です。実際の発生確率は「抽選確率 × (100% - ハズレ確率)」になります。<br>
+          例：抽選確率10%、ハズレ確率20%の場合、実際の発生確率は 10% × 80% = 8% です。
         </div>
         
         <div style="margin-top: 16px; display: flex; gap: 12px;">
@@ -505,7 +510,8 @@
         
         <div id="calc_result" style="display: none; padding: 16px; background: white; border-radius: 4px; border: 1px solid #ddd;">
           <p style="margin: 0; font-size: 16px;"><strong>結果:</strong> <span id="calc_prob_text"></span></p>
-          <p style="margin: 8px 0 0 0; color: #666; font-size: 14px;">5回スピンで合計点数が指定範囲内になる確率です。</p>
+          <p style="margin: 8px 0 0 0; color: #666; font-size: 14px;">5回スピンで合計点数が指定範囲内になる確率です。<br>
+          ※ ハズレ確率も考慮された実際の発生確率です。</p>
         </div>
       </div>
     </div>
