@@ -403,18 +403,26 @@ async function animateFiveSpins(spins){
     startSpinVisual();
     playSoundSpinStart(); // スピン開始音
     await new Promise(r=>setTimeout(r, 500));
-    stopReelVisual(0, one.id);
+    
+    // 各リールを個別に停止
+    stopReelVisual(0, one.reels[0].id);
     playSoundReelStop(); // リール停止音
     await new Promise(r=>setTimeout(r, 420));
-    stopReelVisual(1, one.id);
+    stopReelVisual(1, one.reels[1].id);
     playSoundReelStop(); // リール停止音
     await new Promise(r=>setTimeout(r, 420));
-    stopReelVisual(2, one.id);
+    stopReelVisual(2, one.reels[2].id);
     playSoundReelStop(); // リール停止音
     await new Promise(r=>setTimeout(r, 700));
 
     total += one.payout;
-    $('#round-indicator').textContent = `Round ${i+1}/5：${one.label} (+${one.payout})`;
+    
+    // 結果表示
+    if (one.matched) {
+      $('#round-indicator').textContent = `Round ${i+1}/5：${one.symbol.label} 揃った！ (+${one.payout})`;
+    } else {
+      $('#round-indicator').textContent = `Round ${i+1}/5：ハズレ (+0)`;
+    }
   }
   return total;
 }
@@ -447,8 +455,17 @@ async function play(){
   }
   const li = document.createElement('li');
   const ts = new Date(data.ts*1000).toLocaleString();
-  li.innerHTML = data.spins.map(s => `<span class="badge" style="background:${s.color || '#4f46e5'}">${s.label}</span>`).join(' ')
-    + ` <span class="muted">${ts}</span> / 合計: ${total}`;
+  
+  // 各スピンの結果を表示
+  const spinResults = data.spins.map(s => {
+    if (s.matched) {
+      return `<span class="badge" style="background:${s.symbol.color || '#4f46e5'}">${s.symbol.label}</span>`;
+    } else {
+      return `<span class="badge" style="background:#999">ハズレ</span>`;
+    }
+  }).join(' ');
+  
+  li.innerHTML = spinResults + ` <span class="muted">${ts}</span> / 合計: ${total}`;
   $('#history').insertBefore(li, $('#history').firstChild);
 
   // 設定ダイアログが存在する場合のみ呼び出し

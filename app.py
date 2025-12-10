@@ -478,12 +478,43 @@ def spin():
     psum = sum(float(s.prob) for s in cfg.symbols) or 100.0
     for s in cfg.symbols:
         s.prob = float(s.prob) * 100.0 / psum
+    
     spins = []
     total_payout = 0.0
+    
+    # 5回スピン
     for _ in range(5):
-        sym = _choice_by_prob(cfg.symbols)
-        spins.append({"id": sym.id, "label": sym.label, "color": sym.color, "payout": sym.payout_3})
-        total_payout += sym.payout_3
+        # 各リールを独立して抽選
+        reel1 = _choice_by_prob(cfg.symbols)
+        reel2 = _choice_by_prob(cfg.symbols)
+        reel3 = _choice_by_prob(cfg.symbols)
+        
+        # 3つ揃ったかチェック
+        if reel1.id == reel2.id == reel3.id:
+            # 揃った！配当獲得
+            payout = reel1.payout_3
+            total_payout += payout
+            spins.append({
+                "reels": [
+                    {"id": reel1.id, "label": reel1.label, "color": reel1.color},
+                    {"id": reel2.id, "label": reel2.label, "color": reel2.color},
+                    {"id": reel3.id, "label": reel3.label, "color": reel3.color}
+                ],
+                "matched": True,
+                "symbol": {"id": reel1.id, "label": reel1.label, "color": reel1.color},
+                "payout": payout
+            })
+        else:
+            # ハズレ
+            spins.append({
+                "reels": [
+                    {"id": reel1.id, "label": reel1.label, "color": reel1.color},
+                    {"id": reel2.id, "label": reel2.label, "color": reel2.color},
+                    {"id": reel3.id, "label": reel3.label, "color": reel3.color}
+                ],
+                "matched": False,
+                "payout": 0
+            })
     
     # 景品判定
     settings_path = os.path.join(DATA_DIR, "settings.json")
