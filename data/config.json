@@ -93,6 +93,6 @@
   ],
   "reels": 3,
   "base_bet": 1,
-  "expected_total_5": 100.0,
+  "expected_total_5": 100,
   "miss_probability": 20.0
 }
