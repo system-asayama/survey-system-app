@@ -36,6 +36,8 @@ class Symbol:
     payout_3: float
     color: str | None = None
     prob: float = 0.0  # 保存時は [%]
+    is_reach: bool = False  # リーチ専用シンボルかどうか
+    reach_symbol: str | None = None  # リーチ時に表示する元のシンボルID
 
 @dataclass
 class Config:
