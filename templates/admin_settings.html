@@ -367,18 +367,11 @@
     
     // 景品設定から目標確率設定のUIを生成
     function generateTargetProbRanges() {
-      const rewardRows = document.querySelectorAll('#reward-list tr');
+      // prizeDataから範囲を取得
       const ranges = [];
       
-      rewardRows.forEach(row => {
-        const minInput = row.querySelector('input[name^="reward_min_"]');
-        const maxInput = row.querySelector('input[name^="reward_max_"]');
-        
-        if (minInput && maxInput) {
-          const min = parseInt(minInput.value) || 0;
-          const max = parseInt(maxInput.value) || 999;
-          ranges.push({ min, max });
-        }
+      prizeData.forEach(prize => {
+        ranges.push({ min: prize.min_score, max: prize.max_score });
       });
       
       // 点数でソート（降順）
