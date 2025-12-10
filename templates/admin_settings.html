@@ -220,6 +220,63 @@
       
       alert('確率を自動調整しました！');
     }
+    
+    async function calculateProbability() {
+      const min = parseInt(document.getElementById('calc_min').value) || 0;
+      const max = parseInt(document.getElementById('calc_max').value) || 0;
+      
+      if (min > max) {
+        alert('最小点数は最大点数以下である必要があります。');
+        return;
+      }
+      
+      // 現在のシンボル設定を収集
+      const rows = document.getElementById('slot-symbols').querySelectorAll('tr');
+      const symbols = [];
+      
+      rows.forEach((row, index) => {
+        const id = row.querySelector('input[name^="symbol_id_"]').value;
+        const label = row.querySelector('input[name^="symbol_label_"]').value;
+        const payout = parseFloat(row.querySelector('input[name^="symbol_payout_"]').value) || 0;
+        const prob = parseFloat(row.querySelector('input[name^="symbol_prob_"]').value) || 0;
+        const color = row.querySelector('input[name^="symbol_color_"]').value;
+        
+        symbols.push({
+          id: id,
+          label: label,
+          payout_3: payout,
+          prob: prob,
+          color: color
+        });
+      });
+      
+      try {
+        const response = await fetch('/calc_prob', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            symbols: symbols,
+            min_score: min,
+            max_score: max
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.prob_range !== undefined) {
+          const prob = (data.prob_range * 100).toFixed(2);
+          document.getElementById('calc_prob_text').textContent = prob + '%';
+          document.getElementById('calc_result').style.display = 'block';
+        } else {
+          alert('確率の計算に失敗しました。');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('確率の計算中にエラーが発生しました。');
+      }
+    }
   </script>
 </head>
 <body>
@@ -334,6 +391,31 @@
           <button type="submit" class="btn-primary">スロット設定を保存</button>
         </div>
       </form>
+      
+      <!-- 確率計算ツール -->
+      <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+        <h3 style="margin-top: 0;">📊 確率計算ツール</h3>
+        <p class="help-text">特定の点数範囲になる確率を計算します。</p>
+        
+        <div style="display: flex; gap: 16px; align-items: flex-end; margin-bottom: 16px;">
+          <div>
+            <label>最小点数</label>
+            <input type="number" id="calc_min" value="100" min="0" style="width: 120px;">
+          </div>
+          <div>
+            <label>最大点数</label>
+            <input type="number" id="calc_max" value="200" min="0" style="width: 120px;">
+          </div>
+          <div>
+            <button type="button" class="btn-secondary" onclick="calculateProbability()">確率を計算</button>
+          </div>
+        </div>
+        
+        <div id="calc_result" style="display: none; padding: 16px; background: white; border-radius: 4px; border: 1px solid #ddd;">
+          <p style="margin: 0; font-size: 16px;"><strong>結果:</strong> <span id="calc_prob_text"></span></p>
+          <p style="margin: 8px 0 0 0; color: #666; font-size: 14px;">5回スピンで合計点数が指定範囲内になる確率です。</p>
+        </div>
+      </div>
     </div>
 
     <div class="section">
