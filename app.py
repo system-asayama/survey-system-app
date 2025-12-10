@@ -350,16 +350,18 @@ def slot_page():
     if not session.get('survey_completed'):
         return redirect(url_for('survey'))
     
-    # 設定ファイルからメッセージを読み込み
+    # 設定ファイルからメッセージと景品データを読み込み
     settings_path = os.path.join(DATA_DIR, "settings.json")
     survey_complete_message = "アンケートにご協力いただきありがとうございます！スロットをお楽しみください。"
+    prizes = []
     
     if os.path.exists(settings_path):
         with open(settings_path, "r", encoding="utf-8") as f:
             settings = json.load(f)
             survey_complete_message = settings.get("survey_complete_message", survey_complete_message)
+            prizes = settings.get("prizes", [])
     
-    return render_template("slot.html", survey_complete_message=survey_complete_message)
+    return render_template("slot.html", survey_complete_message=survey_complete_message, prizes=prizes)
 
 @app.post("/reset_survey")
 def reset_survey():
@@ -454,6 +456,8 @@ def set_config():
 
 @app.post("/spin")
 def spin():
+    from prize_logic import get_prize_for_score
+    
     cfg = _load_config()
     psum = sum(float(s.prob) for s in cfg.symbols) or 100.0
     for s in cfg.symbols:
@@ -464,8 +468,23 @@ def spin():
         sym = _choice_by_prob(cfg.symbols)
         spins.append({"id": sym.id, "label": sym.label, "color": sym.color, "payout": sym.payout_3})
         total_payout += sym.payout_3
-    return jsonify({"ok": True, "spins": spins, "total_payout": total_payout,
-                    "expected_total_5": cfg.expected_total_5, "ts": int(time.time())})
+    
+    # 景品判定
+    settings_path = os.path.join(DATA_DIR, "settings.json")
+    prize = get_prize_for_score(int(total_payout), settings_path)
+    
+    result = {
+        "ok": True, 
+        "spins": spins, 
+        "total_payout": total_payout,
+        "expected_total_5": cfg.expected_total_5, 
+        "ts": int(time.time())
+    }
+    
+    if prize:
+        result["prize"] = prize
+    
+    return jsonify(result)
 
 @app.post("/calc_prob")
 def calc_prob():
@@ -737,9 +756,27 @@ def admin_settings():
         google_url = request.form.get("google_review_url", "").strip()
         survey_message = request.form.get("survey_complete_message", "").strip()
         
+        # 景品設定を取得
+        prize_count = int(request.form.get("prize_count", 0))
+        prizes = []
+        for i in range(prize_count):
+            min_score = int(request.form.get(f"prize_min_score_{i}", 0))
+            rank = request.form.get(f"prize_rank_{i}", "").strip()
+            name = request.form.get(f"prize_name_{i}", "").strip()
+            if rank and name:  # 等級名と景品名がある場合のみ追加
+                prizes.append({
+                    "min_score": min_score,
+                    "rank": rank,
+                    "name": name
+                })
+        
+        # 点数で降順ソート
+        prizes.sort(key=lambda x: x["min_score"], reverse=True)
+        
         # 設定を更新
         settings["google_review_url"] = google_url
         settings["survey_complete_message"] = survey_message
+        settings["prizes"] = prizes
         
         # ファイルに保存
         with open(settings_path, "w", encoding="utf-8") as f:
@@ -751,10 +788,20 @@ def admin_settings():
         flash("設定を更新しました", "success")
         return redirect(url_for("admin_settings"))
     
+    # デフォルトの景品設定
+    default_prizes = [
+        {"min_score": 500, "rank": "1等", "name": "ランチ無料券"},
+        {"min_score": 100, "rank": "2等", "name": "ドリンク1杯無料"},
+        {"min_score": 50, "rank": "3等", "name": "デザート50円引き"},
+        {"min_score": 20, "rank": "4等", "name": "次回5%オフ"},
+        {"min_score": 0, "rank": "参加賞", "name": "ご参加ありがとうございました"}
+    ]
+    
     return render_template("admin_settings.html",
                          admin=admin,
                          google_review_url=settings.get("google_review_url", GOOGLE_REVIEW_URL),
-                         survey_complete_message=settings.get("survey_complete_message", "アンケートにご協力いただきありがとうございます！スロットをお楽しみください。"))
+                         survey_complete_message=settings.get("survey_complete_message", "アンケートにご協力いただきありがとうございます！スロットをお楽しみください。"),
+                         prizes=settings.get("prizes", default_prizes))
 
 
 @app.route("/admin/survey/editor", methods=["GET", "POST"])

@@ -85,7 +85,91 @@
       display: inline-block;
       margin-left: 12px;
     }
+    .prize-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 2fr auto;
+      gap: 12px;
+      margin-bottom: 12px;
+      align-items: start;
+    }
+    .prize-row input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    .btn-remove {
+      padding: 10px 16px;
+      background: #ef4444;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .prize-header {
+      display: grid;
+      grid-template-columns: 1fr 1fr 2fr auto;
+      gap: 12px;
+      margin-bottom: 8px;
+      font-weight: 600;
+      font-size: 13px;
+      color: #6b7280;
+    }
   </style>
+  <script>
+    let prizeData = {{ prizes|tojson|safe }};
+    
+    function renderPrizes() {
+      const container = document.getElementById('prize-list');
+      container.innerHTML = `
+        <div class="prize-header">
+          <div>最低点数</div>
+          <div>等級名</div>
+          <div>景品名</div>
+          <div></div>
+        </div>
+      `;
+      
+      prizeData.forEach((prize, index) => {
+        container.innerHTML += `
+          <div class="prize-row">
+            <input type="number" name="prize_min_score_${index}" value="${prize.min_score}" placeholder="0" min="0">
+            <input type="text" name="prize_rank_${index}" value="${prize.rank}" placeholder="1等">
+            <input type="text" name="prize_name_${index}" value="${prize.name}" placeholder="ランチ無料券">
+            <button type="button" class="btn-remove" onclick="removePrize(${index})">削除</button>
+          </div>
+        `;
+      });
+      
+      // 隠しフィールドで景品数を送信
+      const form = container.closest('form');
+      let countInput = form.querySelector('input[name="prize_count"]');
+      if (!countInput) {
+        countInput = document.createElement('input');
+        countInput.type = 'hidden';
+        countInput.name = 'prize_count';
+        form.appendChild(countInput);
+      }
+      countInput.value = prizeData.length;
+    }
+    
+    function addPrizeRow() {
+      prizeData.push({ min_score: 0, rank: '', name: '' });
+      renderPrizes();
+    }
+    
+    function removePrize(index) {
+      prizeData.splice(index, 1);
+      renderPrizes();
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      renderPrizes();
+    });
+  </script>
 </head>
 <body>
   <div class="admin-header">
@@ -136,6 +220,15 @@
         <button type="submit" class="btn-primary">保存</button>
         <a href="{{ url_for('admin_dashboard') }}" class="btn-secondary">キャンセル</a>
       </form>
+    </div>
+
+    <div class="section">
+      <h2>🎁 景品設定</h2>
+      <p class="help-text" style="margin-bottom: 20px;">スロットの点数に応じた等級と景品を設定できます。0点の景品を設定すると「ハズレなし」になります。</p>
+      <div id="prize-list">
+        <!-- 景品設定がここに動的に追加されます -->
+      </div>
+      <button type="button" class="btn-secondary" onclick="addPrizeRow()">+ 景品を追加</button>
     </div>
 
     <div class="section">
