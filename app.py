@@ -494,52 +494,31 @@ def spin():
     import copy
     
     cfg = _load_config()
+    import random
+    
+    # 確率の正規化
     psum = sum(float(s.prob) for s in cfg.symbols) or 100.0
-    
-    # 設定された確率を「3つ揃う確率」として扱い、
-    # 各リールでの出現確率はその3乗根を取り、正規化する
-    reel_symbols = []
-    reel_prob_sum = 0.0
-    
     for s in cfg.symbols:
-        prob_match = float(s.prob) / psum  # 3つ揃う確率
-        prob_reel = prob_match ** (1.0 / 3.0)  # 各リールでの出現確率（未正規化）
-        s_copy = copy.copy(s)
-        s_copy.prob = prob_reel
-        reel_symbols.append(s_copy)
-        reel_prob_sum += prob_reel
-    
-    # 正規化：合計が100%になるように調整
-    for s in reel_symbols:
-        s.prob = (s.prob / reel_prob_sum) * 100.0
+        s.prob = float(s.prob) / psum * 100.0
     
     spins = []
     total_payout = 0.0
+    miss_rate = cfg.miss_probability / 100.0
     
     # 5回スピン
     for _ in range(5):
-        # 各リールを独立して抽選
-        reel1 = _choice_by_prob(reel_symbols)
-        reel2 = _choice_by_prob(reel_symbols)
-        reel3 = _choice_by_prob(reel_symbols)
-        
-        # 3つ揃ったかチェック
-        if reel1.id == reel2.id == reel3.id:
-            # 揃った！配当獲得
-            payout = reel1.payout_3
-            total_payout += payout
-            spins.append({
-                "reels": [
-                    {"id": reel1.id, "label": reel1.label, "color": reel1.color},
-                    {"id": reel2.id, "label": reel2.label, "color": reel2.color},
-                    {"id": reel3.id, "label": reel3.label, "color": reel3.color}
-                ],
-                "matched": True,
-                "symbol": {"id": reel1.id, "label": reel1.label, "color": reel1.color},
-                "payout": payout
-            })
-        else:
-            # ハズレ
+        # まずハズレかどうかを判定
+        if random.random() < miss_rate:
+            # ハズレ：ランダムに3つのシンボルを表示（揃わないように）
+            reel1 = random.choice(cfg.symbols)
+            # reel2はreel1と異なるものを選ぶ
+            other_symbols = [s for s in cfg.symbols if s.id != reel1.id]
+            if other_symbols:
+                reel2 = random.choice(other_symbols)
+            else:
+                reel2 = reel1  # シンボルが1つしかない場合
+            reel3 = random.choice(cfg.symbols)
+            
             spins.append({
                 "reels": [
                     {"id": reel1.id, "label": reel1.label, "color": reel1.color},
@@ -548,6 +527,22 @@ def spin():
                 ],
                 "matched": False,
                 "payout": 0
+            })
+        else:
+            # 当たり：シンボルを確率で抽選し、3つ揃える
+            symbol = _choice_by_prob(cfg.symbols)
+            payout = symbol.payout_3
+            total_payout += payout
+            
+            spins.append({
+                "reels": [
+                    {"id": symbol.id, "label": symbol.label, "color": symbol.color},
+                    {"id": symbol.id, "label": symbol.label, "color": symbol.color},
+                    {"id": symbol.id, "label": symbol.label, "color": symbol.color}
+                ],
+                "matched": True,
+                "symbol": {"id": symbol.id, "label": symbol.label, "color": symbol.color},
+                "payout": payout
             })
     
     # 景品判定
