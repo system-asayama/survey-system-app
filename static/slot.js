@@ -543,10 +543,10 @@ async function animateFiveSpins(spins){
     stopReelVisual(1, one.reels[1].id);
     playSoundReelStop(); // リール停止音
     
-    // リーチ判定（1つ目と2つ目が同じ、かつBAR以上）
-    const isReach = one.reels[0].id === one.reels[1].id;
+    // リーチ判定（サーバーからのis_reachフラグまたは1つ目と2つ目が同じ、かつBAR以上）
+    const isReach = one.is_reach || (one.reels[0].id === one.reels[1].id);
     const highValueSymbols = ['bar', 'seven', 'GOD'];
-    const isHighValue = highValueSymbols.includes(one.reels[0].id);
+    const isHighValue = one.is_reach || highValueSymbols.includes(one.reels[0].id);
     
     if (isReach && isHighValue) {
       playSoundReach(); // リーチ演出音
@@ -578,6 +578,10 @@ async function animateFiveSpins(spins){
       } else if (one.symbol.id === 'bar') {
         playSoundBarWin();
       }
+    } else if (one.is_reach) {
+      // リーチだけど揃わなかった
+      const reachLabel = one.reach_symbol ? one.reach_symbol.label : one.reels[0].label;
+      $('#round-indicator').textContent = `Round ${i+1}/5：${reachLabel} リーチ！ (+0)`;
     } else {
       $('#round-indicator').textContent = `Round ${i+1}/5：ハズレ (+0)`;
     }

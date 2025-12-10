@@ -532,21 +532,50 @@ def spin():
                 "payout": 0
             })
         else:
-            # 当たり：シンボルを確率で抽選し、3つ揃える
+            # 当たり：シンボルを確率で抽選
             symbol = _choice_by_prob(cfg.symbols)
             payout = symbol.payout_3
             total_payout += payout
             
-            spins.append({
-                "reels": [
-                    {"id": symbol.id, "label": symbol.label, "color": symbol.color},
-                    {"id": symbol.id, "label": symbol.label, "color": symbol.color},
-                    {"id": symbol.id, "label": symbol.label, "color": symbol.color}
-                ],
-                "matched": True,
-                "symbol": {"id": symbol.id, "label": symbol.label, "color": symbol.color},
-                "payout": payout
-            })
+            # リーチ専用シンボルの場合
+            is_reach_symbol = hasattr(symbol, 'is_reach') and symbol.is_reach
+            
+            if is_reach_symbol:
+                # リーチ1と2は同じシンボル、リール3は異なるシンボル
+                reach_symbol_id = symbol.reach_symbol if hasattr(symbol, 'reach_symbol') else symbol.id
+                # 元のシンボルを探す
+                original_symbol = next((s for s in cfg.symbols if s.id == reach_symbol_id), symbol)
+                
+                # リール3用に異なるシンボルを選ぶ
+                other_symbols = [s for s in cfg.symbols if s.id != reach_symbol_id and not (hasattr(s, 'is_reach') and s.is_reach)]
+                if other_symbols:
+                    reel3_symbol = random.choice(other_symbols)
+                else:
+                    reel3_symbol = original_symbol
+                
+                spins.append({
+                    "reels": [
+                        {"id": original_symbol.id, "label": original_symbol.label, "color": original_symbol.color},
+                        {"id": original_symbol.id, "label": original_symbol.label, "color": original_symbol.color},
+                        {"id": reel3_symbol.id, "label": reel3_symbol.label, "color": reel3_symbol.color}
+                    ],
+                    "matched": False,
+                    "is_reach": True,
+                    "reach_symbol": {"id": original_symbol.id, "label": original_symbol.label, "color": original_symbol.color},
+                    "payout": 0
+                })
+            else:
+                # 通常の揃い
+                spins.append({
+                    "reels": [
+                        {"id": symbol.id, "label": symbol.label, "color": symbol.color},
+                        {"id": symbol.id, "label": symbol.label, "color": symbol.color},
+                        {"id": symbol.id, "label": symbol.label, "color": symbol.color}
+                    ],
+                    "matched": True,
+                    "symbol": {"id": symbol.id, "label": symbol.label, "color": symbol.color},
+                    "payout": payout
+                })
     
     # 景品判定
     settings_path = os.path.join(DATA_DIR, "settings.json")
