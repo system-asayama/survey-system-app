@@ -930,6 +930,9 @@ def admin_save_slot_config():
         # 期待値を取得
         expected_total_5 = float(request.form.get("expected_total_5", 100.0))
         
+        # ハズレ確率を取得
+        miss_probability = float(request.form.get("miss_probability", 0.0))
+        
         # シンボル数を取得
         symbol_count = int(request.form.get("symbol_count", 0))
         
@@ -956,7 +959,8 @@ def admin_save_slot_config():
             symbols=symbols,
             reels=3,
             base_bet=1,
-            expected_total_5=expected_total_5
+            expected_total_5=expected_total_5,
+            miss_probability=miss_probability
         )
         
         # 保存
