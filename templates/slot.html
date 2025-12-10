@@ -24,7 +24,13 @@
           <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.1);padding:0.4rem 0.6rem;border-radius:4px;">
             <span style="font-weight:bold;">🏆 {{ prize.rank }}</span>
             <span style="flex:1;margin:0 0.5rem;text-align:left;">{{ prize.name }}</span>
-            <span style="background:rgba(255,255,255,0.25);padding:0.2rem 0.5rem;border-radius:3px;font-weight:bold;">{{ prize.min_score }}点～</span>
+            <span style="background:rgba(255,255,255,0.25);padding:0.2rem 0.5rem;border-radius:3px;font-weight:bold;">
+              {% if prize.max_score %}
+                {{ prize.min_score }}点～{{ prize.max_score }}点
+              {% else %}
+                {{ prize.min_score }}点～
+              {% endif %}
+            </span>
           </div>
           {% endfor %}
         </div>

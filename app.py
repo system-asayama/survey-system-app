@@ -777,14 +777,19 @@ def admin_settings():
         prizes = []
         for i in range(prize_count):
             min_score = int(request.form.get(f"prize_min_score_{i}", 0))
+            max_score_str = request.form.get(f"prize_max_score_{i}", "").strip()
+            max_score = int(max_score_str) if max_score_str else None
             rank = request.form.get(f"prize_rank_{i}", "").strip()
             name = request.form.get(f"prize_name_{i}", "").strip()
             if rank and name:  # 等級名と景品名がある場合のみ追加
-                prizes.append({
+                prize = {
                     "min_score": min_score,
                     "rank": rank,
                     "name": name
-                })
+                }
+                if max_score is not None:
+                    prize["max_score"] = max_score
+                prizes.append(prize)
         
         # 点数で降順ソート
         prizes.sort(key=lambda x: x["min_score"], reverse=True)

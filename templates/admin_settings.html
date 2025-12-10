@@ -111,7 +111,7 @@
     }
     .prize-header {
       display: grid;
-      grid-template-columns: 1fr 1fr 2fr auto;
+      grid-template-columns: 1fr 1fr 1fr 2fr auto;
       gap: 12px;
       margin-bottom: 8px;
       font-weight: 600;
@@ -127,6 +127,7 @@
       container.innerHTML = `
         <div class="prize-header">
           <div>最低点数</div>
+          <div>最高点数</div>
           <div>等級名</div>
           <div>景品名</div>
           <div></div>
@@ -134,9 +135,11 @@
       `;
       
       prizeData.forEach((prize, index) => {
+        const maxScore = prize.max_score !== undefined ? prize.max_score : '';
         container.innerHTML += `
           <div class="prize-row">
             <input type="number" name="prize_min_score_${index}" value="${prize.min_score}" placeholder="0" min="0">
+            <input type="number" name="prize_max_score_${index}" value="${maxScore}" placeholder="無制限" min="0">
             <input type="text" name="prize_rank_${index}" value="${prize.rank}" placeholder="1等">
             <input type="text" name="prize_name_${index}" value="${prize.name}" placeholder="ランチ無料券">
             <button type="button" class="btn-remove" onclick="removePrize(${index})">削除</button>
@@ -174,9 +177,15 @@
       const prizes = [];
       rows.forEach((row, index) => {
         const minScore = parseInt(row.querySelector(`input[name^="prize_min_score_"]`).value) || 0;
+        const maxScoreInput = row.querySelector(`input[name^="prize_max_score_"]`).value;
+        const maxScore = maxScoreInput ? parseInt(maxScoreInput) : null;
         const rank = row.querySelector(`input[name^="prize_rank_"]`).value;
         const name = row.querySelector(`input[name^="prize_name_"]`).value;
-        prizes.push({ min_score: minScore, rank: rank, name: name });
+        const prize = { min_score: minScore, rank: rank, name: name };
+        if (maxScore !== null) {
+          prize.max_score = maxScore;
+        }
+        prizes.push(prize);
       });
       
       try {

@@ -4,31 +4,37 @@
   "prizes": [
     {
       "min_score": 500,
+      "max_score": 999,
       "rank": "特等",
       "name": "次回使える10,000円分の商品券"
     },
     {
-      "min_score": 499,
+      "min_score": 300,
+      "max_score": 499,
       "rank": "1等",
-      "name": "次回使える5,000円分の商品券1杯無料"
+      "name": "次回使える5,000円分の商品券"
     },
     {
-      "min_score": 299,
+      "min_score": 200,
+      "max_score": 299,
       "rank": "2等",
       "name": "次回使える3,000円分の商品券"
     },
     {
-      "min_score": 199,
+      "min_score": 150,
+      "max_score": 199,
       "rank": "3等",
       "name": "次回お肉とドリンク一杯サービス"
     },
     {
-      "min_score": 149,
+      "min_score": 100,
+      "max_score": 149,
       "rank": "4等",
       "name": "次回お肉一品サービス"
     },
     {
-      "min_score": 99,
+      "min_score": 0,
+      "max_score": 99,
       "rank": "5等",
       "name": "次回ドリンク一杯またはアイスクリーム無料"
     }
