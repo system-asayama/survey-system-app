@@ -102,6 +102,27 @@ function renderPayoutTableFromRows(){
   });
 }
 
+/* ===== 配当表をwindow.__symbolsから直接描画 ===== */
+function renderPayoutTableFromSymbols(){
+  const tbody = $('#payout-rows');
+  if(!tbody) return;
+  if(!window.__symbols || !window.__symbols.length) return;
+
+  tbody.innerHTML = '';
+
+  // 配当が大きい順に並べ替えて描画
+  const sorted = [...window.__symbols].sort((a,b)=>(b.payout_3||0)-(a.payout_3||0));
+
+  sorted.forEach((r)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="badge" style="background:${r.color || '#4f46e5'}">${r.label || r.id}</span></td>
+      <td style="text-align:right">${Number(r.payout_3 || 0)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
 /* ===== プレビュー再計算（期待値>0は指数傾斜、0は反比例） ===== */
 function previewRecalcProb(){
   const expected5 = parseFloat($('#expected-total-5')?.value||"0");
@@ -128,7 +149,12 @@ function previewRecalcProb(){
   $('#prob-total').textContent = sum.toFixed(4);
   $('#prob-warn').style.display = (Math.abs(sum-100) > 0.05) ? 'inline' : 'none';
 
-  renderPayoutTableFromRows();
+  // 設定ダイアログが存在する場合のみ呼び出し
+  if ($('#rows')) {
+    renderPayoutTableFromRows();
+  } else {
+    renderPayoutTableFromSymbols();
+  }
 }
 
 async function loadConfig(){
@@ -146,6 +172,7 @@ async function loadConfig(){
     if($('#expected-total-5')) $('#expected-total-5').value = cfg.expected_total_5 ?? 2500;
     bindRowEvents();
     buildAllReels(cfg.symbols);
+    renderPayoutTableFromSymbols(); // 配当表を描画
     previewRecalcProb();
   } catch (e) {
     console.error('Failed to load config:', e);
@@ -161,6 +188,7 @@ async function loadConfig(){
     ];
     window.__symbols = defaultSymbols;
     buildAllReels(defaultSymbols);
+    renderPayoutTableFromSymbols(); // 配当表を描画
   }
 }
 
@@ -308,7 +336,12 @@ async function play(){
     + ` <span class="muted">${ts}</span> / 合計: ${total}`;
   $('#history').insertBefore(li, $('#history').firstChild);
 
-  renderPayoutTableFromRows();
+  // 設定ダイアログが存在する場合のみ呼び出し
+  if ($('#rows')) {
+    renderPayoutTableFromRows();
+  } else {
+    renderPayoutTableFromSymbols();
+  }
   spinning = false;
 }
 
