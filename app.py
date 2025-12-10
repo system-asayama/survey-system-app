@@ -363,6 +363,20 @@ def slot_page():
     
     return render_template("slot.html", survey_complete_message=survey_complete_message, prizes=prizes)
 
+@app.get("/demo")
+def demo_page():
+    """デモプレイページ：アンケートなしでスロットを何度でもプレイ可能"""
+    # 設定ファイルから景品データを読み込み
+    settings_path = os.path.join(DATA_DIR, "settings.json")
+    prizes = []
+    
+    if os.path.exists(settings_path):
+        with open(settings_path, "r", encoding="utf-8") as f:
+            settings = json.load(f)
+            prizes = settings.get("prizes", [])
+    
+    return render_template("demo.html", prizes=prizes)
+
 @app.post("/reset_survey")
 def reset_survey():
     """アンケートをリセットして再度回答できるようにする"""
