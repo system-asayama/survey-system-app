@@ -480,9 +480,11 @@ def set_config():
         adjusted_target_e1 = target_e1 / (1.0 - miss_rate)
         probs = _solve_probs_for_target_expectation(payouts, adjusted_target_e1)
         
-        # 各シンボルが3つ揃う確率を設定（ハズレ確率を除いた分）
+        # 各シンボルが3つ揃う確率を設定
+        # probsは既にハズレ確率を考慮して調整済み（adjusted_target_e1を使用）
+        # ここでは100%を基準とした確率として設定
         for s, p in zip(cfg.symbols, probs):
-            s.prob = float(p) * (100.0 - cfg.miss_probability)
+            s.prob = float(p) * 100.0
         cfg.expected_total_5 = float(target_total5)
     else:
         _recalc_probs_inverse_and_expected(cfg)
