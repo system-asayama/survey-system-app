@@ -102,8 +102,22 @@
     {% endwith %}
 
     <div class="section">
-      <h2>Google口コミ設定</h2>
+      <h2>アンケート完了メッセージ</h2>
       <form method="post">
+        <div class="form-group">
+          <label for="survey_complete_message">スロットページ表示メッセージ</label>
+          <input 
+            type="text" 
+            id="survey_complete_message" 
+            name="survey_complete_message" 
+            value="{{ survey_complete_message }}"
+            placeholder="アンケートにご協力いただきありがとうございます！スロットをお楽しみください。"
+          >
+          <div class="help-text">
+            アンケート完了後、スロットページの緑色バナーに表示されるメッセージです。
+          </div>
+        </div>
+
         <div class="form-group">
           <label for="google_review_url">Google口コミURL</label>
           <input 

@@ -349,7 +349,17 @@ def slot_page():
     # アンケート未回答の場合はアンケートページへリダイレクト
     if not session.get('survey_completed'):
         return redirect(url_for('survey'))
-    return render_template("slot.html")
+    
+    # 設定ファイルからメッセージを読み込み
+    settings_path = os.path.join(DATA_DIR, "settings.json")
+    survey_complete_message = "アンケートにご協力いただきありがとうございます！スロットをお楽しみください。"
+    
+    if os.path.exists(settings_path):
+        with open(settings_path, "r", encoding="utf-8") as f:
+            settings = json.load(f)
+            survey_complete_message = settings.get("survey_complete_message", survey_complete_message)
+    
+    return render_template("slot.html", survey_complete_message=survey_complete_message)
 
 @app.post("/reset_survey")
 def reset_survey():
@@ -705,15 +715,37 @@ def admin_export_csv():
 @require_admin_login
 def admin_settings():
     """管理画面設定"""
+    global GOOGLE_REVIEW_URL
+    
     admin = get_current_admin()
     
+    # 設定ファイルのパス
+    settings_path = os.path.join(DATA_DIR, "settings.json")
+    
+    # 設定を読み込み
+    if os.path.exists(settings_path):
+        with open(settings_path, "r", encoding="utf-8") as f:
+            settings = json.load(f)
+    else:
+        settings = {
+            "google_review_url": GOOGLE_REVIEW_URL,
+            "survey_complete_message": "アンケートにご協力いただきありがとうございます！スロットをお楽しみください。"
+        }
+    
     if request.method == "POST":
-        # Google口コミURLの更新
+        # フォームデータを取得
         google_url = request.form.get("google_review_url", "").strip()
+        survey_message = request.form.get("survey_complete_message", "").strip()
         
-        # 設定を環境変数またはファイルに保存
-        # ここでは簡易的にグローバル変数を更新
-        global GOOGLE_REVIEW_URL
+        # 設定を更新
+        settings["google_review_url"] = google_url
+        settings["survey_complete_message"] = survey_message
+        
+        # ファイルに保存
+        with open(settings_path, "w", encoding="utf-8") as f:
+            json.dump(settings, f, ensure_ascii=False, indent=2)
+        
+        # グローバル変数を更新
         GOOGLE_REVIEW_URL = google_url
         
         flash("設定を更新しました", "success")
@@ -721,7 +753,8 @@ def admin_settings():
     
     return render_template("admin_settings.html",
                          admin=admin,
-                         google_review_url=GOOGLE_REVIEW_URL)
+                         google_review_url=settings.get("google_review_url", GOOGLE_REVIEW_URL),
+                         survey_complete_message=settings.get("survey_complete_message", "アンケートにご協力いただきありがとうございます！スロットをお楽しみください。"))
 
 
 @app.route("/admin/survey/editor", methods=["GET", "POST"])
