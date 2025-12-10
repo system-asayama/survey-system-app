@@ -51,14 +51,20 @@ def optimize_symbol_probabilities(
         symbol_groups[payout].append(symbol)
     
     # 各点数範囲に対応する配当を特定
-    payout_ranges = {
-        '500': [s for s in symbols if s.payout_3 >= 500],  # 500点以上
-        '300': [s for s in symbols if 300 <= s.payout_3 < 500],  # 300-499点
-        '200': [s for s in symbols if 200 <= s.payout_3 < 300],  # 200-299点
-        '150': [s for s in symbols if 150 <= s.payout_3 < 200],  # 150-199点
-        '100': [s for s in symbols if 100 <= s.payout_3 < 150],  # 100-149点
-        '0': [s for s in symbols if s.payout_3 < 100]  # 0-99点
-    }
+    payout_ranges = {}
+    for range_key, target_prob in target_probs.items():
+        # range_keyの形式: "min-max" または "min-999"
+        parts = range_key.split('-')
+        if len(parts) == 2:
+            min_payout = int(parts[0])
+            max_payout = int(parts[1])
+            
+            if max_payout >= 999:
+                # 以上の場合
+                payout_ranges[range_key] = [s for s in symbols if s.payout_3 >= min_payout]
+            else:
+                # 範囲の場合
+                payout_ranges[range_key] = [s for s in symbols if min_payout <= s.payout_3 <= max_payout]
     
     # 初期確率を設定（均等分配）
     for range_key, range_symbols in payout_ranges.items():

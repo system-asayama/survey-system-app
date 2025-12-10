@@ -212,6 +212,8 @@
     }
     
     document.addEventListener('DOMContentLoaded', function() {
+      // 景品設定から目標確率設定を生成
+      generateTargetProbRanges();
       renderPrizes();
     });
     
@@ -363,16 +365,78 @@
       }
     }
     
+    // 景品設定から目標確率設定のUIを生成
+    function generateTargetProbRanges() {
+      const rewardRows = document.querySelectorAll('#reward-list tr');
+      const ranges = [];
+      
+      rewardRows.forEach(row => {
+        const minInput = row.querySelector('input[name^="reward_min_"]');
+        const maxInput = row.querySelector('input[name^="reward_max_"]');
+        
+        if (minInput && maxInput) {
+          const min = parseInt(minInput.value) || 0;
+          const max = parseInt(maxInput.value) || 999;
+          ranges.push({ min, max });
+        }
+      });
+      
+      // 点数でソート（降順）
+      ranges.sort((a, b) => b.min - a.min);
+      
+      // UIを生成
+      const container = document.getElementById('target-prob-ranges');
+      container.innerHTML = '';
+      
+      ranges.forEach((range, index) => {
+        const rangeText = range.max >= 999 ? `${range.min}点以上` : `${range.min}-${range.max}点`;
+        const rangeId = `target_prob_${range.min}`;
+        
+        // 点数範囲
+        const rangeDiv = document.createElement('div');
+        const rangeLabel = document.createElement('label');
+        rangeLabel.textContent = '点数範囲';
+        const rangeInput = document.createElement('input');
+        rangeInput.type = 'text';
+        rangeInput.value = rangeText;
+        rangeInput.disabled = true;
+        rangeInput.style.background = '#e0f2fe';
+        rangeDiv.appendChild(rangeLabel);
+        rangeDiv.appendChild(rangeInput);
+        
+        // 目標確率
+        const probDiv = document.createElement('div');
+        const probLabel = document.createElement('label');
+        probLabel.textContent = '目標確率(%)';
+        const probInput = document.createElement('input');
+        probInput.type = 'number';
+        probInput.id = rangeId;
+        probInput.dataset.min = range.min;
+        probInput.dataset.max = range.max;
+        probInput.value = '10.0';
+        probInput.step = '0.1';
+        probInput.min = '0';
+        probInput.max = '100';
+        probInput.style.width = '100%';
+        probDiv.appendChild(probLabel);
+        probDiv.appendChild(probInput);
+        
+        container.appendChild(rangeDiv);
+        container.appendChild(probDiv);
+      });
+    }
+    
     async function optimizeProbabilities() {
       // 目標確率を取得
-      const targetProbs = {
-        '500': parseFloat(document.getElementById('target_prob_500').value),
-        '300': parseFloat(document.getElementById('target_prob_300').value),
-        '200': parseFloat(document.getElementById('target_prob_200').value),
-        '150': parseFloat(document.getElementById('target_prob_150').value),
-        '100': parseFloat(document.getElementById('target_prob_100').value),
-        '0': parseFloat(document.getElementById('target_prob_0').value)
-      };
+      const targetProbs = {};
+      const probInputs = document.querySelectorAll('#target-prob-ranges input[type="number"]');
+      
+      probInputs.forEach(input => {
+        const min = input.dataset.min;
+        const max = input.dataset.max;
+        const prob = parseFloat(input.value) || 0;
+        targetProbs[`${min}-${max}`] = prob;
+      });
       
       const targetExpectedValue = parseFloat(document.getElementById('target_expected_value').value);
       
@@ -497,61 +561,10 @@
       <div style="margin-bottom: 30px; padding: 20px; background: #f0f9ff; border-radius: 8px; border: 1px solid #bae6fd;">
         <h3 style="margin-top: 0; color: #0369a1;">🎯 目標確率設定（高度な設定）</h3>
         <p class="help-text" style="margin-bottom: 16px;">各点数範囲の目標確率を設定し、「確率を最適化」ボタンを押すと、各シンボルの確率が自動計算されます。</p>
+        <p class="help-text" style="margin-bottom: 16px; color: #0369a1;">※ 点数範囲は景品設定から自動的に生成されます。</p>
         
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 16px;">
-          <div>
-            <label>点数範囲</label>
-            <input type="text" value="500点以上" disabled style="background: #e0f2fe;">
-          </div>
-          <div>
-            <label>目標確率(%)</label>
-            <input type="number" id="target_prob_500" value="1.0" step="0.1" min="0" max="100" style="width: 100%;">
-          </div>
-          
-          <div>
-            <label>点数範囲</label>
-            <input type="text" value="300-499点" disabled style="background: #e0f2fe;">
-          </div>
-          <div>
-            <label>目標確率(%)</label>
-            <input type="number" id="target_prob_300" value="3.0" step="0.1" min="0" max="100" style="width: 100%;">
-          </div>
-          
-          <div>
-            <label>点数範囲</label>
-            <input type="text" value="200-299点" disabled style="background: #e0f2fe;">
-          </div>
-          <div>
-            <label>目標確率(%)</label>
-            <input type="number" id="target_prob_200" value="5.0" step="0.1" min="0" max="100" style="width: 100%;">
-          </div>
-          
-          <div>
-            <label>点数範囲</label>
-            <input type="text" value="150-199点" disabled style="background: #e0f2fe;">
-          </div>
-          <div>
-            <label>目標確率(%)</label>
-            <input type="number" id="target_prob_150" value="10.0" step="0.1" min="0" max="100" style="width: 100%;">
-          </div>
-          
-          <div>
-            <label>点数範囲</label>
-            <input type="text" value="100-149点" disabled style="background: #e0f2fe;">
-          </div>
-          <div>
-            <label>目標確率(%)</label>
-            <input type="number" id="target_prob_100" value="15.0" step="0.1" min="0" max="100" style="width: 100%;">
-          </div>
-          
-          <div>
-            <label>点数範囲</label>
-            <input type="text" value="0-99点" disabled style="background: #e0f2fe;">
-          </div>
-          <div>
-            <label>目標確率(%)</label>
-            <input type="number" id="target_prob_0" value="66.0" step="0.1" min="0" max="100" style="width: 100%;">
-          </div>
+        <div id="target-prob-ranges" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 16px;">
+          <!-- 景品設定から動的に生成されます -->
         </div>
         
         <div style="margin-bottom: 16px;">
