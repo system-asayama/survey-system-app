@@ -132,14 +132,36 @@ function previewRecalcProb(){
 }
 
 async function loadConfig(){
-  const cfg = await fetchJSON('/config');
-  window.__symbols = cfg.symbols;
-  $('#rows').innerHTML = '';
-  (cfg.symbols || []).forEach(s => $('#rows').appendChild(rowTemplate(s)));
-  if($('#expected-total-5')) $('#expected-total-5').value = cfg.expected_total_5 ?? 2500;
-  bindRowEvents();
-  buildAllReels(cfg.symbols);
-  previewRecalcProb();
+  try {
+    const cfg = await fetchJSON('/config');
+    window.__symbols = cfg.symbols;
+    
+    // 設定ダイアログが存在する場合のみ更新
+    const rowsEl = $('#rows');
+    if (rowsEl) {
+      rowsEl.innerHTML = '';
+      (cfg.symbols || []).forEach(s => rowsEl.appendChild(rowTemplate(s)));
+    }
+    
+    if($('#expected-total-5')) $('#expected-total-5').value = cfg.expected_total_5 ?? 2500;
+    bindRowEvents();
+    buildAllReels(cfg.symbols);
+    previewRecalcProb();
+  } catch (e) {
+    console.error('Failed to load config:', e);
+    // フォールバック: デフォルトシンボルでリールを構築
+    const defaultSymbols = [
+      {id:'GOD', label:'GOD', payout_3:500, color:'#ff8800', prob:0.4079},
+      {id:'seven', label:'７', payout_3:100, color:'#ff0000', prob:2.0394},
+      {id:'bar', label:'BAR', payout_3:50, color:'#0066ff', prob:4.0789},
+      {id:'bell', label:'🔔', payout_3:20, color:'#8b4513', prob:10.1971},
+      {id:'grape', label:'🍇', payout_3:12, color:'#9370db', prob:16.9952},
+      {id:'cherry', label:'🍒', payout_3:8, color:'#ff0000', prob:25.4929},
+      {id:'lemon', label:'🍋', payout_3:5, color:'#ffff00', prob:40.7886}
+    ];
+    window.__symbols = defaultSymbols;
+    buildAllReels(defaultSymbols);
+  }
 }
 
 function bindRowEvents(){
@@ -272,6 +294,14 @@ async function play(){
   const total = await animateFiveSpins(data.spins);
 
   $('#status').textContent = `合計: ${total}`;
+  
+  // 景品判定と表示
+  if (data.prize) {
+    const prizeMsg = document.querySelector('.survey-complete-message p');
+    if (prizeMsg) {
+      prizeMsg.innerHTML = `🎉 おめでとうございます！${data.prize.rank}が当たりました！！<br>景品: ${data.prize.name}`;
+    }
+  }
   const li = document.createElement('li');
   const ts = new Date(data.ts*1000).toLocaleString();
   li.innerHTML = data.spins.map(s => `<span class="badge" style="background:${s.color || '#4f46e5'}">${s.label}</span>`).join(' ')
