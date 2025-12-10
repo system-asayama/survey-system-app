@@ -109,7 +109,9 @@ def _recalc_probs_inverse_and_expected(cfg: Config) -> None:
     S = sum(inv) or 1.0
     for s, v in zip(cfg.symbols, inv):
         s.prob = float(v / S * 100.0)
-    cfg.expected_total_5 = _expected_total5_from_inverse(payouts)
+    # 期待値を正しく計算: E = Σ(配当 × 確率)
+    expected_e1 = sum(p * (v / S) for p, v in zip(payouts, inv))
+    cfg.expected_total_5 = float(expected_e1 * 5.0)
 
 def _solve_probs_for_target_expectation(payouts: List[float], target_e1: float) -> List[float]:
     vs = [float(v) for v in payouts if float(v) >= 0]

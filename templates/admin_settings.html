@@ -198,27 +198,64 @@
       document.getElementById('symbol_count').value = count;
     }
     
-    function autoAdjustProb() {
+    async function autoAdjustProb() {
       const rows = document.getElementById('slot-symbols').querySelectorAll('tr');
-      const payouts = [];
+      const symbols = [];
       
       rows.forEach(row => {
-        const payoutInput = row.querySelector('input[name^="symbol_payout_"]');
-        const payout = parseFloat(payoutInput.value) || 0;
-        payouts.push(payout);
+        const id = row.querySelector('input[name^="symbol_id_"]').value;
+        const label = row.querySelector('input[name^="symbol_label_"]').value;
+        const payout = parseFloat(row.querySelector('input[name^="symbol_payout_"]').value) || 0;
+        const prob = parseFloat(row.querySelector('input[name^="symbol_prob_"]').value) || 0;
+        const color = row.querySelector('input[name^="symbol_color_"]').value;
+        
+        symbols.push({
+          id: id,
+          label: label,
+          payout_3: payout,
+          prob: prob,
+          color: color
+        });
       });
       
-      // 逆比例で確率を計算（配当が高いほど確率が低い）
-      const inversePayouts = payouts.map(p => p > 0 ? 1 / p : 0);
-      const sum = inversePayouts.reduce((a, b) => a + b, 0);
-      const probs = inversePayouts.map(inv => (inv / sum) * 100);
+      // 5回スピンの期待値を100に設定
+      const targetExpected = parseFloat(document.getElementById('expected_total_5').value) || 100.0;
       
-      rows.forEach((row, index) => {
-        const probInput = row.querySelector('input[name^="symbol_prob_"]');
-        probInput.value = probs[index].toFixed(4);
-      });
-      
-      alert('確率を自動調整しました！');
+      try {
+        const response = await fetch('/config', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            symbols: symbols,
+            target_expected_total_5: targetExpected,
+            reels: 3,
+            base_bet: 1
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.ok) {
+          // 更新された設定を取得
+          const configResponse = await fetch('/config');
+          const configData = await configResponse.json();
+          
+          // 確率を更新
+          rows.forEach((row, index) => {
+            const probInput = row.querySelector('input[name^="symbol_prob_"]');
+            probInput.value = configData.symbols[index].prob.toFixed(4);
+          });
+          
+          alert('確率を自動調整しました！期待値: ' + targetExpected + '点（5回スピン）');
+        } else {
+          alert('確率の自動調整に失敗しました: ' + (data.error || '不明なエラー'));
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('確率の自動調整中にエラーが発生しました。');
+      }
     }
     
     async function calculateProbability() {
@@ -347,7 +384,7 @@
       <form method="post" action="{{ url_for('admin_save_slot_config') }}">
         <div class="form-group">
           <label>5回スピンの期待値</label>
-          <input type="number" name="expected_total_5" value="{{ slot_config.expected_total_5 }}" step="0.01" min="0" style="width: 200px;">
+          <input type="number" id="expected_total_5" name="expected_total_5" value="{{ slot_config.expected_total_5 }}" step="0.01" min="0" style="width: 200px;">
           <div class="help-text">スロットを5回スピンしたときの平均合計点数です。</div>
         </div>
         
