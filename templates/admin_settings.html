@@ -258,8 +258,9 @@
           },
           body: JSON.stringify({
             symbols: symbols,
-            min_score: min,
-            max_score: max
+            threshold_min: min,
+            threshold_max: max,
+            spins: 5
           })
         });
         
