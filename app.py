@@ -43,6 +43,7 @@ class Config:
     reels: int = 3
     base_bet: int = 1
     expected_total_5: float = 2500.0
+    miss_probability: float = 0.0  # ハズレ確率 [%]
 
 # ===== ユーティリティ =====
 def _default_config() -> Config:
@@ -456,14 +457,31 @@ def set_config():
         return jsonify({"ok": False, "error": "symbolsを1件以上送信してください"}), 400
     parsed = [Symbol(**s) for s in symbols_in]
     cfg = Config(symbols=parsed, reels=reels, base_bet=base_bet)
+    
+    # ハズレ確率を取得
+    miss_prob = body.get("miss_probability", None)
+    if miss_prob is not None:
+        cfg.miss_probability = float(miss_prob)
+    
     target_total5 = body.get("target_expected_total_5", None)
     if target_total5 is not None:
         target_total5 = float(target_total5)
         target_e1 = target_total5 / 5.0
         payouts = [s.payout_3 for s in cfg.symbols]
-        probs = _solve_probs_for_target_expectation(payouts, target_e1)
+        
+        # ハズレ確率を考慮した期待値計算
+        # E = (1 - miss_prob) * Σ(prob_i * payout_i)
+        # → Σ(prob_i * payout_i) = E / (1 - miss_prob)
+        miss_rate = cfg.miss_probability / 100.0
+        if miss_rate >= 1.0:
+            return jsonify({"ok": False, "error": "ハズレ確率は100%未満である必要があります"}), 400
+        
+        adjusted_target_e1 = target_e1 / (1.0 - miss_rate)
+        probs = _solve_probs_for_target_expectation(payouts, adjusted_target_e1)
+        
+        # 各シンボルが3つ揃う確率を設定（ハズレ確率を除いた分）
         for s, p in zip(cfg.symbols, probs):
-            s.prob = float(p) * 100.0
+            s.prob = float(p) * (100.0 - cfg.miss_probability)
         cfg.expected_total_5 = float(target_total5)
     else:
         _recalc_probs_inverse_and_expected(cfg)

@@ -3,54 +3,55 @@
     {
       "id": "seven",
       "label": "７",
-      "payout_3": 100.0,
+      "payout_3": 100,
       "color": "#f50a39",
-      "prob": 2.0394
+      "prob": 5.2676123265887265
     },
     {
       "id": "bar",
       "label": "BAR",
-      "payout_3": 50.0,
+      "payout_3": 50,
       "color": "#5463d9",
-      "prob": 4.0789
+      "prob": 11.404485351096868
     },
     {
       "id": "bell",
       "label": "🔔",
-      "payout_3": 20.0,
+      "payout_3": 20,
       "color": "#92400e",
-      "prob": 10.1971
+      "prob": 18.128122345345947
     },
     {
       "id": "grape",
       "label": "🍇",
-      "payout_3": 12.0,
+      "payout_3": 12,
       "color": "#7c3aed",
-      "prob": 16.9952
+      "prob": 20.51288406012223
     },
     {
       "id": "cherry",
       "label": "🍒",
-      "payout_3": 8.0,
+      "payout_3": 8,
       "color": "#ef4444",
-      "prob": 25.4929
+      "prob": 21.82044867126712
     },
     {
       "id": "lemon",
       "label": "🍋",
-      "payout_3": 5.0,
+      "payout_3": 5,
       "color": "#fde047",
-      "prob": 40.7886
+      "prob": 22.85553488485211
     },
     {
       "id": "GOD",
       "label": "GOD",
-      "payout_3": 500.0,
+      "payout_3": 500,
       "color": "#ef9906",
-      "prob": 0.4079
+      "prob": 0.010912360727000378
     }
   ],
   "reels": 3,
   "base_bet": 1,
-  "expected_total_5": 100.0
+  "expected_total_5": 100.0,
+  "miss_probability": 0.0
 }

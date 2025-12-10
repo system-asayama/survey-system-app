@@ -263,8 +263,9 @@
         });
       });
       
-      // 5回スピンの期待値を100に設定
+      // 5回スピンの期待値とハズレ確率を取得
       const targetExpected = parseFloat(document.getElementById('expected_total_5').value) || 100.0;
+      const missProbability = parseFloat(document.getElementById('miss_probability').value) || 0.0;
       
       try {
         const response = await fetch('/config', {
@@ -275,6 +276,7 @@
           body: JSON.stringify({
             symbols: symbols,
             target_expected_total_5: targetExpected,
+            miss_probability: missProbability,
             reels: 3,
             base_bet: 1
           })
@@ -432,6 +434,12 @@
           <label>5回スピンの期待値</label>
           <input type="number" id="expected_total_5" name="expected_total_5" value="{{ slot_config.expected_total_5 }}" step="0.01" min="0" style="width: 200px;">
           <div class="help-text">スロットを5回スピンしたときの平均合計点数です。</div>
+        </div>
+        
+        <div class="form-group">
+          <label>ハズレ確率 (%)</label>
+          <input type="number" id="miss_probability" name="miss_probability" value="{{ slot_config.miss_probability }}" step="0.01" min="0" max="100" style="width: 200px;">
+          <div class="help-text">1回のスピンでハズレになる確率です。「確率を自動調整」を押すと、ハズレ確率と期待値に基づいて各シンボルが3つ揃う確率が自動計算されます。</div>
         </div>
         
         <div style="overflow-x: auto;">
