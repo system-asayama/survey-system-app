@@ -9,6 +9,7 @@ import os, json, secrets, time, math
 from datetime import datetime
 from decimal import Decimal, getcontext
 from openai import OpenAI
+from optimizer import optimize_symbol_probabilities as _optimize_symbol_probabilities
 
 getcontext().prec = 28  # 小数演算の安全側
 
@@ -46,6 +47,7 @@ class Config:
     base_bet: int = 1
     expected_total_5: float = 2500.0
     miss_probability: float = 0.0  # ハズレ確率 [%]
+    target_probabilities: Dict[str, float] | None = None  # 目標確率設定 {"500-2500": 1.0, ...}
 
 # ===== ユーティリティ =====
 def _default_config() -> Config:
@@ -1004,13 +1006,22 @@ def admin_save_slot_config():
                     prob=symbol_prob
                 ))
         
+        # 目標確率設定を収集
+        target_probabilities = {}
+        for key in request.form:
+            if key.startswith('target_prob_'):
+                range_min = key.replace('target_prob_', '')
+                prob_value = float(request.form.get(key, 0))
+                target_probabilities[range_min] = prob_value
+        
         # Configオブジェクトを作成
         cfg = Config(
             symbols=symbols,
             reels=3,
             base_bet=1,
             expected_total_5=expected_total_5,
-            miss_probability=miss_probability
+            miss_probability=miss_probability,
+            target_probabilities=target_probabilities if target_probabilities else None
         )
         
         # 保存
@@ -1022,6 +1033,55 @@ def admin_save_slot_config():
     
     return redirect(url_for('admin_settings'))
 
+@app.route('/admin/optimize_probabilities', methods=['POST'])
+@require_admin_login
+def optimize_probabilities():
+    """
+    目標確率と期待値から各シンボルの確率を最適化する
+    """
+    try:
+        data = request.get_json()
+        target_probs = data.get('target_probs', {})
+        target_expected_value = data.get('target_expected_value', 100.0)
+        
+        cfg = _load_config()
+        store_code = session.get('store_code', 'default')
+        
+        # 最適化アルゴリズムを実行
+        optimized_symbols = _optimize_symbol_probabilities(
+            cfg.symbols,
+            target_probs,
+            target_expected_value,
+            cfg.miss_probability
+        )
+        
+        if optimized_symbols is None:
+            return jsonify({
+                'success': False,
+                'error': '最適化に失敗しました。目標確率または期待値を調整してください。'
+            })
+        
+        # シンボルの確率を更新
+        for i, symbol in enumerate(cfg.symbols):
+            if i < len(optimized_symbols):
+                symbol.prob = optimized_symbols[i].prob
+        
+        # 期待値を更新
+        cfg.expected_total_5 = target_expected_value
+        
+        # 保存
+        _save_config(cfg)
+        
+        return jsonify({
+            'success': True,
+            'message': f'最適化が完了しました。期待値: {target_expected_value:.1f}点',
+            'symbols': [{'id': s.id, 'prob': s.prob} for s in cfg.symbols]
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
 
 @app.route("/admin/survey/editor", methods=["GET", "POST"])
 @require_admin_login

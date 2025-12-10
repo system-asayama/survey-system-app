@@ -5,7 +5,7 @@
       "label": "７",
       "payout_3": 100.0,
       "color": "#f50a39",
-      "prob": 3.3469,
+      "prob": 15.0,
       "is_reach": false,
       "reach_symbol": null
     },
@@ -14,7 +14,7 @@
       "label": "BAR",
       "payout_3": 50.0,
       "color": "#5463d9",
-      "prob": 6.8371,
+      "prob": 8.25,
       "is_reach": false,
       "reach_symbol": null
     },
@@ -23,7 +23,7 @@
       "label": "🔔",
       "payout_3": 20.0,
       "color": "#92400e",
-      "prob": 10.4955,
+      "prob": 8.25,
       "is_reach": false,
       "reach_symbol": null
     },
@@ -32,7 +32,7 @@
       "label": "🍇",
       "payout_3": 12.0,
       "color": "#7c3aed",
-      "prob": 11.7663,
+      "prob": 8.25,
       "is_reach": false,
       "reach_symbol": null
     },
@@ -41,7 +41,7 @@
       "label": "🍒",
       "payout_3": 8.0,
       "color": "#ef4444",
-      "prob": 12.4582,
+      "prob": 8.25,
       "is_reach": false,
       "reach_symbol": null
     },
@@ -50,16 +50,16 @@
       "label": "🍋",
       "payout_3": 5.0,
       "color": "#fde047",
-      "prob": 13.0038,
+      "prob": 8.25,
       "is_reach": false,
       "reach_symbol": null
     },
     {
       "id": "GOD",
       "label": "GOD",
-      "payout_3": 300.0,
+      "payout_3": 500.0,
       "color": "#ef9906",
-      "prob": 0.1922,
+      "prob": 1.0,
       "is_reach": false,
       "reach_symbol": null
     },
@@ -68,7 +68,7 @@
       "label": "BAR",
       "payout_3": 0.0,
       "color": "#5463d9",
-      "prob": 13.9667,
+      "prob": 8.25,
       "is_reach": true,
       "reach_symbol": "bar"
     },
@@ -77,7 +77,7 @@
       "label": "７",
       "payout_3": 0.0,
       "color": "#f50a39",
-      "prob": 13.9667,
+      "prob": 8.25,
       "is_reach": true,
       "reach_symbol": "seven"
     },
@@ -86,13 +86,13 @@
       "label": "GOD",
       "payout_3": 0.0,
       "color": "#ef9906",
-      "prob": 13.9667,
+      "prob": 8.25,
       "is_reach": true,
       "reach_symbol": "GOD"
     }
   ],
   "reels": 3,
   "base_bet": 1,
-  "expected_total_5": 50.0,
+  "expected_total_5": 100,
   "miss_probability": 20.0
 }
