@@ -169,6 +169,57 @@
     document.addEventListener('DOMContentLoaded', function() {
       renderPrizes();
     });
+    
+    // スロットシンボル管理
+    function addSlotSymbol() {
+      const tbody = document.getElementById('slot-symbols');
+      const count = tbody.querySelectorAll('tr').length;
+      const newRow = document.createElement('tr');
+      newRow.innerHTML = `
+        <td><input type="text" name="symbol_id_${count}" value="symbol${count}" style="width: 90px;"></td>
+        <td><input type="text" name="symbol_label_${count}" value="★" style="width: 90px;"></td>
+        <td><input type="number" name="symbol_payout_${count}" value="10" step="0.01" min="0" style="width: 110px;"></td>
+        <td><input type="number" name="symbol_prob_${count}" value="10.0000" step="0.0001" min="0" max="100" style="width: 110px;"></td>
+        <td>
+          <input type="color" name="symbol_color_${count}" value="#888888" style="width: 60px; height: 36px;">
+        </td>
+        <td>
+          <button type="button" class="btn-remove" onclick="removeSlotSymbol(this)">削除</button>
+        </td>
+      `;
+      tbody.appendChild(newRow);
+      document.getElementById('symbol_count').value = count + 1;
+    }
+    
+    function removeSlotSymbol(btn) {
+      const row = btn.closest('tr');
+      row.remove();
+      const count = document.getElementById('slot-symbols').querySelectorAll('tr').length;
+      document.getElementById('symbol_count').value = count;
+    }
+    
+    function autoAdjustProb() {
+      const rows = document.getElementById('slot-symbols').querySelectorAll('tr');
+      const payouts = [];
+      
+      rows.forEach(row => {
+        const payoutInput = row.querySelector('input[name^="symbol_payout_"]');
+        const payout = parseFloat(payoutInput.value) || 0;
+        payouts.push(payout);
+      });
+      
+      // 逆比例で確率を計算（配当が高いほど確率が低い）
+      const inversePayouts = payouts.map(p => p > 0 ? 1 / p : 0);
+      const sum = inversePayouts.reduce((a, b) => a + b, 0);
+      const probs = inversePayouts.map(inv => (inv / sum) * 100);
+      
+      rows.forEach((row, index) => {
+        const probInput = row.querySelector('input[name^="symbol_prob_"]');
+        probInput.value = probs[index].toFixed(4);
+      });
+      
+      alert('確率を自動調整しました！');
+    }
   </script>
 </head>
 <body>
@@ -229,6 +280,60 @@
         <!-- 景品設定がここに動的に追加されます -->
       </div>
       <button type="button" class="btn-secondary" onclick="addPrizeRow()">+ 景品を追加</button>
+    </div>
+
+    <div class="section">
+      <h2>🎰 スロット確率設定</h2>
+      <p class="help-text" style="margin-bottom: 20px;">スロットのシンボルと配当、確率を設定できます。確率は自動調整されますが、手動でも調整可能です。</p>
+      
+      <form method="post" action="{{ url_for('admin_save_slot_config') }}">
+        <div class="form-group">
+          <label>5回スピンの期待値</label>
+          <input type="number" name="expected_total_5" value="{{ slot_config.expected_total_5 }}" step="0.01" min="0" style="width: 200px;">
+          <div class="help-text">スロットを5回スピンしたときの平均合計点数です。</div>
+        </div>
+        
+        <div style="overflow-x: auto;">
+          <table class="grid" style="width: 100%; min-width: 700px;">
+            <thead>
+              <tr>
+                <th style="width: 100px;">ID</th>
+                <th style="width: 100px;">表示</th>
+                <th style="width: 120px;">配当</th>
+                <th style="width: 120px;">確率(%)</th>
+                <th style="width: 100px;">色</th>
+                <th style="width: 80px;"></th>
+              </tr>
+            </thead>
+            <tbody id="slot-symbols">
+              {% for symbol in slot_config.symbols %}
+              <tr>
+                <td><input type="text" name="symbol_id_{{ loop.index0 }}" value="{{ symbol.id }}" style="width: 90px;"></td>
+                <td><input type="text" name="symbol_label_{{ loop.index0 }}" value="{{ symbol.label }}" style="width: 90px;"></td>
+                <td><input type="number" name="symbol_payout_{{ loop.index0 }}" value="{{ symbol.payout_3 }}" step="0.01" min="0" style="width: 110px;"></td>
+                <td><input type="number" name="symbol_prob_{{ loop.index0 }}" value="{{ '%.4f'|format(symbol.prob) }}" step="0.0001" min="0" max="100" style="width: 110px;"></td>
+                <td>
+                  <input type="color" name="symbol_color_{{ loop.index0 }}" value="{{ symbol.color }}" style="width: 60px; height: 36px;">
+                </td>
+                <td>
+                  <button type="button" class="btn-remove" onclick="removeSlotSymbol(this)">削除</button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        
+        <div style="margin-top: 16px; display: flex; gap: 12px;">
+          <button type="button" class="btn-secondary" onclick="addSlotSymbol()">+ シンボルを追加</button>
+          <button type="button" class="btn-secondary" onclick="autoAdjustProb()">確率を自動調整</button>
+          <input type="hidden" name="symbol_count" id="symbol_count" value="{{ slot_config.symbols|length }}">
+        </div>
+        
+        <div style="margin-top: 20px;">
+          <button type="submit" class="btn-primary">スロット設定を保存</button>
+        </div>
+      </form>
     </div>
 
     <div class="section">

@@ -3,51 +3,51 @@
     {
       "id": "seven",
       "label": "７",
-      "payout_3": 100,
+      "payout_3": 100.0,
       "color": "#f50a39",
-      "prob": 5.267612326588729
+      "prob": 2.0394
     },
     {
       "id": "bar",
       "label": "BAR",
-      "payout_3": 50,
+      "payout_3": 50.0,
       "color": "#5463d9",
-      "prob": 11.404485351096872
+      "prob": 4.0789
     },
     {
       "id": "bell",
       "label": "🔔",
-      "payout_3": 20,
+      "payout_3": 20.0,
       "color": "#92400e",
-      "prob": 18.128122345345947
+      "prob": 10.1971
     },
     {
       "id": "grape",
       "label": "🍇",
-      "payout_3": 12,
+      "payout_3": 12.0,
       "color": "#7c3aed",
-      "prob": 20.51288406012223
+      "prob": 16.9952
     },
     {
       "id": "cherry",
       "label": "🍒",
-      "payout_3": 8,
+      "payout_3": 8.0,
       "color": "#ef4444",
-      "prob": 21.82044867126712
+      "prob": 25.4929
     },
     {
       "id": "lemon",
       "label": "🍋",
-      "payout_3": 5,
+      "payout_3": 5.0,
       "color": "#fde047",
-      "prob": 22.85553488485211
+      "prob": 40.7886
     },
     {
       "id": "GOD",
       "label": "GOD",
-      "payout_3": 500,
+      "payout_3": 500.0,
       "color": "#ef9906",
-      "prob": 0.010912360727000399
+      "prob": 0.4079
     }
   ],
   "reels": 3,

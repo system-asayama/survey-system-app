@@ -797,11 +797,62 @@ def admin_settings():
         {"min_score": 0, "rank": "参加賞", "name": "ご参加ありがとうございました"}
     ]
     
+    # スロット設定を読み込み
+    slot_config = _load_config()
+    
     return render_template("admin_settings.html",
                          admin=admin,
                          google_review_url=settings.get("google_review_url", GOOGLE_REVIEW_URL),
                          survey_complete_message=settings.get("survey_complete_message", "アンケートにご協力いただきありがとうございます！スロットをお楽しみください。"),
-                         prizes=settings.get("prizes", default_prizes))
+                         prizes=settings.get("prizes", default_prizes),
+                         slot_config=asdict(slot_config))
+
+
+@app.route("/admin/save_slot_config", methods=["POST"])
+@require_admin_login
+def admin_save_slot_config():
+    """スロット設定を保存"""
+    try:
+        # 期待値を取得
+        expected_total_5 = float(request.form.get("expected_total_5", 100.0))
+        
+        # シンボル数を取得
+        symbol_count = int(request.form.get("symbol_count", 0))
+        
+        # シンボルデータを収集
+        symbols = []
+        for i in range(symbol_count):
+            symbol_id = request.form.get(f"symbol_id_{i}", "").strip()
+            symbol_label = request.form.get(f"symbol_label_{i}", "").strip()
+            symbol_payout = float(request.form.get(f"symbol_payout_{i}", 0))
+            symbol_prob = float(request.form.get(f"symbol_prob_{i}", 0))
+            symbol_color = request.form.get(f"symbol_color_{i}", "#888888")
+            
+            if symbol_id and symbol_label:  # IDとラベルがある場合のみ追加
+                symbols.append(Symbol(
+                    id=symbol_id,
+                    label=symbol_label,
+                    payout_3=symbol_payout,
+                    color=symbol_color,
+                    prob=symbol_prob
+                ))
+        
+        # Configオブジェクトを作成
+        cfg = Config(
+            symbols=symbols,
+            reels=3,
+            base_bet=1,
+            expected_total_5=expected_total_5
+        )
+        
+        # 保存
+        _save_config(cfg)
+        
+        flash("スロット設定を更新しました", "success")
+    except Exception as e:
+        flash(f"エラー: {str(e)}", "error")
+    
+    return redirect(url_for('admin_settings'))
 
 
 @app.route("/admin/survey/editor", methods=["GET", "POST"])
