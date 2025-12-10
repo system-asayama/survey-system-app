@@ -152,6 +152,97 @@ function playSoundReach() {
   oscillator2.stop(audioContext.currentTime + duration);
 }
 
+// GOD揃いの特別な効果音
+function playSoundGodWin() {
+  // 豪華なファンファーレ
+  const notes = [
+    {freq: 523, time: 0.0},    // C5
+    {freq: 659, time: 0.15},   // E5
+    {freq: 784, time: 0.3},    // G5
+    {freq: 1047, time: 0.45},  // C6
+    {freq: 1319, time: 0.6},   // E6
+    {freq: 1047, time: 0.75},  // C6
+    {freq: 1319, time: 0.9},   // E6
+    {freq: 1568, time: 1.05}   // G6
+  ];
+  
+  notes.forEach((note) => {
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.type = 'triangle';
+    oscillator.frequency.setValueAtTime(note.freq, audioContext.currentTime + note.time);
+    
+    gainNode.gain.setValueAtTime(0.4, audioContext.currentTime + note.time);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + note.time + 0.4);
+    
+    oscillator.start(audioContext.currentTime + note.time);
+    oscillator.stop(audioContext.currentTime + note.time + 0.4);
+  });
+}
+
+// ７揃いの特別な効果音
+function playSoundSevenWin() {
+  // 華やかな上昇音
+  const notes = [
+    {freq: 392, time: 0.0},    // G4
+    {freq: 494, time: 0.12},   // B4
+    {freq: 587, time: 0.24},   // D5
+    {freq: 784, time: 0.36},   // G5
+    {freq: 988, time: 0.48},   // B5
+    {freq: 784, time: 0.6}     // G5
+  ];
+  
+  notes.forEach((note) => {
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(note.freq, audioContext.currentTime + note.time);
+    
+    gainNode.gain.setValueAtTime(0.35, audioContext.currentTime + note.time);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + note.time + 0.3);
+    
+    oscillator.start(audioContext.currentTime + note.time);
+    oscillator.stop(audioContext.currentTime + note.time + 0.3);
+  });
+}
+
+// BAR揃いの特別な効果音
+function playSoundBarWin() {
+  // 明るい上昇音
+  const notes = [
+    {freq: 330, time: 0.0},    // E4
+    {freq: 415, time: 0.1},    // G#4
+    {freq: 523, time: 0.2},    // C5
+    {freq: 659, time: 0.3},    // E5
+    {freq: 523, time: 0.4}     // C5
+  ];
+  
+  notes.forEach((note) => {
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.type = 'square';
+    oscillator.frequency.setValueAtTime(note.freq, audioContext.currentTime + note.time);
+    
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime + note.time);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + note.time + 0.25);
+    
+    oscillator.start(audioContext.currentTime + note.time);
+    oscillator.stop(audioContext.currentTime + note.time + 0.25);
+  });
+}
+
 
 async function fetchJSON(url,opt={}){
   const hasBody = opt && typeof opt.body !== "undefined";
@@ -465,13 +556,28 @@ async function animateFiveSpins(spins){
     }
     stopReelVisual(2, one.reels[2].id);
     playSoundReelStop(); // リール停止音
-    await new Promise(r=>setTimeout(r, 700));
+    
+    // リーチ時は最終リール停止後の待機時間を長くする
+    if (isReach && isHighValue) {
+      await new Promise(r=>setTimeout(r, 1500)); // リーチ時は1.5秒
+    } else {
+      await new Promise(r=>setTimeout(r, 700)); // 通常は0.7秒
+    }
 
     total += one.payout;
     
-    // 結果表示
+    // 結果表示と特別な効果音
     if (one.matched) {
       $('#round-indicator').textContent = `Round ${i+1}/5：${one.symbol.label} 揃った！ (+${one.payout})`;
+      
+      // BAR以上が揃ったときの特別な効果音
+      if (one.symbol.id === 'GOD') {
+        playSoundGodWin();
+      } else if (one.symbol.id === 'seven') {
+        playSoundSevenWin();
+      } else if (one.symbol.id === 'bar') {
+        playSoundBarWin();
+      }
     } else {
       $('#round-indicator').textContent = `Round ${i+1}/5：ハズレ (+0)`;
     }
