@@ -72,6 +72,7 @@ def _load_config() -> Config:
         reels=raw.get("reels", 3),
         base_bet=raw.get("base_bet", 1),
         expected_total_5=raw.get("expected_total_5", 2500.0),
+        miss_probability=raw.get("miss_probability", 0.0)
     )
 
 def _save_config(cfg: Config) -> None:
