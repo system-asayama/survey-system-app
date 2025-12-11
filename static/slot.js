@@ -560,14 +560,12 @@ async function animateFiveSpins(spins){
     stopReelVisual(1, one.reels[1].id);
     playSoundReelStop(); // リール停止音
     
-    // リーチ判定（サーバーからのis_reachフラグまたは1つ目と2つ目が同じ、かつBAR以上）
-    const isReach = one.is_reach || (one.reels[0].id === one.reels[1].id);
-    const highValueSymbols = ['bar', 'seven', 'GOD'];
-    const isHighValue = one.is_reach || highValueSymbols.includes(one.reels[0].id);
+    // リーチ判定（サーバーの判定を信頼）
+    const isReach = one.is_reach === true;
     
-    console.log(`[REACH DEBUG] Round ${i+1}: is_reach=${one.is_reach}, reels[0]=${one.reels[0].id}, reels[1]=${one.reels[1].id}, isReach=${isReach}, isHighValue=${isHighValue}`);
+    console.log(`[REACH DEBUG] Round ${i+1}: is_reach=${one.is_reach}, reels[0]=${one.reels[0].id}, reels[1]=${one.reels[1].id}, isReach=${isReach}`);
     
-    if (isReach && isHighValue) {
+    if (isReach) {
       console.log(`[REACH DEBUG] Playing reach sound for ${one.reels[0].id}`);
       playSoundReach(); // リーチ演出音
       await new Promise(r=>setTimeout(r, 600)); // リーチ演出の時間

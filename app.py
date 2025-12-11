@@ -512,19 +512,23 @@ def spin():
     total_payout = 0.0
     miss_rate = cfg.miss_probability / 100.0
     
+    # 通常シンボルとリーチ専用シンボルを分類
+    normal_symbols = [s for s in cfg.symbols if not (hasattr(s, 'is_reach') and s.is_reach)]
+    reach_symbols = [s for s in cfg.symbols if hasattr(s, 'is_reach') and s.is_reach]
+    
     # 5回スピン
     for _ in range(5):
         # まずハズレかどうかを判定
         if random.random() < miss_rate:
-            # ハズレ：ランダムに3つのシンボルを表示（揃わないように）
-            reel1 = random.choice(cfg.symbols)
+            # ハズレ：1コマ目と2コマ目は必ず異なるシンボル
+            reel1 = random.choice(normal_symbols)
             # reel2はreel1と異なるものを選ぶ
-            other_symbols = [s for s in cfg.symbols if s.id != reel1.id]
+            other_symbols = [s for s in normal_symbols if s.id != reel1.id]
             if other_symbols:
                 reel2 = random.choice(other_symbols)
             else:
                 reel2 = reel1  # シンボルが1つしかない場合
-            reel3 = random.choice(cfg.symbols)
+            reel3 = random.choice(normal_symbols)
             
             spins.append({
                 "reels": [
@@ -537,22 +541,20 @@ def spin():
                 "payout": 0
             })
         else:
-            # 当たり：シンボルを確率で抽選
+            # 当たりまたはリーチハズレ：シンボルを確率で抽選
             symbol = _choice_by_prob(cfg.symbols)
-            payout = symbol.payout_3
-            total_payout += payout
             
             # リーチ専用シンボルの場合
             is_reach_symbol = hasattr(symbol, 'is_reach') and symbol.is_reach
             
             if is_reach_symbol:
-                # リーチ1と2は同じシンボル、リール3は異なるシンボル
+                # リーチハズレ：1,2コマ目は同じ、3コマ目は必ず異なる
                 reach_symbol_id = symbol.reach_symbol if hasattr(symbol, 'reach_symbol') else symbol.id
                 # 元のシンボルを探す
-                original_symbol = next((s for s in cfg.symbols if s.id == reach_symbol_id), symbol)
+                original_symbol = next((s for s in normal_symbols if s.id == reach_symbol_id), symbol)
                 
-                # リール3用に異なるシンボルを選ぶ
-                other_symbols = [s for s in cfg.symbols if s.id != reach_symbol_id and not (hasattr(s, 'is_reach') and s.is_reach)]
+                # リール3用に異なるシンボルを選ぶ（リーチ専用シンボルも除外）
+                other_symbols = [s for s in normal_symbols if s.id != reach_symbol_id]
                 if other_symbols:
                     reel3_symbol = random.choice(other_symbols)
                 else:
@@ -570,7 +572,10 @@ def spin():
                     "payout": 0
                 })
             else:
-                # 通常の揃い
+                # 通常の当たり：3つ揃い
+                payout = symbol.payout_3
+                total_payout += payout
+                
                 spins.append({
                     "reels": [
                         {"id": symbol.id, "label": symbol.label, "color": symbol.color},
