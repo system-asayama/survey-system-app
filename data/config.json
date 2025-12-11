@@ -69,8 +69,8 @@
       "payout_3": 0.0,
       "color": "#5463d9",
       "prob": 13.9667,
-      "is_reach": false,
-      "reach_symbol": null
+      "is_reach": true,
+      "reach_symbol": "bar"
     },
     {
       "id": "seven_reach",
@@ -78,8 +78,8 @@
       "payout_3": 0.0,
       "color": "#f50a39",
       "prob": 13.9667,
-      "is_reach": false,
-      "reach_symbol": null
+      "is_reach": true,
+      "reach_symbol": "seven"
     },
     {
       "id": "god_reach",
@@ -87,8 +87,8 @@
       "payout_3": 0.0,
       "color": "#ef9906",
       "prob": 13.9667,
-      "is_reach": false,
-      "reach_symbol": null
+      "is_reach": true,
+      "reach_symbol": "GOD"
     }
   ],
   "reels": 3,
