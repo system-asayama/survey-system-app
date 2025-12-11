@@ -348,8 +348,10 @@ function renderPayoutTableFromRows(){
 
   tbody.innerHTML = '';
 
-  // 配当が大きい順に並べ替えて描画
-  const sorted = [...rows].sort((a,b)=>(b.payout_3||0)-(a.payout_3||0));
+  // 配当が大きい順に並べ替えて描画（配当0のシンボルは除外）
+  const sorted = [...rows]
+    .filter(r => (r.payout_3 || 0) > 0)  // 配当0のシンボルを除外
+    .sort((a,b)=>(b.payout_3||0)-(a.payout_3||0));
 
   sorted.forEach((r)=>{
     const tr = document.createElement('tr');
@@ -369,8 +371,10 @@ function renderPayoutTableFromSymbols(){
 
   tbody.innerHTML = '';
 
-  // 配当が大きい順に並べ替えて描画
-  const sorted = [...window.__symbols].sort((a,b)=>(b.payout_3||0)-(a.payout_3||0));
+  // 配当が大きい順に並べ替えて描画（配当0のシンボルは除外）
+  const sorted = [...window.__symbols]
+    .filter(s => (s.payout_3 || 0) > 0)  // 配当0のシンボルを除外
+    .sort((a,b)=>(b.payout_3||0)-(a.payout_3||0));
 
   sorted.forEach((r)=>{
     const tr = document.createElement('tr');
