@@ -560,10 +560,11 @@ async function animateFiveSpins(spins){
     stopReelVisual(1, one.reels[1].id);
     playSoundReelStop(); // リール停止音
     
-    // リーチ判定（サーバーの判定を信頼）
-    const isReach = one.is_reach === true;
+    // リーチ判定（リーチハズレまたは高価値シンボルの当たり）
+    const highValueSymbols = ['bar', 'seven', 'GOD'];
+    const isReach = one.is_reach === true || (one.matched === true && highValueSymbols.includes(one.reels[0].id));
     
-    console.log(`[REACH DEBUG] Round ${i+1}: is_reach=${one.is_reach}, reels[0]=${one.reels[0].id}, reels[1]=${one.reels[1].id}, isReach=${isReach}`);
+    console.log(`[REACH DEBUG] Round ${i+1}: is_reach=${one.is_reach}, matched=${one.matched}, reels[0]=${one.reels[0].id}, reels[1]=${one.reels[1].id}, isReach=${isReach}`);
     
     if (isReach) {
       console.log(`[REACH DEBUG] Playing reach sound for ${one.reels[0].id}`);
