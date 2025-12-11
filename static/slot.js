@@ -593,9 +593,9 @@ async function animateFiveSpins(spins){
       if (one.symbol.id === 'GOD') {
         playSoundGodWin();
       } else if (one.symbol.id === 'seven') {
-        playSoundSevenWin();
-      } else if (one.symbol.id === 'bar') {
         playSoundBarWin();
+      } else if (one.symbol.id === 'bar') {
+        playSoundSevenWin();
       }
     } else if (one.is_reach) {
       // リーチだけど揃わなかった
