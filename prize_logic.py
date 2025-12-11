@@ -25,13 +25,25 @@ def get_prize_for_score(score, settings_path="data/settings.json"):
     if not prizes:
         return None
     
-    # 点数が高い順にソート済みと仮定し、該当する景品を探す
+    # 点数範囲に該当する景品を探す
     for prize in prizes:
-        if score >= prize["min_score"]:
-            return {
-                "rank": prize["rank"],
-                "name": prize["name"]
-            }
+        min_score = prize["min_score"]
+        max_score = prize.get("max_score")
+        
+        # max_scoreがNoneの場合は上限なし
+        if max_score is None:
+            if score >= min_score:
+                return {
+                    "rank": prize["rank"],
+                    "name": prize["name"]
+                }
+        else:
+            # min_score <= score <= max_scoreの範囲内か確認
+            if min_score <= score <= max_score:
+                return {
+                    "rank": prize["rank"],
+                    "name": prize["name"]
+                }
     
     # 該当する景品がない場合はNone
     return None
