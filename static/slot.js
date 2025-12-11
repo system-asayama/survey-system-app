@@ -577,7 +577,7 @@ async function animateFiveSpins(spins){
     playSoundReelStop(); // リール停止音
     
     // リーチ時は最終リール停止後の待機時間を長くする
-    if (isReach && isHighValue) {
+    if (isReach) {
       await new Promise(r=>setTimeout(r, 1500)); // リーチ時は1.5秒
     } else {
       await new Promise(r=>setTimeout(r, 700)); // 通常は0.7秒
