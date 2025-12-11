@@ -5,7 +5,7 @@
       "label": "７",
       "payout_3": 100,
       "color": "#f50a39",
-      "prob": 3.6723047418975447,
+      "prob": 3.3469461439949657,
       "is_reach": false,
       "reach_symbol": null
     },
@@ -14,7 +14,7 @@
       "label": "BAR",
       "payout_3": 50,
       "color": "#5463d9",
-      "prob": 7.122835213416198,
+      "prob": 6.83707729867866,
       "is_reach": false,
       "reach_symbol": null
     },
@@ -23,7 +23,7 @@
       "label": "🔔",
       "payout_3": 20,
       "color": "#92400e",
-      "prob": 10.599403060154579,
+      "prob": 10.495510065717733,
       "is_reach": false,
       "reach_symbol": null
     },
@@ -32,7 +32,7 @@
       "label": "🍇",
       "payout_3": 12,
       "color": "#7c3aed",
-      "prob": 11.784622538468955,
+      "prob": 11.766276017656567,
       "is_reach": false,
       "reach_symbol": null
     },
@@ -41,7 +41,7 @@
       "label": "🍒",
       "payout_3": 8,
       "color": "#ef4444",
-      "prob": 12.426041831885707,
+      "prob": 12.4582423022099,
       "is_reach": false,
       "reach_symbol": null
     },
@@ -50,16 +50,16 @@
       "label": "🍋",
       "payout_3": 5,
       "color": "#fde047",
-      "prob": 12.929914775398021,
+      "prob": 13.003793947274508,
       "is_reach": false,
       "reach_symbol": null
     },
     {
       "id": "GOD",
       "label": "GOD",
-      "payout_3": 500,
+      "payout_3": 300,
       "color": "#ef9906",
-      "prob": 0.018332649885281698,
+      "prob": 0.1922036632876162,
       "is_reach": false,
       "reach_symbol": null
     },
@@ -68,7 +68,7 @@
       "label": "BAR",
       "payout_3": 0,
       "color": "#5463d9",
-      "prob": 13.815515062964574,
+      "prob": 13.96665018706002,
       "is_reach": true,
       "reach_symbol": "bar"
     },
@@ -77,7 +77,7 @@
       "label": "７",
       "payout_3": 0,
       "color": "#f50a39",
-      "prob": 13.815515062964574,
+      "prob": 13.96665018706002,
       "is_reach": true,
       "reach_symbol": "seven"
     },
@@ -86,7 +86,7 @@
       "label": "GOD",
       "payout_3": 0,
       "color": "#ef9906",
-      "prob": 13.815515062964574,
+      "prob": 13.96665018706002,
       "is_reach": true,
       "reach_symbol": "GOD"
     }
