@@ -18,10 +18,25 @@ DATA_DIR = os.path.join(APP_DIR, "data")
 CONFIG_PATH = os.path.join(DATA_DIR, "config.json")
 SURVEY_DATA_PATH = os.path.join(DATA_DIR, "survey_responses.json")
 
-# Google口コミのURL（環境変数またはデフォルト値）
+# Google口コミのURL（環境変数またはsettings.jsonから読み込み）
 # 実際のお店のPlace IDを設定してください
 # 例: https://search.google.com/local/writereview?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4
 GOOGLE_REVIEW_URL = os.environ.get('GOOGLE_REVIEW_URL', '#')
+
+# settings.jsonからGoogle口コミURLを読み込み
+def _load_google_review_url():
+    settings_path = os.path.join(DATA_DIR, "settings.json")
+    if os.path.exists(settings_path):
+        try:
+            with open(settings_path, "r", encoding="utf-8") as f:
+                settings = json.load(f)
+                return settings.get("google_review_url", GOOGLE_REVIEW_URL)
+        except:
+            pass
+    return GOOGLE_REVIEW_URL
+
+# 起動時に読み込み
+GOOGLE_REVIEW_URL = _load_google_review_url()
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(32))
