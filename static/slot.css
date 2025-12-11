@@ -83,7 +83,9 @@ h1{font-size:1.1rem;margin:0}
   align-items:center;
   justify-content:center;
   color:#fff;
-  font-size:64px;
+  font-size:48px;
+  font-weight:700;
+  padding:0 .25rem;
 }
 
 /* 🔽 上から下への無限スクロール */
