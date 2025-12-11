@@ -6,7 +6,7 @@
       "min_score": 500,
       "rank": "特賞",
       "name": "次回使える10,000円分の商品券",
-      "max_score": 999
+      "max_score": 2500
     },
     {
       "min_score": 300,
@@ -27,7 +27,7 @@
       "max_score": 199
     },
     {
-      "min_score": 100,
+      "min_score": 50,
       "rank": "4等",
       "name": "次回お肉一品サービス",
       "max_score": 149
@@ -36,7 +36,7 @@
       "min_score": 0,
       "rank": "5等",
       "name": "次回ドリンク一杯またはアイスクリーム無料",
-      "max_score": 99
+      "max_score": 49
     }
   ]
 }

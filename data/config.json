@@ -3,96 +3,97 @@
     {
       "id": "seven",
       "label": "７",
-      "payout_3": 100.0,
+      "payout_3": 100,
       "color": "#f50a39",
-      "prob": 15.0,
+      "prob": 3.6723047418975447,
       "is_reach": false,
       "reach_symbol": null
     },
     {
       "id": "bar",
       "label": "BAR",
-      "payout_3": 50.0,
+      "payout_3": 50,
       "color": "#5463d9",
-      "prob": 8.25,
+      "prob": 7.122835213416198,
       "is_reach": false,
       "reach_symbol": null
     },
     {
       "id": "bell",
       "label": "🔔",
-      "payout_3": 20.0,
+      "payout_3": 20,
       "color": "#92400e",
-      "prob": 8.25,
+      "prob": 10.599403060154579,
       "is_reach": false,
       "reach_symbol": null
     },
     {
       "id": "grape",
       "label": "🍇",
-      "payout_3": 12.0,
+      "payout_3": 12,
       "color": "#7c3aed",
-      "prob": 8.25,
+      "prob": 11.784622538468955,
       "is_reach": false,
       "reach_symbol": null
     },
     {
       "id": "cherry",
       "label": "🍒",
-      "payout_3": 8.0,
+      "payout_3": 8,
       "color": "#ef4444",
-      "prob": 8.25,
+      "prob": 12.426041831885707,
       "is_reach": false,
       "reach_symbol": null
     },
     {
       "id": "lemon",
       "label": "🍋",
-      "payout_3": 5.0,
+      "payout_3": 5,
       "color": "#fde047",
-      "prob": 8.25,
+      "prob": 12.929914775398021,
       "is_reach": false,
       "reach_symbol": null
     },
     {
       "id": "GOD",
       "label": "GOD",
-      "payout_3": 500.0,
+      "payout_3": 500,
       "color": "#ef9906",
-      "prob": 1.0,
+      "prob": 0.018332649885281698,
       "is_reach": false,
       "reach_symbol": null
     },
     {
       "id": "bar_reach",
       "label": "BAR",
-      "payout_3": 0.0,
+      "payout_3": 0,
       "color": "#5463d9",
-      "prob": 8.25,
+      "prob": 13.815515062964574,
       "is_reach": true,
       "reach_symbol": "bar"
     },
     {
       "id": "seven_reach",
       "label": "７",
-      "payout_3": 0.0,
+      "payout_3": 0,
       "color": "#f50a39",
-      "prob": 8.25,
+      "prob": 13.815515062964574,
       "is_reach": true,
       "reach_symbol": "seven"
     },
     {
       "id": "god_reach",
       "label": "GOD",
-      "payout_3": 0.0,
+      "payout_3": 0,
       "color": "#ef9906",
-      "prob": 8.25,
+      "prob": 13.815515062964574,
       "is_reach": true,
       "reach_symbol": "GOD"
     }
   ],
   "reels": 3,
   "base_bet": 1,
-  "expected_total_5": 100,
-  "miss_probability": 20.0
+  "expected_total_5": 50.0,
+  "miss_probability": 20.0,
+  "target_probabilities": null
 }
