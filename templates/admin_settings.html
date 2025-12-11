@@ -213,8 +213,7 @@
     }
     
     document.addEventListener('DOMContentLoaded', function() {
-      // 景品設定から目標確率設定を生成
-      generateTargetProbRanges();
+
       renderPrizes();
     });
     
@@ -366,151 +365,7 @@
       }
     }
     
-    // 景品設定から目標確率設定のUIを生成
-    function generateTargetProbRanges() {
-      // prizeDataから範囲を取得
-      const ranges = [];
-      
-      prizeData.forEach(prize => {
-        ranges.push({ min: prize.min_score, max: prize.max_score });
-      });
-      
-      // 点数でソート（降順）
-      ranges.sort((a, b) => b.min - a.min);
-      
-      // UIを生成
-      const container = document.getElementById('target-prob-ranges');
-      container.innerHTML = '';
-      
-      ranges.forEach((range, index) => {
-        const rangeText = `${range.min}-${range.max}点`;
-        const rangeId = `target_prob_${range.min}`;
-        
-        // 行全体のコンテナ
-        const rowDiv = document.createElement('div');
-        rowDiv.style.display = 'grid';
-        rowDiv.style.gridTemplateColumns = '1fr 1fr';
-        rowDiv.style.gap = '16px';
-        rowDiv.style.marginBottom = '12px';
-        
-        // 点数範囲
-        const rangeDiv = document.createElement('div');
-        const rangeLabel = document.createElement('label');
-        rangeLabel.textContent = '点数範囲';
-        rangeLabel.style.display = 'block';
-        rangeLabel.style.marginBottom = '8px';
-        rangeLabel.style.fontWeight = '600';
-        rangeLabel.style.color = '#374151';
-        rangeLabel.style.fontSize = '14px';
-        const rangeInput = document.createElement('input');
-        rangeInput.type = 'text';
-        rangeInput.value = rangeText;
-        rangeInput.disabled = true;
-        rangeInput.style.background = '#e0f2fe';
-        rangeInput.style.width = '100%';
-        rangeInput.style.padding = '10px';
-        rangeInput.style.border = '1px solid #cbd5e1';
-        rangeInput.style.borderRadius = '6px';
-        rangeDiv.appendChild(rangeLabel);
-        rangeDiv.appendChild(rangeInput);
-        
-        // 目標確率
-        const probDiv = document.createElement('div');
-        const probLabel = document.createElement('label');
-        probLabel.textContent = '目標確率(%)';
-        probLabel.style.display = 'block';
-        probLabel.style.marginBottom = '8px';
-        probLabel.style.fontWeight = '600';
-        probLabel.style.color = '#374151';
-        probLabel.style.fontSize = '14px';
-        const probInput = document.createElement('input');
-        probInput.type = 'number';
-        probInput.id = rangeId;
-        probInput.dataset.min = range.min;
-        probInput.dataset.max = range.max;
-        // 保存された目標確率を復元
-        const savedProb = targetProbabilities && targetProbabilities[range.min.toString()] ? targetProbabilities[range.min.toString()] : 10.0;
-        probInput.value = savedProb.toString();
-        probInput.step = '0.1';
-        probInput.min = '0';
-        probInput.max = '100';
-        probInput.style.width = '100%';
-        probInput.style.padding = '10px';
-        probInput.style.border = '1px solid #cbd5e1';
-        probInput.style.borderRadius = '6px';
-        probDiv.appendChild(probLabel);
-        probDiv.appendChild(probInput);
-        
-        rowDiv.appendChild(rangeDiv);
-        rowDiv.appendChild(probDiv);
-        container.appendChild(rowDiv);
-      });
-    }
-    
-    async function optimizeProbabilities() {
-      // 目標確率を取得
-      const targetProbs = {};
-      const probInputs = document.querySelectorAll('#target-prob-ranges input[type="number"]');
-      
-      probInputs.forEach(input => {
-        const min = input.dataset.min;
-        const max = input.dataset.max;
-        const prob = parseFloat(input.value) || 0;
-        targetProbs[`${min}-${max}`] = prob;
-      });
-      
-      const targetExpectedValue = parseFloat(document.getElementById('target_expected_value').value);
-      
-      // 合計が100%になるかチェック
-      const totalProb = Object.values(targetProbs).reduce((a, b) => a + b, 0);
-      if (Math.abs(totalProb - 100) > 0.1) {
-        alert(`目標確率の合計が100%ではありません（${totalProb.toFixed(1)}%）。合計が100%になるように調整してください。`);
-        return;
-      }
-      
-      try {
-        const response = await fetch('/admin/optimize_probabilities', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            target_probs: targetProbs,
-            target_expected_value: targetExpectedValue
-          })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-          // シンボルの確率を更新
-          const symbols = data.symbols;
-          const tbody = document.querySelector('#slot-symbols');
-          const rows = tbody.querySelectorAll('tr');
-          
-          rows.forEach((row, index) => {
-            if (index < symbols.length) {
-              const probInput = row.querySelector('input[name^="symbol_prob_"]');
-              if (probInput) {
-                probInput.value = symbols[index].prob.toFixed(4);
-              }
-            }
-          });
-          
-          // 期待値を更新
-          document.getElementById('expected_total_5').value = targetExpectedValue.toFixed(1);
-          
-          // 結果を表示
-          document.getElementById('optimization_message').textContent = data.message;
-          document.getElementById('optimization_result').style.display = 'block';
-        } else {
-          alert('最適化に失敗しました：' + data.error);
-        }
-      } catch (error) {
-        console.error('Error:', error);
-        alert('最適化中にエラーが発生しました。');
-      }
-    }
+
   </script>
 </head>
 <body>
@@ -578,29 +433,7 @@
       <h2>🎰 スロット確率設定</h2>
       <p class="help-text" style="margin-bottom: 20px;">スロットのシンボルと配当、確率を設定できます。確率は自動調整されますが、手動でも調整可能です。</p>
       
-      <!-- 目標確率設定 -->
-      <div style="margin-bottom: 30px; padding: 20px; background: #f0f9ff; border-radius: 8px; border: 1px solid #bae6fd;">
-        <h3 style="margin-top: 0; color: #0369a1;">🎯 目標確率設定（高度な設定）</h3>
-        <p class="help-text" style="margin-bottom: 16px;">各点数範囲の目標確率を設定し、「確率を最適化」ボタンを押すと、各シンボルの確率が自動計算されます。</p>
-        <p class="help-text" style="margin-bottom: 16px; color: #0369a1;">※ 点数範囲は景品設定から自動的に生成されます。</p>
-        
-        <div id="target-prob-ranges" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 16px;">
-          <!-- 景品設定から動的に生成されます -->
-        </div>
-        
-        <div style="margin-bottom: 16px;">
-          <label>5回スピンの目標期待値</label>
-          <input type="number" id="target_expected_value" value="100.0" step="0.1" min="0" style="width: 200px;">
-          <span class="help-text" style="margin-left: 10px;">スロットを5回スピンしたときの平均合計点数</span>
-        </div>
-        
-        <button type="button" class="btn-primary" onclick="optimizeProbabilities()">🛠️ 確率を最適化</button>
-        <div id="optimization_result" style="display: none; margin-top: 16px; padding: 12px; background: white; border-radius: 4px; border: 1px solid #bae6fd;">
-          <p style="margin: 0; color: #0369a1;"><strong>✅ 最適化完了！</strong></p>
-          <p style="margin: 8px 0 0 0; font-size: 14px; color: #666;" id="optimization_message"></p>
-        </div>
-      </div>
-      
+
       <form method="post" action="{{ url_for('admin_save_slot_config') }}">
         <div class="form-group">
           <label>5回スピンの期待値</label>
