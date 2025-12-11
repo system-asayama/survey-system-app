@@ -441,7 +441,7 @@ async function loadConfig(){
     console.error('Failed to load config:', e);
     // フォールバック: デフォルトシンボルでリールを構築
     const defaultSymbols = [
-      {id:'GOD', label:'GOD', payout_3:500, color:'#ff8800', prob:0.4079},
+      {id:'GOD', label:'GOD', payout_3:300, color:'#ff8800', prob:0.4079},
       {id:'seven', label:'７', payout_3:100, color:'#ff0000', prob:2.0394},
       {id:'bar', label:'BAR', payout_3:50, color:'#0066ff', prob:4.0789},
       {id:'bell', label:'🔔', payout_3:20, color:'#8b4513', prob:10.1971},

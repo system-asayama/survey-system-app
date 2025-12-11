@@ -1,0 +1,172 @@
+{
+  "simulation_count": 1000000,
+  "timestamp": "2025-12-11T04:25:59.772999",
+  "config": {
+    "symbols": [
+      {
+        "id": "seven",
+        "label": "７",
+        "payout_3": 100,
+        "color": "#f50a39",
+        "prob": 3.3469461439949657,
+        "is_reach": false,
+        "reach_symbol": null
+      },
+      {
+        "id": "bar",
+        "label": "BAR",
+        "payout_3": 50,
+        "color": "#5463d9",
+        "prob": 6.83707729867866,
+        "is_reach": false,
+        "reach_symbol": null
+      },
+      {
+        "id": "bell",
+        "label": "🔔",
+        "payout_3": 20,
+        "color": "#92400e",
+        "prob": 10.495510065717733,
+        "is_reach": false,
+        "reach_symbol": null
+      },
+      {
+        "id": "grape",
+        "label": "🍇",
+        "payout_3": 12,
+        "color": "#7c3aed",
+        "prob": 11.766276017656567,
+        "is_reach": false,
+        "reach_symbol": null
+      },
+      {
+        "id": "cherry",
+        "label": "🍒",
+        "payout_3": 8,
+        "color": "#ef4444",
+        "prob": 12.4582423022099,
+        "is_reach": false,
+        "reach_symbol": null
+      },
+      {
+        "id": "lemon",
+        "label": "🍋",
+        "payout_3": 5,
+        "color": "#fde047",
+        "prob": 13.003793947274508,
+        "is_reach": false,
+        "reach_symbol": null
+      },
+      {
+        "id": "GOD",
+        "label": "GOD",
+        "payout_3": 300,
+        "color": "#ef9906",
+        "prob": 0.1922036632876162,
+        "is_reach": false,
+        "reach_symbol": null
+      },
+      {
+        "id": "bar_reach",
+        "label": "BAR",
+        "payout_3": 0,
+        "color": "#5463d9",
+        "prob": 13.96665018706002,
+        "is_reach": true,
+        "reach_symbol": "bar"
+      },
+      {
+        "id": "seven_reach",
+        "label": "７",
+        "payout_3": 0,
+        "color": "#f50a39",
+        "prob": 13.96665018706002,
+        "is_reach": true,
+        "reach_symbol": "seven"
+      },
+      {
+        "id": "god_reach",
+        "label": "GOD",
+        "payout_3": 0,
+        "color": "#ef9906",
+        "prob": 13.96665018706002,
+        "is_reach": true,
+        "reach_symbol": "GOD"
+      }
+    ],
+    "reels": 3,
+    "base_bet": 1,
+    "expected_total_5": 50.0,
+    "miss_probability": 20.0,
+    "target_probabilities": null
+  },
+  "prizes": [
+    {
+      "min_score": 500,
+      "rank": "特賞",
+      "name": "次回使える10,000円分の商品券",
+      "max_score": 2500
+    },
+    {
+      "min_score": 300,
+      "rank": "1等",
+      "name": "次回使える5,000円分の商品券",
+      "max_score": 499
+    },
+    {
+      "min_score": 200,
+      "rank": "2等",
+      "name": "次回使える3,000円分の商品券",
+      "max_score": 299
+    },
+    {
+      "min_score": 150,
+      "rank": "3等",
+      "name": "次回お肉とドリンク一杯サービス",
+      "max_score": 199
+    },
+    {
+      "min_score": 50,
+      "rank": "4等",
+      "name": "次回お肉一品サービス",
+      "max_score": 149
+    },
+    {
+      "min_score": 0,
+      "rank": "5等",
+      "name": "次回ドリンク一杯またはアイスクリーム無料",
+      "max_score": 49
+    }
+  ],
+  "score_distribution": {
+    "0": 971277,
+    "5": 8635,
+    "20": 4471,
+    "8": 7635,
+    "12": 6294,
+    "50": 1249,
+    "13": 48,
+    "100": 149,
+    "17": 52,
+    "28": 28,
+    "16": 23,
+    "32": 25,
+    "62": 10,
+    "25": 35,
+    "10": 31,
+    "24": 9,
+    "55": 10,
+    "21": 1,
+    "40": 4,
+    "120": 1,
+    "70": 3,
+    "58": 8,
+    "150": 1,
+    "37": 1
+  },
+  "prize_distribution": {
+    "5等": 998569,
+    "4等": 1430,
+    "3等": 1
+  }
+}
