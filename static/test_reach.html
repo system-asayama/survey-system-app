@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>リーチ音テスト</title>
+</head>
+<body>
+  <h1>リーチ音再生テスト</h1>
+  <button id="testBtn">テストスピン実行</button>
+  <div id="result"></div>
+  
+  <script>
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    
+    function playSoundReach() {
+      console.log("playSoundReach() called");
+      const duration = 0.6;
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.type = 'sawtooth';
+      oscillator.frequency.setValueAtTime(100, audioContext.currentTime);
+      oscillator.frequency.linearRampToValueAtTime(200, audioContext.currentTime + duration);
+      
+      gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + duration);
+    }
+    
+    document.getElementById('testBtn').addEventListener('click', async () => {
+      const resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = '';
+      
+      // テストデータ
+      const testData = {
+        reels: [
+          {id: "GOD", label: "GOD", color: "gold"},
+          {id: "GOD", label: "GOD", color: "gold"},
+          {id: "bar", label: "BAR", color: "blue"}
+        ],
+        matched: false,
+        is_reach: true,
+        reach_symbol: {id: "GOD", label: "GOD", color: "gold"},
+        payout: 0
+      };
+      
+      resultDiv.innerHTML += '<p>テストデータ: ' + JSON.stringify(testData) + '</p>';
+      
+      // リーチ判定ロジック（slot.jsと同じ）
+      const isReach = testData.is_reach || (testData.reels[0].id === testData.reels[1].id);
+      const highValueSymbols = ['bar', 'seven', 'GOD'];
+      const isHighValue = testData.is_reach || highValueSymbols.includes(testData.reels[0].id);
+      
+      resultDiv.innerHTML += '<p>isReach: ' + isReach + '</p>';
+      resultDiv.innerHTML += '<p>isHighValue: ' + isHighValue + '</p>';
+      resultDiv.innerHTML += '<p>Should play sound: ' + (isReach && isHighValue) + '</p>';
+      
+      if (isReach && isHighValue) {
+        resultDiv.innerHTML += '<p style="color:green">リーチ音を再生します</p>';
+        playSoundReach();
+      } else {
+        resultDiv.innerHTML += '<p style="color:red">リーチ音は再生されません</p>';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -548,7 +548,10 @@ async function animateFiveSpins(spins){
     const highValueSymbols = ['bar', 'seven', 'GOD'];
     const isHighValue = one.is_reach || highValueSymbols.includes(one.reels[0].id);
     
+    console.log(`[REACH DEBUG] Round ${i+1}: is_reach=${one.is_reach}, reels[0]=${one.reels[0].id}, reels[1]=${one.reels[1].id}, isReach=${isReach}, isHighValue=${isHighValue}`);
+    
     if (isReach && isHighValue) {
+      console.log(`[REACH DEBUG] Playing reach sound for ${one.reels[0].id}`);
       playSoundReach(); // リーチ演出音
       await new Promise(r=>setTimeout(r, 600)); // リーチ演出の時間
     } else {

@@ -533,6 +533,7 @@ def spin():
                     {"id": reel3.id, "label": reel3.label, "color": reel3.color}
                 ],
                 "matched": False,
+                "is_reach": False,
                 "payout": 0
             })
         else:
@@ -577,6 +578,7 @@ def spin():
                         {"id": symbol.id, "label": symbol.label, "color": symbol.color}
                     ],
                     "matched": True,
+                    "is_reach": False,
                     "symbol": {"id": symbol.id, "label": symbol.label, "color": symbol.color},
                     "payout": payout
                 })
