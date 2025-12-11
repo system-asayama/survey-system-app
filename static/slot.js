@@ -5,6 +5,16 @@ const $$ = (q)=>Array.from(document.querySelectorAll(q));
 /* ===== 効果音（Web Audio API） ===== */
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
+// AudioContextの状態を確認して自動再開
+function ensureAudioContext() {
+  if (audioContext.state === 'suspended') {
+    console.log('[AUDIO] AudioContext is suspended, resuming...');
+    audioContext.resume().then(() => {
+      console.log('[AUDIO] AudioContext resumed successfully');
+    });
+  }
+}
+
 // スピン開始音（上昇トーン）
 function playSoundSpinStart() {
   const oscillator = audioContext.createOscillator();
@@ -113,6 +123,13 @@ function playSimple() {
 
 // リーチ演出音（BAR以上がリーチになったとき）
 function playSoundReach() {
+  // AudioContextの状態を確認
+  if (audioContext.state === 'suspended') {
+    console.log('[AUDIO] AudioContext suspended, cannot play reach sound');
+    return;
+  }
+  console.log('[AUDIO] Playing reach sound, AudioContext state:', audioContext.state);
+  
   // ドラムロール風の緊張感のある音
   const duration = 0.6;
   
@@ -127,7 +144,7 @@ function playSoundReach() {
     oscillator.type = 'triangle';
     oscillator.frequency.setValueAtTime(80 + i * 10, audioContext.currentTime + i * 0.07);
     
-    gainNode.gain.setValueAtTime(0.15, audioContext.currentTime + i * 0.07);
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime + i * 0.07);
     gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + i * 0.07 + 0.05);
     
     oscillator.start(audioContext.currentTime + i * 0.07);
@@ -145,7 +162,7 @@ function playSoundReach() {
   oscillator2.frequency.setValueAtTime(200, audioContext.currentTime + 0.3);
   oscillator2.frequency.exponentialRampToValueAtTime(800, audioContext.currentTime + duration);
   
-  gainNode2.gain.setValueAtTime(0.25, audioContext.currentTime + 0.3);
+  gainNode2.gain.setValueAtTime(0.4, audioContext.currentTime + 0.3);
   gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
   
   oscillator2.start(audioContext.currentTime + 0.3);
@@ -596,6 +613,9 @@ async function animateFiveSpins(spins){
 async function play(){
   if(spinning) return;
   spinning = true;
+  
+  // AudioContextを再開（ブラウザのAutoplay Policy対策）
+  ensureAudioContext();
 
   let data;
   try{
