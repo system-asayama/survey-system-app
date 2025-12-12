@@ -29,7 +29,20 @@ def slot_page():
     # アンケート未回答の場合はアンケートページへリダイレクト
     if not session.get('survey_completed'):
         return redirect(url_for('survey.survey_page'))
-    return render_template('slot.html')
+    
+    # 設定ファイルからメッセージと景品データを読み込み
+    import json
+    settings_path = os.path.join(DATA_DIR, "settings.json")
+    survey_complete_message = "アンケートにご協力いただきありがとうございます！スロットをお楽しみください。"
+    prizes = []
+    
+    if os.path.exists(settings_path):
+        with open(settings_path, "r", encoding="utf-8") as f:
+            settings = json.load(f)
+            survey_complete_message = settings.get("survey_complete_message", survey_complete_message)
+            prizes = settings.get("prizes", [])
+    
+    return render_template('slot.html', survey_complete_message=survey_complete_message, prizes=prizes)
 
 
 @bp.get("/config")
