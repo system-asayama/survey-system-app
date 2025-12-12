@@ -19,6 +19,13 @@ https://5001-i3gjrskfqpsj8g9tekp41-2228fcf2.manus-asia.computer/select_login
 - **パスワード:** Admin@123
 - **権限:** 全テナント管理、システム設定
 
+### テナント管理者ログイン
+- **URL:** https://5001-i3gjrskfqpsj8g9tekp41-2228fcf2.manus-asia.computer/tenant_admin_login
+- **ログインID:** （システム管理者が作成時に設定）
+- **パスワード:** （システム管理者が作成時に設定）
+- **権限:** テナント単位の管理者・従業員管理
+- **注意:** システム管理者がテナント作成後に、テナント管理者を作成する必要があります
+
 ### 管理者ログイン（既存）
 - **URL:** https://5001-i3gjrskfqpsj8g9tekp41-2228fcf2.manus-asia.computer/admin/login
 - **店舗コード:** default
