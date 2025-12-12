@@ -15,7 +15,79 @@ bp = Blueprint('admin', __name__, url_prefix='/admin')
 @require_roles(ROLES["ADMIN"], ROLES["TENANT_ADMIN"], ROLES["SYSTEM_ADMIN"])
 def dashboard():
     """管理者ダッシュボード"""
-    return render_template('admin_dashboard.html', tenant_id=session.get('tenant_id'))
+    from ..utils.db import get_db, _sql
+    
+    user_id = session.get('user_id')
+    tenant_id = session.get('tenant_id')
+    store_id = session.get('store_id')
+    
+    admin = {
+        'name': session.get('name', '管理者'),
+        'store_code': 'default'
+    }
+    
+    # 初期値
+    total_responses = 0
+    avg_rating = 0.0
+    rating_counts = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+    responses = []
+    
+    conn = get_db()
+    try:
+        cur = conn.cursor()
+        
+        # 店舗情報を取得
+        if store_id:
+            sql = _sql(conn, 'SELECT slug FROM "T_店舗" WHERE id=%s')
+            cur.execute(sql, (store_id,))
+            row = cur.fetchone()
+            if row:
+                admin['store_code'] = row[0]
+        
+        # アンケートデータを取得（store_idがある場合）
+        if store_id:
+            try:
+                # 総回答数と平均評価
+                sql = _sql(conn, 'SELECT COUNT(*), AVG(recommend) FROM "T_アンケート回答" WHERE store_id=%s')
+                cur.execute(sql, (store_id,))
+                row = cur.fetchone()
+                if row:
+                    total_responses = row[0] or 0
+                    avg_rating = round(row[1] or 0.0, 1)
+                
+                # 評価別カウント
+                for rating in range(1, 6):
+                    sql = _sql(conn, 'SELECT COUNT(*) FROM "T_アンケート回答" WHERE store_id=%s AND recommend=%s')
+                    cur.execute(sql, (store_id, rating))
+                    row = cur.fetchone()
+                    if row:
+                        rating_counts[rating] = row[0] or 0
+                
+                # 最近の回答（5件）
+                sql = _sql(conn, 'SELECT id, visit_purpose, recommend, timestamp FROM "T_アンケート回答" WHERE store_id=%s ORDER BY timestamp DESC LIMIT 5')
+                cur.execute(sql, (store_id,))
+                rows = cur.fetchall()
+                for row in rows:
+                    responses.append({
+                        'id': row[0],
+                        'visit_purpose': row[1],
+                        'recommend': row[2],
+                        'timestamp': str(row[3])
+                    })
+            except Exception as e:
+                # テーブルが存在しない場合はデフォルト値を使用
+                print(f'⚠️ アンケートデータ取得エラー: {e}')
+    finally:
+        try: conn.close()
+        except: pass
+    
+    return render_template('admin_dashboard.html', 
+                         tenant_id=tenant_id, 
+                         admin=admin,
+                         total_responses=total_responses,
+                         avg_rating=avg_rating,
+                         rating_counts=rating_counts,
+                         responses=responses)
 
 
 @bp.route('/store_info')

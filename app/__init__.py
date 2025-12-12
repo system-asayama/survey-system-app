@@ -86,12 +86,12 @@ def create_app() -> Flask:
     except Exception as e:
         print(f"⚠️ tenant_admin blueprint 登録エラー: {e}")
 
-    # login-systemのadmin blueprintは無効化（survey_adminを使用）
-    # try:
-    #     from .blueprints.admin import bp as admin_bp
-    #     app.register_blueprint(admin_bp)
-    # except Exception as e:
-    #     print(f"⚠️ admin blueprint 登録エラー: {e}")
+    # login-systemのadmin blueprintを有効化
+    try:
+        from .blueprints.admin import bp as admin_bp
+        app.register_blueprint(admin_bp)
+    except Exception as e:
+        print(f"⚠️ admin blueprint 登録エラー: {e}")
 
     try:
         from .blueprints.employee import bp as employee_bp
