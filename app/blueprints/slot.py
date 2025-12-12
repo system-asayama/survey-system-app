@@ -1,26 +1,35 @@
 # -*- coding: utf-8 -*-
 """
-スロット機能 Blueprint
+スロット機能 Blueprint - 元の仕様に準拠
 """
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, render_template, session, redirect, url_for
 from dataclasses import asdict
 import os
 import time
 import random
-from ..models import Symbol
+from ..models import Symbol, Config
 from ..utils.config import load_config, save_config
 from ..utils.slot_logic import (
     choice_by_prob,
-    solve_probs_for_target_expectation,
+    recalc_probs_inverse_and_expected,
     prob_total_ge,
     prob_total_le
 )
 
-bp = Blueprint('slot', __name__, url_prefix='/api')
+bp = Blueprint('slot', __name__, url_prefix='')
 
 # パス設定
 APP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(APP_DIR, "data")
+
+
+@bp.get("/slot")
+def slot_page():
+    """スロットページ"""
+    # アンケート未回答の場合はアンケートページへリダイレクト
+    if not session.get('survey_completed'):
+        return redirect(url_for('survey.survey_page'))
+    return render_template('slot.html')
 
 
 @bp.get("/config")
@@ -38,56 +47,31 @@ def get_config():
 @bp.post("/config")
 def set_config():
     """スロット設定を更新"""
-    from ..utils.slot_logic import recalc_probs_inverse_and_expected
-    
     body = request.get_json(silent=True) or {}
     reels = int(body.get("reels", 3))
     base_bet = int(body.get("base_bet", 1))
     symbols_in = body.get("symbols", [])
     if not isinstance(symbols_in, list) or len(symbols_in) == 0:
         return jsonify({"ok": False, "error": "symbolsを1件以上送信してください"}), 400
+    
     parsed = [Symbol(**s) for s in symbols_in]
     cfg = load_config()
     cfg.symbols = parsed
     cfg.reels = reels
     cfg.base_bet = base_bet
     
-    # ハズレ確率を取得
-    miss_prob = body.get("miss_probability", None)
-    if miss_prob is not None:
-        cfg.miss_probability = float(miss_prob)
-    
-    target_total5 = body.get("target_expected_total_5", None)
-    if target_total5 is not None:
-        target_total5 = float(target_total5)
-        target_e1 = target_total5 / 5.0
-        payouts = [s.payout_3 for s in cfg.symbols]
-        
-        # ハズレ確率を考慮した期待値計算
-        miss_rate = cfg.miss_probability / 100.0
-        if miss_rate >= 1.0:
-            return jsonify({"ok": False, "error": "ハズレ確率は100%未満である必要があります"}), 400
-        
-        adjusted_target_e1 = target_e1 / (1.0 - miss_rate)
-        probs = solve_probs_for_target_expectation(payouts, adjusted_target_e1)
-        
-        if probs:
-            for s, p in zip(cfg.symbols, probs):
-                s.prob = float(p * 100.0)
-            # 実際の期待値を再計算
-            actual_e1 = sum(s.payout_3 * (s.prob / 100.0) for s in cfg.symbols)
-            cfg.expected_total_5 = float(actual_e1 * 5.0 * (1.0 - miss_rate))
-    else:
-        recalc_probs_inverse_and_expected(cfg)
-    
+    # 確率を逆算して期待値を再計算
+    recalc_probs_inverse_and_expected(cfg)
     save_config(cfg)
-    return jsonify({"ok": True, "expected_total_5": cfg.expected_total_5})
+    
+    return jsonify({"ok": True})
 
 
 @bp.post("/spin")
 def spin():
-    """スロットを5回スピン"""
+    """スロット実行 - 元の仕様に準拠"""
     from prize_logic import get_prize_for_score
+    import copy
     
     cfg = load_config()
     
@@ -196,25 +180,49 @@ def spin():
 
 @bp.post("/calc_prob")
 def calc_prob():
-    """確率計算"""
+    """
+    確率計算
+    body: {"threshold_min":200, "threshold_max":500, "spins":5}
+    - threshold_maxがNoneまたは未指定なら上限なし（∞）
+    """
     body = request.get_json(silent=True) or {}
-    symbols_in = body.get("symbols", [])
-    spins_count = int(body.get("spins", 5))
-    threshold = float(body.get("threshold", 100))
-    mode = body.get("mode", "ge")  # "ge" or "le"
+    tmin = float(body.get("threshold_min", 0))
+    tmax = body.get("threshold_max")
+    tmax = None if tmax in (None, "", "null") else float(tmax)
+    spins = int(body.get("spins", 5))
+    spins = max(1, spins)
+
+    cfg = load_config()
     
-    if not isinstance(symbols_in, list) or len(symbols_in) == 0:
-        return jsonify({"ok": False, "error": "symbolsを1件以上送信してください"}), 400
+    # ハズレ確率を考慮するため、ハズレ（0点）をシンボルリストに追加
+    miss_rate = cfg.miss_probability
+    symbols_with_miss = list(cfg.symbols)
     
-    parsed = [Symbol(**s) for s in symbols_in]
+    # ハズレシンボルを追加
+    miss_symbol = Symbol(
+        id="miss",
+        label="ハズレ",
+        payout_3=0.0,
+        prob=miss_rate,
+        color="#000000"
+    )
+    symbols_with_miss.append(miss_symbol)
     
-    if mode == "le":
-        prob = prob_total_le(parsed, spins_count, threshold)
-    else:
-        prob = prob_total_ge(parsed, spins_count, threshold)
-    
+    # 確率を正規化（ハズレ確率 + シンボル確率の合計 = 100%）
+    psum = sum(float(s.prob) for s in symbols_with_miss)
+    for s in symbols_with_miss:
+        s.prob = float(s.prob) * 100.0 / psum
+
+    prob_ge = prob_total_ge(symbols_with_miss, spins, tmin)
+    prob_le = 1.0 if tmax is None else prob_total_le(symbols_with_miss, spins, tmax)
+    prob_range = max(0.0, prob_le - (1.0 - prob_ge))
+
     return jsonify({
         "ok": True,
-        "probability": float(prob),
-        "percentage": float(prob * 100.0)
+        "prob_ge": prob_ge,
+        "prob_le": prob_le,
+        "prob_range": prob_range,
+        "tmin": tmin,
+        "tmax": tmax,
+        "spins": spins
     })
