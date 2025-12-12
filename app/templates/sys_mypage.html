@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}マイページ{% endblock %}
+{% block content %}
+<h1>システム管理者マイページ</h1>
+
+<div class="card" style="max-width:640px">
+  <h2>プロフィール情報</h2>
+  
+  <div style="margin-top:20px">
+    <table style="width:100%; border-collapse:collapse">
+      <tr style="border-bottom:1px solid #eee">
+        <th style="text-align:left; padding:8px; width:40%">ユーザーID</th>
+        <td style="padding:8px">{{ user.id }}</td>
+      </tr>
+      <tr style="border-bottom:1px solid #eee">
+        <th style="text-align:left; padding:8px">ログインID</th>
+        <td style="padding:8px">{{ user.login_id }}</td>
+      </tr>
+      <tr style="border-bottom:1px solid #eee">
+        <th style="text-align:left; padding:8px">氏名</th>
+        <td style="padding:8px">{{ user.name }}</td>
+      </tr>
+      <tr style="border-bottom:1px solid #eee">
+        <th style="text-align:left; padding:8px">ロール</th>
+        <td style="padding:8px">{{ user.role }}</td>
+      </tr>
+      <tr style="border-bottom:1px solid #eee">
+        <th style="text-align:left; padding:8px">オーナー権限</th>
+        <td style="padding:8px">{{ 'あり' if user.is_owner else 'なし' }}</td>
+      </tr>
+      <tr style="border-bottom:1px solid #eee">
+        <th style="text-align:left; padding:8px">管理者管理権限</th>
+        <td style="padding:8px">{{ 'あり' if user.can_manage_admins else 'なし' }}</td>
+      </tr>
+      <tr style="border-bottom:1px solid #eee">
+        <th style="text-align:left; padding:8px">作成日時</th>
+        <td style="padding:8px">{{ user.created_at }}</td>
+      </tr>
+      <tr>
+        <th style="text-align:left; padding:8px">更新日時</th>
+        <td style="padding:8px">{{ user.updated_at }}</td>
+      </tr>
+    </table>
+  </div>
+
+  <div style="margin-top:30px; display:flex; gap:12px; flex-wrap:wrap">
+    <a class="btn sub" href="{{ url_for('system_admin.dashboard') }}">ダッシュボードに戻る</a>
+  </div>
+</div>
+
+{% if get_flashed_messages() %}
+<div style="margin-top:20px">
+  {% for category, message in get_flashed_messages(with_categories=true) %}
+    <div class="alert alert-{{ category }}">{{ message }}</div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

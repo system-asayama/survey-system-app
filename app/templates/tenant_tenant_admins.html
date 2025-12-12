@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}テナント管理者一覧{% endblock %}
+{% block content %}
+<h1>テナント管理者一覧</h1>
+
+<div style="margin-bottom:20px">
+  <a class="btn" href="{{ url_for('tenant_admin.tenant_admin_new') }}">新規作成</a>
+  <a class="btn sub" href="{{ url_for('tenant_admin.dashboard') }}">戻る</a>
+</div>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>ログインID</th>
+      <th>氏名</th>
+      <th>状態</th>
+      <th>オーナー</th>
+      <th>管理権限</th>
+      <th>作成日時</th>
+      <th>操作</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for ta in tenant_admins %}
+    <tr>
+      <td>{{ ta.id }}</td>
+      <td>{{ ta.login_id }}</td>
+      <td>{{ ta.name }}</td>
+      <td>{{ '有効' if ta.active == 1 else '無効' }}</td>
+      <td>
+        {% if ta.is_owner == 1 %}
+          <span style="color: #dc3545; font-weight: bold;">★ オーナー</span>
+        {% else %}
+          <span style="color: #666;">-</span>
+        {% endif %}
+      </td>
+      <td>
+        {% if ta.can_manage_admins == 1 %}
+          <span style="color: #28a745; font-weight: bold;">✓ 管理権限あり</span>
+        {% else %}
+          <span style="color: #666;">管理権限なし</span>
+        {% endif %}
+      </td>
+      <td>{{ ta.created_at }}</td>
+      <td>
+        <a class="btn small" href="{{ url_for('tenant_admin.tenant_admin_edit', tadmin_id=ta.id) }}">編集</a>
+        
+        {% if ta.is_owner != 1 %}
+          <form method="post" action="{{ url_for('tenant_admin.toggle_tenant_admin_manage_permission', tadmin_id=ta.id) }}" style="display:inline">
+            {% if get_csrf %}<input type="hidden" name="csrf_token" value="{{ get_csrf() }}">{% endif %}
+            {% if ta.can_manage_admins == 1 %}
+              <button class="btn small sub" type="submit">権限剝奪</button>
+            {% else %}
+              <button class="btn small" type="submit">権限付与</button>
+            {% endif %}
+          </form>
+          
+          <form method="post" action="{{ url_for('tenant_admin.transfer_tenant_ownership', tadmin_id=ta.id) }}" style="display:inline" onsubmit="return confirm('本当にオーナー権限を移譲しますか？')">
+            {% if get_csrf %}<input type="hidden" name="csrf_token" value="{{ get_csrf() }}">{% endif %}
+            <button class="btn small" type="submit" style="background-color: #dc3545;">オーナー移譲</button>
+          </form>
+          
+          <form method="post" action="{{ url_for('tenant_admin.tenant_admin_delete', tadmin_id=ta.id) }}" style="display:inline" onsubmit="return confirm('本当に削除しますか？')">
+            {% if get_csrf %}<input type="hidden" name="csrf_token" value="{{ get_csrf() }}">{% endif %}
+            <button class="btn small sub" type="submit">削除</button>
+          </form>
+        {% else %}
+          <span style="color: #666;">オーナーは編集のみ可能</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if not tenant_admins %}
+<p style="color:#666">テナント管理者が登録されていません。</p>
+{% endif %}
+
+{% endblock %}

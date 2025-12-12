@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}テナント情報{% endblock %}
+{% block content %}
+<h1>テナント情報</h1>
+
+<div class="card">
+  <h2>{{ tenant['名称'] }}</h2>
+  
+  <div style="margin-top:20px">
+    <table class="table">
+      <tbody>
+        <tr>
+          <th style="width:200px">テナントID</th>
+          <td>{{ tenant.id }}</td>
+        </tr>
+        <tr>
+          <th>名称</th>
+          <td>{{ tenant['名称'] }}</td>
+        </tr>
+        <tr>
+          <th>Slug</th>
+          <td>{{ tenant.slug }}</td>
+        </tr>
+        <tr>
+          <th>作成日時</th>
+          <td>{{ tenant.created_at }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div style="margin-top:20px">
+    <a class="btn" href="{{ url_for('tenant_admin.me_edit') }}">編集</a>
+    <a class="btn sub" href="{{ url_for('tenant_admin.dashboard') }}">戻る</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}店舗情報{% endblock %}
+{% block content %}
+<h1>店舗情報</h1>
+
+<div class="card">
+  <h2>テナント情報</h2>
+  <table class="table">
+    <tbody>
+      <tr>
+        <th style="width:200px">テナントID</th>
+        <td>{{ tenant.id }}</td>
+      </tr>
+      <tr>
+        <th>名称</th>
+        <td>{{ tenant['名称'] }}</td>
+      </tr>
+      <tr>
+        <th>Slug</th>
+        <td>{{ tenant.slug }}</td>
+      </tr>
+      <tr>
+        <th>作成日時</th>
+        <td>{{ tenant.created_at }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card" style="margin-top:20px">
+  <h2>店舗一覧</h2>
+  
+  {% if stores %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>店舗ID</th>
+          <th>名称</th>
+          <th>Slug</th>
+          <th>作成日時</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for store in stores %}
+        <tr>
+          <td>{{ store.id }}</td>
+          <td>{{ store['名称'] }}</td>
+          <td>{{ store.slug }}</td>
+          <td>{{ store.created_at }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p style="color:#666">店舗が登録されていません。</p>
+  {% endif %}
+</div>
+
+<div style="margin-top:20px">
+  <a class="btn sub" href="{{ url_for('admin.dashboard') }}">戻る</a>
+</div>
+{% endblock %}

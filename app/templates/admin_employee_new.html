@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}従業員新規作成{% endblock %}
+{% block content %}
+<h1>従業員新規作成</h1>
+
+<form method="post">
+  <div class="card" style="max-width:500px">
+    <div class="row">
+      <label for="login_id">ログインID</label>
+      <input id="login_id" name="login_id" type="text" required autofocus>
+    </div>
+    
+    <div class="row">
+      <label for="name">氏名</label>
+      <input id="name" name="name" type="text" required>
+    </div>
+    
+    <div class="row">
+      <label for="password">パスワード</label>
+      <input id="password" name="password" type="password" required>
+    </div>
+    
+    <div class="actions" style="margin-top:20px; display:flex; gap:10px">
+      <button class="btn" type="submit">作成</button>
+      <a class="btn sub" href="{{ back_url }}">キャンセル</a>
+    </div>
+  </div>
+</form>
+
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}管理者新規作成{% endblock %}
+
+{% block content %}
+<h2>管理者新規作成</h2>
+
+<form method="post">
+  <div style="margin-bottom:16px">
+    <label style="display:block;margin-bottom:4px">ログインID</label>
+    <input type="text" name="login_id" required style="width:100%;max-width:400px;padding:8px">
+  </div>
+
+  <div style="margin-bottom:16px">
+    <label style="display:block;margin-bottom:4px">氏名</label>
+    <input type="text" name="name" required style="width:100%;max-width:400px;padding:8px">
+  </div>
+
+  <div style="margin-bottom:16px">
+    <label style="display:block;margin-bottom:4px">パスワード</label>
+    <input type="password" name="password" required style="width:100%;max-width:400px;padding:8px">
+  </div>
+
+  <div style="margin-top:24px">
+    <button type="submit" class="btn">作成</button>
+    <a href="{{ back_url }}" class="btn secondary">キャンセル</a>
+  </div>
+</form>
+{% endblock %}

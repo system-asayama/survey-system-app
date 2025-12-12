@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}従業員一覧{% endblock %}
+{% block content %}
+<h1>従業員一覧</h1>
+
+<div style="margin-bottom:20px">
+  <a class="btn" href="{{ url_for('admin.employee_new') }}">新規作成</a>
+  <a class="btn sub" href="{{ url_for('admin.dashboard') }}">戻る</a>
+</div>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>ログインID</th>
+      <th>氏名</th>
+      <th>メールアドレス</th>
+      <th>作成日時</th>
+      <th>操作</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for e in employees %}
+    <tr>
+      <td>{{ e.id }}</td>
+      <td>{{ e.login_id }}</td>
+      <td>{{ e.name }}</td>
+      <td>{{ e.email }}</td>
+      <td>{{ e.created_at }}</td>
+      <td>
+        <form method="post" action="{{ url_for('admin.employee_delete', employee_id=e.id) }}" style="display:inline" onsubmit="return confirm('本当に削除しますか？')">
+          <button class="btn small" type="submit">削除</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if not employees %}
+<p style="color:#666">従業員が登録されていません。</p>
+{% endif %}
+
+{% endblock %}

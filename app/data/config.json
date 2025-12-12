@@ -1,0 +1,63 @@
+{
+  "symbols": [
+    {
+      "id": "seven",
+      "label": "7",
+      "payout_3": 100,
+      "color": "#ff0000",
+      "prob": 3.571428571428571,
+      "is_reach": false,
+      "reach_symbol": null
+    },
+    {
+      "id": "bell",
+      "label": "🔔",
+      "payout_3": 50,
+      "color": "#fbbf24",
+      "prob": 7.142857142857142,
+      "is_reach": false,
+      "reach_symbol": null
+    },
+    {
+      "id": "bar",
+      "label": "BAR",
+      "payout_3": 25,
+      "color": "#ffffff",
+      "prob": 14.285714285714285,
+      "is_reach": false,
+      "reach_symbol": null
+    },
+    {
+      "id": "grape",
+      "label": "🍇",
+      "payout_3": 20,
+      "color": "#7c3aed",
+      "prob": 17.857142857142858,
+      "is_reach": false,
+      "reach_symbol": null
+    },
+    {
+      "id": "cherry",
+      "label": "🍒",
+      "payout_3": 12.5,
+      "color": "#ef4444",
+      "prob": 28.57142857142857,
+      "is_reach": false,
+      "reach_symbol": null
+    },
+    {
+      "id": "lemon",
+      "label": "🍋",
+      "payout_3": 12.5,
+      "color": "#fde047",
+      "prob": 28.57142857142857,
+      "is_reach": false,
+      "reach_symbol": null
+    }
+  ],
+  "reels": 3,
+  "base_bet": 1,
+  "expected_total_5": 107.14285714285711,
+  "miss_probability": 0.0,
+  "target_probabilities": null
+}

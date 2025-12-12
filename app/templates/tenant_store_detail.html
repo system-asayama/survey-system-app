@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}店舗詳細{% endblock %}
+{% block content %}
+<h1>店舗詳細</h1>
+
+<div class="card">
+  <h2>{{ store['名称'] }}</h2>
+  
+  <div style="margin-top:20px">
+    <table class="table">
+      <tbody>
+        <tr>
+          <th style="width:200px">店舗ID</th>
+          <td>{{ store.id }}</td>
+        </tr>
+        <tr>
+          <th>名称</th>
+          <td>{{ store['名称'] }}</td>
+        </tr>
+        <tr>
+          <th>Slug</th>
+          <td>{{ store.slug }}</td>
+        </tr>
+        <tr>
+          <th>作成日時</th>
+          <td>{{ store.created_at }}</td>
+        </tr>
+        <tr>
+          <th>更新日時</th>
+          <td>{{ store.updated_at }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div style="margin-top:30px">
+    <h3>管理機能</h3>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:12px">
+      <a class="card" href="{{ url_for('tenant_admin.admins') }}" style="text-decoration:none">
+        <h4>店舗管理者管理</h4>
+        <p class="small" style="color:#666">店舗管理者の作成・編集・削除（{{ admin_count }}人）</p>
+      </a>
+      <a class="card" href="{{ url_for('tenant_admin.employees') }}" style="text-decoration:none">
+        <h4>従業員管理</h4>
+        <p class="small" style="color:#666">従業員の作成・編集・削除（{{ employee_count }}人）</p>
+      </a>
+    </div>
+  </div>
+
+  <div style="margin-top:20px">
+    <a class="btn" href="{{ url_for('tenant_admin.store_edit', store_id=store.id) }}">編集</a>
+    <a class="btn sub" href="{{ url_for('tenant_admin.stores') }}">戻る</a>
+  </div>
+</div>
+{% endblock %}

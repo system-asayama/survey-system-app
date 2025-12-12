@@ -1,0 +1,929 @@
+# -*- coding: utf-8 -*-
+"""
+テナント管理者ダッシュボード
+"""
+
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from ..utils import require_roles, ROLES, get_db_connection, is_tenant_owner, can_manage_tenant_admins
+from ..utils.db import _sql
+from werkzeug.security import generate_password_hash
+
+bp = Blueprint('tenant_admin', __name__, url_prefix='/tenant_admin')
+
+
+@bp.route('/')
+@require_roles(ROLES["TENANT_ADMIN"], ROLES["SYSTEM_ADMIN"])
+def dashboard():
+    """テナント管理者ダッシュボード"""
+    return render_template('tenant_admin_dashboard.html', tenant_id=session.get('tenant_id'))
+
+
+# ========================================
+# テナント情報管理
+# ========================================
+
+@bp.route('/tenant_info')
+@require_roles(ROLES["TENANT_ADMIN"])
+def tenant_info():
+    """テナント情報表示"""
+    tenant_id = session.get('tenant_id')
+    if not tenant_id:
+        flash('テナントIDが取得できません', 'error')
+        return redirect(url_for('tenant_admin.dashboard'))
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    cur.execute(_sql(conn, 'SELECT id, 名称, slug, created_at FROM "T_テナント" WHERE id = %s'), (tenant_id,))
+    row = cur.fetchone()
+    conn.close()
+    
+    if not row:
+        flash('テナント情報が見つかりません', 'error')
+        return redirect(url_for('tenant_admin.dashboard'))
+    
+    tenant = {
+        'id': row[0],
+        '名称': row[1],
+        'slug': row[2],
+        'created_at': row[3]
+    }
+    return render_template('tenant_info.html', tenant=tenant)
+
+
+@bp.route('/me/edit', methods=['GET', 'POST'])
+@require_roles(ROLES["TENANT_ADMIN"])
+def me_edit():
+    """テナント情報編集"""
+    tenant_id = session.get('tenant_id')
+    if not tenant_id:
+        flash('テナントIDが取得できません', 'error')
+        return redirect(url_for('tenant_admin.dashboard'))
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    if request.method == 'POST':
+        name = request.form.get('名称', '').strip()
+        slug = request.form.get('slug', '').strip()
+        
+        if not name or not slug:
+            flash('名称とslugは必須です', 'error')
+        else:
+            cur.execute(_sql(conn, 'UPDATE "T_テナント" SET 名称 = %s, slug = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s'),
+                       (name, slug, tenant_id))
+            conn.commit()
+            flash('テナント情報を更新しました', 'success')
+            conn.close()
+            return redirect(url_for('tenant_admin.dashboard'))
+    
+    cur.execute(_sql(conn, 'SELECT id, 名称, slug FROM "T_テナント" WHERE id = %s'), (tenant_id,))
+    row = cur.fetchone()
+    conn.close()
+    
+    if not row:
+        flash('テナント情報が見つかりません', 'error')
+        return redirect(url_for('tenant_admin.dashboard'))
+    
+    tenant = {'id': row[0], '名称': row[1], 'slug': row[2]}
+    return render_template('tenant_me_edit.html', t=tenant, back_url=url_for('tenant_admin.dashboard'))
+
+
+@bp.route('/portal')
+@require_roles(ROLES["TENANT_ADMIN"])
+def portal():
+    """テナントポータル"""
+    tenant_id = session.get('tenant_id')
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # テナント情報を取得
+    cur.execute(_sql(conn, 'SELECT id, "名称", slug FROM "T_テナント" WHERE id = %s'), (tenant_id,))
+    tenant_row = cur.fetchone()
+    tenant = None
+    if tenant_row:
+        tenant = {'id': tenant_row[0], '名称': tenant_row[1], 'slug': tenant_row[2]}
+    
+    # 管理者数を取得
+    cur.execute(_sql(conn, 'SELECT COUNT(*) FROM "T_管理者" WHERE tenant_id = %s AND role = %s'),
+               (tenant_id, ROLES["ADMIN"]))
+    admin_count = cur.fetchone()[0]
+    
+    # 従業員数を取得
+    cur.execute(_sql(conn, 'SELECT COUNT(*) FROM "T_従業員" WHERE tenant_id = %s'),
+               (tenant_id,))
+    employee_count = cur.fetchone()[0]
+    
+    conn.close()
+    
+    return render_template('tenant_portal.html', 
+                         tenant=tenant,
+                         admin_count=admin_count,
+                         employee_count=employee_count,
+                         stores=[])
+
+
+# ========================================
+# 店舗管理
+# ========================================
+
+@bp.route('/stores')
+@require_roles(ROLES["TENANT_ADMIN"])
+def stores():
+    """店舗一覧"""
+    tenant_id = session.get('tenant_id')
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    cur.execute(_sql(conn, '''
+        SELECT id, 名称, slug, created_at, updated_at
+        FROM "T_店舗"
+        WHERE tenant_id = %s
+        ORDER BY id
+    '''), (tenant_id,))
+    
+    stores_list = []
+    for row in cur.fetchall():
+        stores_list.append({
+            'id': row[0],
+            '名称': row[1],
+            'slug': row[2],
+            'created_at': row[3],
+            'updated_at': row[4]
+        })
+    conn.close()
+    
+    return render_template('tenant_stores.html', stores=stores_list)
+
+
+@bp.route('/stores/<int:store_id>')
+@require_roles(ROLES["TENANT_ADMIN"])
+def store_detail(store_id):
+    """店舗詳細"""
+    tenant_id = session.get('tenant_id')
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # 店舗情報を取得
+    cur.execute(_sql(conn, '''
+        SELECT id, 名称, slug, created_at, updated_at
+        FROM "T_店舗"
+        WHERE id = %s AND tenant_id = %s
+    '''), (store_id, tenant_id))
+    row = cur.fetchone()
+    
+    if not row:
+        flash('店舗が見つかりません', 'error')
+        conn.close()
+        return redirect(url_for('tenant_admin.stores'))
+    
+    store = {
+        'id': row[0],
+        '名称': row[1],
+        'slug': row[2],
+        'created_at': row[3],
+        'updated_at': row[4]
+    }
+    
+    # 店舗管理者数を取得
+    cur.execute(_sql(conn, 'SELECT COUNT(*) FROM "T_管理者" WHERE tenant_id = %s AND role = %s'),
+               (tenant_id, ROLES["ADMIN"]))
+    admin_count = cur.fetchone()[0]
+    
+    # 従業員数を取得
+    cur.execute(_sql(conn, 'SELECT COUNT(*) FROM "T_従業員" WHERE tenant_id = %s'),
+               (tenant_id,))
+    employee_count = cur.fetchone()[0]
+    
+    conn.close()
+    
+    return render_template('tenant_store_detail.html', 
+                         store=store,
+                         admin_count=admin_count,
+                         employee_count=employee_count)
+
+
+@bp.route('/stores/new', methods=['GET', 'POST'])
+@require_roles(ROLES["TENANT_ADMIN"])
+def store_new():
+    """店舗新規作成"""
+    tenant_id = session.get('tenant_id')
+    
+    if request.method == 'POST':
+        name = request.form.get('名称', '').strip()
+        slug = request.form.get('slug', '').strip()
+        
+        if not name or not slug:
+            flash('名称とslugは必須です', 'error')
+        else:
+            conn = get_db_connection()
+            cur = conn.cursor()
+            
+            # 重複チェック
+            cur.execute(_sql(conn, 'SELECT id FROM "T_店舗" WHERE tenant_id = %s AND slug = %s'), (tenant_id, slug))
+            if cur.fetchone():
+                flash('このslugは既に使用されています', 'error')
+                conn.close()
+            else:
+                cur.execute(_sql(conn, '''
+                    INSERT INTO "T_店舗" (tenant_id, 名称, slug)
+                    VALUES (%s, %s, %s)
+                '''), (tenant_id, name, slug))
+                conn.commit()
+                conn.close()
+                flash('店舗を作成しました', 'success')
+                return redirect(url_for('tenant_admin.stores'))
+    
+    return render_template('tenant_store_new.html', back_url=url_for('tenant_admin.stores'))
+
+
+@bp.route('/stores/<int:store_id>/edit', methods=['GET', 'POST'])
+@require_roles(ROLES["TENANT_ADMIN"])
+def store_edit(store_id):
+    """店舗編集"""
+    tenant_id = session.get('tenant_id')
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    if request.method == 'POST':
+        name = request.form.get('名称', '').strip()
+        slug = request.form.get('slug', '').strip()
+        
+        if not name or not slug:
+            flash('名称とslugは必須です', 'error')
+        else:
+            # 重複チェック（自分以外）
+            cur.execute(_sql(conn, 'SELECT id FROM "T_店舗" WHERE tenant_id = %s AND slug = %s AND id != %s'), 
+                       (tenant_id, slug, store_id))
+            if cur.fetchone():
+                flash(f'slug "{slug}" は既に使用されています', 'error')
+            else:
+                cur.execute(_sql(conn, '''
+                    UPDATE "T_店舗"
+                    SET 名称 = %s, slug = %s, updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s AND tenant_id = %s
+                '''), (name, slug, store_id, tenant_id))
+                conn.commit()
+                flash('店舗情報を更新しました', 'success')
+                conn.close()
+                return redirect(url_for('tenant_admin.store_detail', store_id=store_id))
+    
+    # GETリクエスト：店舗情報を取得
+    cur.execute(_sql(conn, '''
+        SELECT id, 名称, slug
+        FROM "T_店舗"
+        WHERE id = %s AND tenant_id = %s
+    '''), (store_id, tenant_id))
+    row = cur.fetchone()
+    conn.close()
+    
+    if not row:
+        flash('店舗が見つかりません', 'error')
+        return redirect(url_for('tenant_admin.stores'))
+    
+    store = {'id': row[0], '名称': row[1], 'slug': row[2]}
+    return render_template('tenant_store_edit.html', store=store)
+
+
+@bp.route('/stores/<int:store_id>/delete', methods=['POST'])
+@require_roles(ROLES["TENANT_ADMIN"])
+def store_delete(store_id):
+    """店舗削除"""
+    tenant_id = session.get('tenant_id')
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # 店舗情報を取得
+    cur.execute(_sql(conn, 'SELECT 名称 FROM "T_店舗" WHERE id = %s AND tenant_id = %s'),
+               (store_id, tenant_id))
+    row = cur.fetchone()
+    
+    if not row:
+        flash('店舗が見つかりません', 'error')
+    else:
+        cur.execute(_sql(conn, 'DELETE FROM "T_店舗" WHERE id = %s'), (store_id,))
+        conn.commit()
+        flash(f'{row[0]} を削除しました', 'success')
+    
+    conn.close()
+    return redirect(url_for('tenant_admin.stores'))
+
+
+# ========================================
+# 管理者管理
+# ========================================
+
+@bp.route('/admins')
+@require_roles(ROLES["TENANT_ADMIN"])
+def admins():
+    """管理者一覧"""
+    tenant_id = session.get('tenant_id')
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    cur.execute(_sql(conn, '''
+        SELECT id, login_id, name, active, created_at, can_manage_admins 
+        FROM "T_管理者" 
+        WHERE tenant_id = %s AND role = %s 
+        ORDER BY can_manage_admins DESC, id
+    '''), (tenant_id, ROLES["ADMIN"]))
+    
+    admins_list = []
+    for row in cur.fetchall():
+        admins_list.append({
+            'id': row[0],
+            'login_id': row[1],
+            'name': row[2],
+            'active': row[3],
+            'created_at': row[4],
+            'can_manage_admins': row[5]
+        })
+    conn.close()
+    
+    return render_template('tenant_admins.html', admins=admins_list)
+
+
+@bp.route('/admins/new', methods=['GET', 'POST'])
+@require_roles(ROLES["TENANT_ADMIN"])
+def admin_new():
+    """管理者新規作成（管理者管理権限が必要）"""
+    # 管理者管理権限チェック
+    if not can_manage_tenant_admins():
+        flash('管理者を作成する権限がありません', 'error')
+        return redirect(url_for('tenant_admin.admins'))
+    
+    tenant_id = session.get('tenant_id')
+    
+    if request.method == 'POST':
+        login_id = request.form.get('login_id', '').strip()
+        name = request.form.get('name', '').strip()
+        password = request.form.get('password', '').strip()
+        
+        if not login_id or not name or not password:
+            flash('全ての項目を入力してください', 'error')
+        else:
+            conn = get_db_connection()
+            cur = conn.cursor()
+            
+            # 重複チェック
+            cur.execute(_sql(conn, 'SELECT id FROM "T_管理者" WHERE login_id = %s'), (login_id,))
+            if cur.fetchone():
+                flash('このログインIDは既に使用されています', 'error')
+                conn.close()
+            else:
+                ph = generate_password_hash(password)
+                cur.execute(_sql(conn, '''
+                    INSERT INTO "T_管理者" (login_id, name, password_hash, role, tenant_id, active)
+                    VALUES (%s, %s, %s, %s, %s, 1)
+                '''), (login_id, name, ph, ROLES["ADMIN"], tenant_id))
+                conn.commit()
+                conn.close()
+                flash('管理者を作成しました', 'success')
+                return redirect(url_for('tenant_admin.admins'))
+    
+    return render_template('admin_new.html', back_url=url_for('tenant_admin.admins'))
+
+
+@bp.route('/admins/<int:admin_id>/delete', methods=['POST'])
+@require_roles(ROLES["TENANT_ADMIN"])
+def admin_delete(admin_id):
+    """管理者削除（管理者管理権限が必要）"""
+    # 管理者管理権限チェック
+    if not can_manage_tenant_admins():
+        flash('管理者を削除する権限がありません', 'error')
+        return redirect(url_for('tenant_admin.admins'))
+    
+    tenant_id = session.get('tenant_id')
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # テナントIDの確認
+    cur.execute(_sql(conn, 'SELECT name FROM "T_管理者" WHERE id = %s AND tenant_id = %s AND role = %s'),
+               (admin_id, tenant_id, ROLES["ADMIN"]))
+    row = cur.fetchone()
+    
+    if not row:
+        flash('管理者が見つかりません', 'error')
+    else:
+        cur.execute(_sql(conn, 'DELETE FROM "T_管理者" WHERE id = %s'), (admin_id,))
+        conn.commit()
+        flash(f'{row[0]} を削除しました', 'success')
+    
+    conn.close()
+    return redirect(url_for('tenant_admin.admins'))
+
+
+@bp.route('/admins/<int:admin_id>/edit', methods=['GET', 'POST'])
+@require_roles(ROLES["TENANT_ADMIN"])
+def admin_edit(admin_id):
+    """管理者編集（管理者管理権限が必要）"""
+    # 管理者管理権限チェック
+    if not can_manage_tenant_admins():
+        flash('管理者を編集する権限がありません', 'error')
+        return redirect(url_for('tenant_admin.admins'))
+    
+    tenant_id = session.get('tenant_id')
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    if request.method == 'POST':
+        login_id = request.form.get('login_id', '').strip()
+        name = request.form.get('name', '').strip()
+        password = request.form.get('password', '').strip()
+        active = int(request.form.get('active', 1))
+        
+        if not login_id or not name:
+            flash('ログインIDと氏名は必須です', 'error')
+        else:
+            # 重複チェック（自分以外）
+            cur.execute(_sql(conn, 'SELECT id FROM "T_管理者" WHERE login_id = %s AND id != %s'), (login_id, admin_id))
+            if cur.fetchone():
+                flash(f'ログインID "{login_id}" は既に使用されています', 'error')
+            else:
+                if password:
+                    # パスワード変更あり
+                    ph = generate_password_hash(password)
+                    cur.execute(_sql(conn, '''
+                        UPDATE "T_管理者"
+                        SET login_id = %s, name = %s, password_hash = %s, active = %s
+                        WHERE id = %s AND tenant_id = %s AND role = %s
+                    '''), (login_id, name, ph, active, admin_id, tenant_id, ROLES["ADMIN"]))
+                else:
+                    # パスワード変更なし
+                    cur.execute(_sql(conn, '''
+                        UPDATE "T_管理者"
+                        SET login_id = %s, name = %s, active = %s
+                        WHERE id = %s AND tenant_id = %s AND role = %s
+                    '''), (login_id, name, active, admin_id, tenant_id, ROLES["ADMIN"]))
+                
+                conn.commit()
+                flash('管理者情報を更新しました', 'success')
+                conn.close()
+                return redirect(url_for('tenant_admin.admins'))
+    
+    # GETリクエスト：管理者情報を取得
+    cur.execute(_sql(conn, '''
+        SELECT id, login_id, name, active, can_manage_admins
+        FROM "T_管理者"
+        WHERE id = %s AND tenant_id = %s AND role = %s
+    '''), (admin_id, tenant_id, ROLES["ADMIN"]))
+    row = cur.fetchone()
+    conn.close()
+    
+    if not row:
+        flash('管理者が見つかりません', 'error')
+        return redirect(url_for('tenant_admin.admins'))
+    
+    admin = {
+        'id': row[0],
+        'login_id': row[1],
+        'name': row[2],
+        'active': row[3],
+        'can_manage_admins': row[4]
+    }
+    
+    return render_template('tenant_admin_edit.html', admin=admin)
+
+
+@bp.route('/admins/<int:admin_id>/toggle_manage_permission', methods=['POST'])
+@require_roles(ROLES["TENANT_ADMIN"])
+def toggle_admin_manage_permission(admin_id):
+    """管理者管理権限の付与・剝奪（管理者管理権限が必要）"""
+    # 管理者管理権限チェック
+    if not can_manage_tenant_admins():
+        flash('管理者管理権限を変更する権限がありません', 'error')
+        return redirect(url_for('tenant_admin.admins'))
+    
+    # 自分自身の権限は変更できない
+    if admin_id == session.get('user_id'):
+        flash('自分自身の権限は変更できません', 'error')
+        return redirect(url_for('tenant_admin.admins'))
+    
+    tenant_id = session.get('tenant_id')
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # 現在の状態を取得
+    cur.execute(_sql(conn, '''
+        SELECT can_manage_admins, name 
+        FROM "T_管理者" 
+        WHERE id = %s AND tenant_id = %s AND role = %s
+    '''), (admin_id, tenant_id, ROLES["ADMIN"]))
+    row = cur.fetchone()
+    
+    if not row:
+        flash('管理者が見つかりません', 'error')
+        conn.close()
+        return redirect(url_for('tenant_admin.admins'))
+    
+    current_permission = row[0]
+    admin_name = row[1]
+    new_permission = 0 if current_permission == 1 else 1
+    
+    # 権限を切り替え
+    cur.execute(_sql(conn, '''
+        UPDATE "T_管理者"
+        SET can_manage_admins = %s
+        WHERE id = %s
+    '''), (new_permission, admin_id))
+    conn.commit()
+    conn.close()
+    
+    if new_permission == 1:
+        flash(f'{admin_name} に管理者管理権限を付与しました', 'success')
+    else:
+        flash(f'{admin_name} から管理者管理権限を剝奪しました', 'success')
+    
+    return redirect(url_for('tenant_admin.admins'))
+
+
+# ========================================
+# 従業員管理
+# ========================================
+
+@bp.route('/employees')
+@require_roles(ROLES["TENANT_ADMIN"])
+def employees():
+    """従業員一覧"""
+    tenant_id = session.get('tenant_id')
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    cur.execute(_sql(conn, '''
+        SELECT id, login_id, name, email, created_at 
+        FROM "T_従業員" 
+        WHERE tenant_id = %s 
+        ORDER BY id
+    '''), (tenant_id,))
+    
+    employees_list = []
+    for row in cur.fetchall():
+        employees_list.append({
+            'id': row[0],
+            'login_id': row[1],
+            'name': row[2],
+            'email': row[3],
+            'created_at': row[4]
+        })
+    conn.close()
+    
+    return render_template('tenant_employees.html', employees=employees_list)
+
+
+@bp.route('/employees/new', methods=['GET', 'POST'])
+@require_roles(ROLES["TENANT_ADMIN"])
+def employee_new():
+    """従業員新規作成"""
+    tenant_id = session.get('tenant_id')
+    
+    if request.method == 'POST':
+        login_id = request.form.get('login_id', '').strip()
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '').strip()
+        
+        if not login_id or not name or not email or not password:
+            flash('全ての項目を入力してください', 'error')
+        else:
+            conn = get_db_connection()
+            cur = conn.cursor()
+            
+            # 重複チェック
+            cur.execute(_sql(conn, 'SELECT id FROM "T_従業員" WHERE login_id = %s OR email = %s'), (login_id, email))
+            if cur.fetchone():
+                flash('このログインIDまたはメールアドレスは既に使用されています', 'error')
+                conn.close()
+            else:
+                ph = generate_password_hash(password)
+                cur.execute(_sql(conn, '''
+                    INSERT INTO "T_従業員" (login_id, name, email, password_hash, tenant_id, role)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                '''), (login_id, name, email, ph, tenant_id, ROLES['EMPLOYEE']))
+                conn.commit()
+                conn.close()
+                flash('従業員を作成しました', 'success')
+                return redirect(url_for('tenant_admin.employees'))
+    
+    return render_template('tenant_employee_new.html', back_url=url_for('tenant_admin.employees'))
+
+
+@bp.route('/employees/<int:employee_id>/delete', methods=['POST'])
+@require_roles(ROLES["TENANT_ADMIN"])
+def employee_delete(employee_id):
+    """従業員削除"""
+    tenant_id = session.get('tenant_id')
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # テナントIDの確認
+    cur.execute(_sql(conn, 'SELECT name FROM "T_従業員" WHERE id = %s AND tenant_id = %s'),
+               (employee_id, tenant_id))
+    row = cur.fetchone()
+    
+    if not row:
+        flash('従業員が見つかりません', 'error')
+    else:
+        cur.execute(_sql(conn, 'DELETE FROM "T_従業員" WHERE id = %s'), (employee_id,))
+        conn.commit()
+        flash(f'{row[0]} を削除しました', 'success')
+    
+    conn.close()
+    return redirect(url_for('tenant_admin.employees'))
+
+
+# ========================================
+# テナント管理者管理
+# ========================================
+
+@bp.route('/tenant_admins')
+@require_roles(ROLES["TENANT_ADMIN"])
+def tenant_admins():
+    """テナント管理者一覧"""
+    tenant_id = session.get('tenant_id')
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    cur.execute(_sql(conn, '''
+        SELECT id, login_id, name, active, created_at, is_owner, can_manage_admins 
+        FROM "T_管理者" 
+        WHERE tenant_id = %s AND role = %s 
+        ORDER BY is_owner DESC, can_manage_admins DESC, id
+    '''), (tenant_id, ROLES["TENANT_ADMIN"]))
+    
+    tenant_admins_list = []
+    for row in cur.fetchall():
+        tenant_admins_list.append({
+            'id': row[0],
+            'login_id': row[1],
+            'name': row[2],
+            'active': row[3],
+            'created_at': row[4],
+            'is_owner': row[5],
+            'can_manage_admins': row[6]
+        })
+    conn.close()
+    
+    return render_template('tenant_tenant_admins.html', tenant_admins=tenant_admins_list)
+
+
+@bp.route('/tenant_admins/new', methods=['GET', 'POST'])
+@require_roles(ROLES["TENANT_ADMIN"])
+def tenant_admin_new():
+    """テナント管理者新規作成（管理者管理権限が必要）"""
+    # 管理者管理権限チェック
+    if not can_manage_tenant_admins():
+        flash('テナント管理者を作成する権限がありません', 'error')
+        return redirect(url_for('tenant_admin.tenant_admins'))
+    
+    tenant_id = session.get('tenant_id')
+    
+    if request.method == 'POST':
+        login_id = request.form.get('login_id', '').strip()
+        name = request.form.get('name', '').strip()
+        password = request.form.get('password', '').strip()
+        
+        if not login_id or not name or not password:
+            flash('全ての項目を入力してください', 'error')
+        else:
+            conn = get_db_connection()
+            cur = conn.cursor()
+            
+            # 重複チェック
+            cur.execute(_sql(conn, 'SELECT id FROM "T_管理者" WHERE login_id = %s'), (login_id,))
+            if cur.fetchone():
+                flash('このログインIDは既に使用されています', 'error')
+                conn.close()
+            else:
+                ph = generate_password_hash(password)
+                cur.execute(_sql(conn, '''
+                    INSERT INTO "T_管理者" (login_id, name, password_hash, role, tenant_id, active, can_manage_admins)
+                    VALUES (%s, %s, %s, %s, %s, 1, 0)
+                '''), (login_id, name, ph, ROLES["TENANT_ADMIN"], tenant_id))
+                conn.commit()
+                conn.close()
+                flash('テナント管理者を作成しました', 'success')
+                return redirect(url_for('tenant_admin.tenant_admins'))
+    
+    return render_template('tenant_tenant_admin_new.html', back_url=url_for('tenant_admin.tenant_admins'))
+
+
+@bp.route('/tenant_admins/<int:tadmin_id>/edit', methods=['GET', 'POST'])
+@require_roles(ROLES["TENANT_ADMIN"])
+def tenant_admin_edit(tadmin_id):
+    """テナント管理者編集（管理者管理権限が必要）"""
+    # 管理者管理権限チェック
+    if not can_manage_tenant_admins():
+        flash('テナント管理者を編集する権限がありません', 'error')
+        return redirect(url_for('tenant_admin.tenant_admins'))
+    
+    tenant_id = session.get('tenant_id')
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    if request.method == 'POST':
+        login_id = request.form.get('login_id', '').strip()
+        name = request.form.get('name', '').strip()
+        password = request.form.get('password', '').strip()
+        active = int(request.form.get('active', 1))
+        
+        if not login_id or not name:
+            flash('ログインIDと氏名は必須です', 'error')
+        else:
+            # 重複チェック（自分以外）
+            cur.execute(_sql(conn, 'SELECT id FROM "T_管理者" WHERE login_id = %s AND id != %s'), (login_id, tadmin_id))
+            if cur.fetchone():
+                flash(f'ログインID "{login_id}" は既に使用されています', 'error')
+            else:
+                if password:
+                    # パスワード変更あり
+                    ph = generate_password_hash(password)
+                    cur.execute(_sql(conn, '''
+                        UPDATE "T_管理者"
+                        SET login_id = %s, name = %s, password_hash = %s, active = %s
+                        WHERE id = %s AND tenant_id = %s AND role = %s
+                    '''), (login_id, name, ph, active, tadmin_id, tenant_id, ROLES["TENANT_ADMIN"]))
+                else:
+                    # パスワード変更なし
+                    cur.execute(_sql(conn, '''
+                        UPDATE "T_管理者"
+                        SET login_id = %s, name = %s, active = %s
+                        WHERE id = %s AND tenant_id = %s AND role = %s
+                    '''), (login_id, name, active, tadmin_id, tenant_id, ROLES["TENANT_ADMIN"]))
+                
+                conn.commit()
+                flash('テナント管理者情報を更新しました', 'success')
+                conn.close()
+                return redirect(url_for('tenant_admin.tenant_admins'))
+    
+    # GETリクエスト：テナント管理者情報を取得
+    cur.execute(_sql(conn, '''
+        SELECT id, login_id, name, active, can_manage_admins
+        FROM "T_管理者"
+        WHERE id = %s AND tenant_id = %s AND role = %s
+    '''), (tadmin_id, tenant_id, ROLES["TENANT_ADMIN"]))
+    row = cur.fetchone()
+    conn.close()
+    
+    if not row:
+        flash('テナント管理者が見つかりません', 'error')
+        return redirect(url_for('tenant_admin.tenant_admins'))
+    
+    tadmin = {
+        'id': row[0],
+        'login_id': row[1],
+        'name': row[2],
+        'active': row[3],
+        'can_manage_admins': row[4]
+    }
+    
+    return render_template('tenant_tenant_admin_edit.html', tadmin=tadmin)
+
+
+@bp.route('/tenant_admins/<int:tadmin_id>/delete', methods=['POST'])
+@require_roles(ROLES["TENANT_ADMIN"])
+def tenant_admin_delete(tadmin_id):
+    """テナント管理者削除（管理者管理権限が必要）"""
+    # 管理者管理権限チェック
+    if not can_manage_tenant_admins():
+        flash('テナント管理者を削除する権限がありません', 'error')
+        return redirect(url_for('tenant_admin.tenant_admins'))
+    
+    # 自分自身は削除できない
+    if tadmin_id == session.get('user_id'):
+        flash('自分自身は削除できません', 'error')
+        return redirect(url_for('tenant_admin.tenant_admins'))
+    
+    tenant_id = session.get('tenant_id')
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # テナントIDとオーナーフラグの確認
+    cur.execute(_sql(conn, 'SELECT name, is_owner FROM "T_管理者" WHERE id = %s AND tenant_id = %s AND role = %s'),
+               (tadmin_id, tenant_id, ROLES["TENANT_ADMIN"]))
+    row = cur.fetchone()
+    
+    if not row:
+        flash('テナント管理者が見つかりません', 'error')
+    elif row[1] == 1:
+        flash('オーナーは削除できません。先にオーナー権限を移譲してください。', 'error')
+    else:
+        cur.execute(_sql(conn, 'DELETE FROM "T_管理者" WHERE id = %s'), (tadmin_id,))
+        conn.commit()
+        flash(f'{row[0]} を削除しました', 'success')
+    
+    conn.close()
+    return redirect(url_for('tenant_admin.tenant_admins'))
+
+
+@bp.route('/tenant_admins/<int:tadmin_id>/toggle_manage_permission', methods=['POST'])
+@require_roles(ROLES["TENANT_ADMIN"])
+def toggle_tenant_admin_manage_permission(tadmin_id):
+    """テナント管理者管理権限の付与・剝奪（管理者管理権限が必要）"""
+    # 管理者管理権限チェック
+    if not can_manage_tenant_admins():
+        flash('管理者管理権限を変更する権限がありません', 'error')
+        return redirect(url_for('tenant_admin.tenant_admins'))
+    
+    # 自分自身の権限は変更できない
+    if tadmin_id == session.get('user_id'):
+        flash('自分自身の権限は変更できません', 'error')
+        return redirect(url_for('tenant_admin.tenant_admins'))
+    
+    tenant_id = session.get('tenant_id')
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # 現在の状態を取得
+    cur.execute(_sql(conn, '''
+        SELECT can_manage_admins, name, is_owner 
+        FROM "T_管理者" 
+        WHERE id = %s AND tenant_id = %s AND role = %s
+    '''), (tadmin_id, tenant_id, ROLES["TENANT_ADMIN"]))
+    row = cur.fetchone()
+    
+    if not row:
+        flash('テナント管理者が見つかりません', 'error')
+        conn.close()
+        return redirect(url_for('tenant_admin.tenant_admins'))
+    
+    current_permission = row[0]
+    tadmin_name = row[1]
+    is_owner = row[2]
+    
+    # オーナーの権限は変更できない
+    if is_owner == 1:
+        flash('オーナーの管理権限は変更できません', 'error')
+        conn.close()
+        return redirect(url_for('tenant_admin.tenant_admins'))
+    new_permission = 0 if current_permission == 1 else 1
+    
+    # 権限を切り替え
+    cur.execute(_sql(conn, '''
+        UPDATE "T_管理者"
+        SET can_manage_admins = %s
+        WHERE id = %s
+    '''), (new_permission, tadmin_id))
+    conn.commit()
+    conn.close()
+    
+    if new_permission == 1:
+        flash(f'{tadmin_name} に管理者管理権限を付与しました', 'success')
+    else:
+        flash(f'{tadmin_name} から管理者管理権限を剝奪しました', 'success')
+    
+    return redirect(url_for('tenant_admin.tenant_admins'))
+
+
+@bp.route('/tenant_admins/<int:tadmin_id>/transfer_ownership', methods=['POST'])
+@require_roles(ROLES["TENANT_ADMIN"])
+def transfer_tenant_ownership(tadmin_id):
+    """テナントオーナー権限を他のテナント管理者に移譲"""
+    # オーナーのみ実行可能
+    if not is_tenant_owner():
+        flash('オーナーのみがオーナー権限を移譲できます', 'error')
+        return redirect(url_for('tenant_admin.tenant_admins'))
+    
+    # 自分自身には移譲できない
+    if tadmin_id == session.get('user_id'):
+        flash('自分自身にオーナー権限を移譲することはできません', 'error')
+        return redirect(url_for('tenant_admin.tenant_admins'))
+    
+    tenant_id = session.get('tenant_id')
+    current_user_id = session.get('user_id')
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # 移譲先のテナント管理者を確認
+    cur.execute(_sql(conn, '''
+        SELECT id, name 
+        FROM "T_管理者" 
+        WHERE id = %s AND tenant_id = %s AND role = %s AND active = 1
+    '''), (tadmin_id, tenant_id, ROLES["TENANT_ADMIN"]))
+    row = cur.fetchone()
+    
+    if not row:
+        flash('移譲先のテナント管理者が見つかりません', 'error')
+        conn.close()
+        return redirect(url_for('tenant_admin.tenant_admins'))
+    
+    new_owner_name = row[1]
+    
+    # 現在のオーナーのis_ownerを0に設定
+    cur.execute(_sql(conn, '''
+        UPDATE "T_管理者"
+        SET is_owner = 0
+        WHERE id = %s
+    '''), (current_user_id,))
+    
+    # 新しいオーナーのis_ownerを1に設定し、can_manage_adminsも1に設定
+    cur.execute(_sql(conn, '''
+        UPDATE "T_管理者"
+        SET is_owner = 1, can_manage_admins = 1
+        WHERE id = %s
+    '''), (tadmin_id,))
+    
+    conn.commit()
+    conn.close()
+    
+    flash(f'{new_owner_name} にオーナー権限を移譲しました', 'success')
+    return redirect(url_for('tenant_admin.tenant_admins'))

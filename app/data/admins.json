@@ -1,0 +1,13 @@
+[
+  {
+    "id": 1,
+    "store_code": "default",
+    "login_id": "admin",
+    "password_hash": "scrypt:32768:8:1$EDyKk2LUFIsRuwnb$09d7b67b0e6808caa3b5eaea617fd3637ffb660e4d1924fbb91e9e012da9e6ac36d25a2eaf8d6f20f451b5b4ef0d319012118dc91269567e4ff1f32bfafe3700",
+    "name": "管理者",
+    "email": "admin@example.com",
+    "active": true,
+    "created_at": "2025-12-11T21:54:18.637126",
+    "last_login": "2025-12-11T21:54:18.780041"
+  }
+]

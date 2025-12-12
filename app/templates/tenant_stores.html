@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}店舗一覧{% endblock %}
+{% block content %}
+<h1>店舗一覧</h1>
+
+<div style="margin-bottom:20px">
+  <a class="btn" href="{{ url_for('tenant_admin.store_new') }}">新規作成</a>
+  <a class="btn sub" href="{{ url_for('tenant_admin.dashboard') }}">戻る</a>
+</div>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>名称</th>
+      <th>Slug</th>
+      <th>作成日時</th>
+      <th>更新日時</th>
+      <th>操作</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for store in stores %}
+    <tr>
+      <td>{{ store.id }}</td>
+      <td><a href="{{ url_for('tenant_admin.store_detail', store_id=store.id) }}">{{ store['名称'] }}</a></td>
+      <td>{{ store.slug }}</td>
+      <td>{{ store.created_at }}</td>
+      <td>{{ store.updated_at }}</td>
+      <td>
+        <a class="btn small" href="{{ url_for('tenant_admin.store_detail', store_id=store.id) }}">詳細</a>
+        <a class="btn small" href="{{ url_for('tenant_admin.store_edit', store_id=store.id) }}">編集</a>
+        <form method="post" action="{{ url_for('tenant_admin.store_delete', store_id=store.id) }}" style="display:inline" onsubmit="return confirm('本当に削除しますか？')">
+          {% if get_csrf %}<input type="hidden" name="csrf_token" value="{{ get_csrf() }}">{% endif %}
+          <button class="btn small sub" type="submit">削除</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if not stores %}
+<p style="color:#666">店舗が登録されていません。</p>
+{% endif %}
+
+{% endblock %}

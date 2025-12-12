@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}管理者一覧{% endblock %}
+{% block content %}
+<h1>管理者一覧</h1>
+
+<div style="margin-bottom:12px">
+  <a class="btn" href="{{ url_for('admin.admin_new') }}">新規作成</a>
+  <a class="btn sub" href="{{ url_for('admin.dashboard') }}">戻る</a>
+</div>
+
+<div class="card">
+  {% if admins %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>ログインID</th>
+          <th>氏名</th>
+          <th>権限</th>
+          <th>作成日時</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for admin in admins %}
+        <tr>
+          <td>{{ admin.id }}</td>
+          <td>{{ admin.login_id }}</td>
+          <td>{{ admin.name }}</td>
+          <td>
+            {% if admin.is_owner %}
+              <span style="color:#d97706;font-weight:bold">オーナー</span>
+            {% else %}
+              管理者
+            {% endif %}
+          </td>
+          <td>{{ admin.created_at }}</td>
+          <td>
+            {% if admin.id != current_user_id %}
+              {% if is_owner and not admin.is_owner %}
+                <form method="post" action="{{ url_for('admin.admin_transfer_owner', admin_id=admin.id) }}" style="display:inline;margin-right:4px" onsubmit="return confirm('この管理者にオーナー権限を移譲しますか？移譲後はあなたはオーナーではなくなります。');">
+                  <button class="btn" type="submit" style="background:#d97706">オーナー移譲</button>
+                </form>
+              {% endif %}
+              <form method="post" action="{{ url_for('admin.admin_delete', admin_id=admin.id) }}" style="display:inline" onsubmit="return confirm('本当に削除しますか？');">
+                <button class="btn danger" type="submit">削除</button>
+              </form>
+            {% else %}
+              <span style="color:#666">（自分）</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p style="color:#666">管理者が登録されていません。</p>
+  {% endif %}
+</div>
+{% endblock %}
