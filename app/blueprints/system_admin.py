@@ -286,9 +286,9 @@ def tenant_admin_new(tid):
         # テナント管理者作成
         hashed_password = generate_password_hash(password)
         cur.execute(_sql(conn, '''
-            INSERT INTO "T_管理者" (login_id, name, password_hash, role, tenant_id, active)
-            VALUES (?, ?, ?, ?, ?, ?)
-        '''), (login_id, name, hashed_password, ROLES["TENANT_ADMIN"], tid, active))
+            INSERT INTO "T_管理者" (login_id, name, password_hash, role, tenant_id, active, is_owner, can_manage_admins)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        '''), (login_id, name, hashed_password, ROLES["TENANT_ADMIN"], tid, active, 1, 1))
         conn.commit()
         conn.close()
         
