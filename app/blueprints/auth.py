@@ -11,7 +11,19 @@ from ..utils.db import _sql
 bp = Blueprint('auth', __name__)
 
 
-# / ルートはsurvey blueprintに任せる（アンケートシステム優先）
+@bp.route('/')
+def index():
+    """トップページ - ロール別リダイレクト"""
+    role = session.get("role")
+    if role == ROLES["SYSTEM_ADMIN"]:
+        return redirect(url_for('system_admin.dashboard'))
+    if role == ROLES["TENANT_ADMIN"]:
+        return redirect(url_for('tenant_admin.dashboard'))
+    if role == ROLES["ADMIN"]:
+        return redirect(url_for('admin.dashboard'))
+    if role == ROLES["EMPLOYEE"]:
+        return redirect(url_for('employee.mypage'))
+    return redirect(url_for('auth.select_login'))
 
 
 @bp.route('/select_login')
@@ -116,16 +128,17 @@ def tenant_admin_login():
         conn = get_db()
         try:
             cur = conn.cursor()
-            sql = _sql(conn, 'SELECT id, name, password_hash, tenant_id FROM "T_管理者" WHERE login_id=%s AND role=%s')
+            sql = _sql(conn, 'SELECT id, name, password_hash FROM "T_管理者" WHERE login_id=%s AND role=%s')
             cur.execute(sql, (login_id, ROLES["TENANT_ADMIN"]))
             row = cur.fetchone()
             if row and check_password_hash(row[2], password):
-                user_id, name, tenant_id = row[0], row[1], row[3]
-                if not tenant_id:
-                    error = "このアカウントにはテナントが紐づいていません。"
-                else:
-                    login_user(user_id, name, ROLES["TENANT_ADMIN"], tenant_id)
-                    return redirect(url_for('tenant_admin.mypage'))
+                user_id, name = row[0], row[1]
+                # セッションに保存
+                session['user_id'] = user_id
+                session['user_name'] = name
+                session['role'] = ROLES["TENANT_ADMIN"]
+                session['tenant_id'] = None  # テナント未選択状態
+                return redirect(url_for('tenant_admin.mypage'))
             else:
                 error = "ログインIDまたはパスワードが違います"
         finally:
@@ -144,18 +157,20 @@ def admin_login():
         conn = get_db()
         try:
             cur = conn.cursor()
-            sql = _sql(conn, 'SELECT id, name, password_hash, tenant_id, store_id FROM "T_管理者" WHERE login_id=%s AND role=%s')
+            sql = _sql(conn, 'SELECT id, name, password_hash, tenant_id FROM "T_管理者" WHERE login_id=%s AND role=%s')
             cur.execute(sql, (login_id, ROLES["ADMIN"]))
             row = cur.fetchone()
             if row and check_password_hash(row[2], password):
-                user_id, name, tenant_id, store_id = row[0], row[1], row[3], row[4]
+                user_id, name, tenant_id = row[0], row[1], row[3]
                 if not tenant_id:
                     error = "この管理者にはテナントが紐づいていません。"
-                elif not store_id:
-                    error = "この管理者には店舗が紐づいていません。"
                 else:
-                    login_user(user_id, name, ROLES["ADMIN"], tenant_id)
-                    session['store_id'] = store_id
+                    # セッションにユーザー情報を保存（店舗未選択）
+                    session['user_id'] = user_id
+                    session['user_name'] = name
+                    session['tenant_id'] = tenant_id
+                    session['role'] = ROLES["ADMIN"]
+                    session['store_id'] = None  # 店舗未選択
                     return redirect(url_for('admin.mypage'))
             else:
                 error = "ログインIDまたはパスワードが違います"
@@ -180,12 +195,22 @@ def employee_login():
             row = cur.fetchone()
             if row:
                 user_id, name, hashv, tenant_id = row[0], row[1], row[2], row[3]
-                # 初回パス未設定 + 123456 を許容（既存仕様踏襲）
+                # 初回パス未設定 + 123456 を許容
                 if (not hashv or hashv == '') and password == '123456':
-                    login_user(user_id, name, ROLES["EMPLOYEE"], tenant_id, is_employee=True)
+                    # セッションにユーザー情報を保存（店舗未選択）
+                    session['user_id'] = user_id
+                    session['user_name'] = name
+                    session['tenant_id'] = tenant_id
+                    session['role'] = ROLES["EMPLOYEE"]
+                    session['store_id'] = None  # 店舗未選択
                     return redirect(url_for('employee.mypage'))
                 if hashv and check_password_hash(hashv, password):
-                    login_user(user_id, name, ROLES["EMPLOYEE"], tenant_id, is_employee=True)
+                    # セッションにユーザー情報を保存（店舗未選択）
+                    session['user_id'] = user_id
+                    session['user_name'] = name
+                    session['tenant_id'] = tenant_id
+                    session['role'] = ROLES["EMPLOYEE"]
+                    session['store_id'] = None  # 店舗未選択
                     return redirect(url_for('employee.mypage'))
             error = "ログインIDまたはパスワードが違います"
         finally:
@@ -223,4 +248,124 @@ def tenant_admin_redirect():
     return redirect(url_for('tenant_admin.dashboard'))
 
 
-# /admin ルートはsurvey_admin blueprintに任せる
+@bp.route('/admin')
+def admin_redirect():
+    """元のapp.pyとの互換性のため /admin → /admin/ へリダイレクト"""
+    return redirect(url_for('admin.dashboard'))
+
+
+@bp.route('/select_tenant', methods=['GET', 'POST'])
+def select_tenant():
+    """テナント選択画面"""
+    user_id = session.get('temp_user_id')
+    name = session.get('temp_name')
+    role = session.get('temp_role')
+    
+    if not user_id or role != ROLES["TENANT_ADMIN"]:
+        return redirect(url_for('auth.tenant_admin_login'))
+    
+    conn = get_db()
+    try:
+        cur = conn.cursor()
+        
+        if request.method == 'POST':
+            tenant_id = request.form.get('tenant_id')
+            if tenant_id:
+                # セッションをクリアして正式にログイン
+                session.pop('temp_user_id', None)
+                session.pop('temp_name', None)
+                session.pop('temp_role', None)
+                login_user(user_id, name, role, int(tenant_id))
+                return redirect(url_for('tenant_admin.dashboard'))
+        
+        # 所属テナント一覧を取得
+        sql = _sql(conn, '''
+            SELECT t.id, t.名称, t.slug
+            FROM "T_テナント" t
+            INNER JOIN "T_テナント管理者_テナント" tt ON t.id = tt.tenant_id
+            WHERE tt.tenant_admin_id = %s AND t.有効 = 1
+            ORDER BY t.名称
+        ''')
+        cur.execute(sql, (user_id,))
+        tenants = []
+        for row in cur.fetchall():
+            tenants.append({
+                'id': row[0],
+                '名称': row[1],
+                'slug': row[2]
+            })
+        
+        return render_template('select_tenant.html', tenants=tenants)
+    finally:
+        try: conn.close()
+        except: pass
+
+
+@bp.route('/select_store', methods=['GET', 'POST'])
+def select_store():
+    """店舗選択画面"""
+    user_id = session.get('temp_user_id')
+    name = session.get('temp_name')
+    tenant_id = session.get('temp_tenant_id')
+    role = session.get('temp_role')
+    role_param = request.args.get('role', 'admin')
+    
+    if not user_id or not tenant_id:
+        if role_param == 'employee':
+            return redirect(url_for('auth.employee_login'))
+        else:
+            return redirect(url_for('auth.admin_login'))
+    
+    conn = get_db()
+    try:
+        cur = conn.cursor()
+        
+        if request.method == 'POST':
+            store_id = request.form.get('store_id')
+            if store_id:
+                # セッションをクリアして正式にログイン
+                session.pop('temp_user_id', None)
+                session.pop('temp_name', None)
+                session.pop('temp_tenant_id', None)
+                session.pop('temp_role', None)
+                
+                if role == ROLES["EMPLOYEE"]:
+                    login_user(user_id, name, role, tenant_id, is_employee=True)
+                    session['store_id'] = int(store_id)
+                    return redirect(url_for('employee.mypage'))
+                else:
+                    login_user(user_id, name, role, tenant_id)
+                    session['store_id'] = int(store_id)
+                    return redirect(url_for('admin.dashboard'))
+        
+        # 所属店舗一覧を取得
+        if role == ROLES["EMPLOYEE"]:
+            sql = _sql(conn, '''
+                SELECT s.id, s.名称, s.slug
+                FROM "T_店舗" s
+                INNER JOIN "T_従業員_店舗" es ON s.id = es.store_id
+                WHERE es.employee_id = %s AND s.tenant_id = %s AND s.有効 = 1
+                ORDER BY s.名称
+            ''')
+        else:
+            sql = _sql(conn, '''
+                SELECT s.id, s.名称, s.slug
+                FROM "T_店舗" s
+                INNER JOIN "T_管理者_店舗" ams ON s.id = ams.store_id
+                WHERE ams.admin_id = %s AND s.tenant_id = %s AND s.有効 = 1
+                ORDER BY s.名称
+            ''')
+        
+        cur.execute(sql, (user_id, tenant_id))
+        stores = []
+        for row in cur.fetchall():
+            stores.append({
+                'id': row[0],
+                '名称': row[1],
+                'slug': row[2]
+            })
+        
+        return render_template('select_store.html', stores=stores)
+    finally:
+        try: conn.close()
+        except: pass
