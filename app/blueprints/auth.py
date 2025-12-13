@@ -98,7 +98,7 @@ def system_admin_login():
             if row and check_password_hash(row[2], password):
                 user_id, name, tenant_id = row[0], row[1], row[3]
                 login_user(user_id, name, ROLES["SYSTEM_ADMIN"], tenant_id)
-                return redirect(url_for('system_admin.dashboard'))
+                return redirect(url_for('system_admin.mypage'))
             error = "ログインIDまたはパスワードが違います"
         finally:
             try: conn.close()
@@ -125,7 +125,7 @@ def tenant_admin_login():
                     error = "このアカウントにはテナントが紐づいていません。"
                 else:
                     login_user(user_id, name, ROLES["TENANT_ADMIN"], tenant_id)
-                    return redirect(url_for('tenant_admin.dashboard'))
+                    return redirect(url_for('tenant_admin.mypage'))
             else:
                 error = "ログインIDまたはパスワードが違います"
         finally:
@@ -156,7 +156,7 @@ def admin_login():
                 else:
                     login_user(user_id, name, ROLES["ADMIN"], tenant_id)
                     session['store_id'] = store_id
-                    return redirect(url_for('admin.dashboard'))
+                    return redirect(url_for('admin.mypage'))
             else:
                 error = "ログインIDまたはパスワードが違います"
         finally:
