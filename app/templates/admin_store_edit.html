@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}店舗編集{% endblock %}
+{% block content %}
+<h1>店舗編集</h1>
+
+<div class="card" style="max-width:600px">
+  <form method="post">
+    <div style="margin-bottom:16px">
+      <label style="display:block;margin-bottom:4px">名称 <span style="color:red">*</span></label>
+      <input type="text" name="名称" value="{{ store['名称'] }}" required autofocus style="width:100%;padding:8px">
+    </div>
+
+    <div style="margin-bottom:16px">
+      <label style="display:block;margin-bottom:4px">Slug <span style="color:red">*</span></label>
+      <input type="text" name="slug" value="{{ store.slug }}" required style="width:100%;padding:8px">
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:20px">
+      <button class="btn" type="submit">更新</button>
+      <a class="btn sub" href="{{ back_url }}">キャンセル</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

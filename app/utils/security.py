@@ -119,9 +119,14 @@ def can_manage_tenant_admins() -> bool:
     """
     現在ログイン中のテナント管理者が管理者管理権限を持っているかを確認
     オーナーは常にTrue、それ以外はcan_manage_adminsフラグで判定
+    システム管理者は常にTrue
     """
     user_id = session.get('user_id')
     role = session.get('role')
+    
+    # システム管理者は常に権限あり
+    if role == 'system_admin':
+        return True
     
     if not user_id or role != 'tenant_admin':
         return False

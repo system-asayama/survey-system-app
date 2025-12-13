@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}管理者編集{% endblock %}
+{% block content %}
+<h1>管理者編集</h1>
+
+<div class="card" style="max-width:600px">
+  <form method="post">
+    <div style="margin-bottom:16px">
+      <label style="display:block;margin-bottom:4px">ログインID <span style="color:red">*</span></label>
+      <input type="text" name="login_id" value="{{ admin.login_id }}" required autofocus style="width:100%;padding:8px">
+    </div>
+
+    <div style="margin-bottom:16px">
+      <label style="display:block;margin-bottom:4px">氏名 <span style="color:red">*</span></label>
+      <input type="text" name="name" value="{{ admin.name }}" required style="width:100%;padding:8px">
+    </div>
+
+    <div style="margin-bottom:16px">
+      <label style="display:block;margin-bottom:4px">メールアドレス</label>
+      <input type="email" name="email" value="{{ admin.email or '' }}" placeholder="例）admin@example.com" style="width:100%;padding:8px">
+    </div>
+
+    <div style="margin-bottom:16px">
+      <label style="display:block;margin-bottom:4px">パスワード</label>
+      <input type="password" name="password" minlength="8" placeholder="変更する場合のみ入力（8文字以上）" style="width:100%;padding:8px">
+      <small style="color:#666">※ 空欄の場合はパスワードを変更しません</small>
+    </div>
+
+    <div style="margin-bottom:16px">
+      <label style="display:block;margin-bottom:4px">パスワード（確認）</label>
+      <input type="password" name="password_confirm" minlength="8" placeholder="もう一度入力" style="width:100%;padding:8px">
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:20px">
+      <button class="btn" type="submit">更新</button>
+      <a class="btn sub" href="{{ back_url }}">キャンセル</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

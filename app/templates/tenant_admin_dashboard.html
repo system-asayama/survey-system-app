@@ -5,7 +5,11 @@
 
 <div class="card">
   <h2>ようこそ、{{ session.user_name }}さん</h2>
-  <p>テナント管理者としてログインしています。</p>
+  {% if session.role == 'system_admin' %}
+    <p>システム管理者としてログインしています。</p>
+  {% else %}
+    <p>テナント管理者としてログインしています。</p>
+  {% endif %}
   
   <div style="margin-top:20px">
     <h3>ロール情報</h3>
@@ -36,6 +40,7 @@
   </div>
 
   <div style="margin-top:30px">
+    <a class="btn sub" href="{{ mypage_url }}">マイページ</a>
     <a class="btn" href="{{ url_for('auth.logout') }}">ログアウト</a>
   </div>
 </div>

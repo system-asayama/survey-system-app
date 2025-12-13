@@ -36,6 +36,7 @@
           </td>
           <td>{{ admin.created_at }}</td>
           <td>
+            <a class="btn" href="{{ url_for('admin.admin_edit', admin_id=admin.id) }}" style="margin-right:4px">編集</a>
             {% if admin.id != current_user_id %}
               {% if is_owner and not admin.is_owner %}
                 <form method="post" action="{{ url_for('admin.admin_transfer_owner', admin_id=admin.id) }}" style="display:inline;margin-right:4px" onsubmit="return confirm('この管理者にオーナー権限を移譲しますか？移譲後はあなたはオーナーではなくなります。');">
@@ -45,8 +46,6 @@
               <form method="post" action="{{ url_for('admin.admin_delete', admin_id=admin.id) }}" style="display:inline" onsubmit="return confirm('本当に削除しますか？');">
                 <button class="btn danger" type="submit">削除</button>
               </form>
-            {% else %}
-              <span style="color:#666">（自分）</span>
             {% endif %}
           </td>
         </tr>
