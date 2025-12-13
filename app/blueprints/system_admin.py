@@ -6,7 +6,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from ..utils import require_roles, ROLES, get_db_connection, is_owner, can_manage_system_admins
 from ..utils.db import _sql
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 
 bp = Blueprint('system_admin', __name__, url_prefix='/system_admin')
 
@@ -256,6 +256,7 @@ def tenant_admin_new(tid):
     if request.method == 'POST':
         login_id = request.form.get('login_id', '').strip()
         name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
         password = request.form.get('password', '')
         password_confirm = request.form.get('password_confirm', '')
         active = int(request.form.get('active', 1))
@@ -286,9 +287,18 @@ def tenant_admin_new(tid):
         # テナント管理者作成
         hashed_password = generate_password_hash(password)
         cur.execute(_sql(conn, '''
-            INSERT INTO "T_管理者" (login_id, name, password_hash, role, tenant_id, active, is_owner, can_manage_admins)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        '''), (login_id, name, hashed_password, ROLES["TENANT_ADMIN"], tid, active, 1, 1))
+            INSERT INTO "T_管理者" (login_id, name, email, password_hash, role, tenant_id, active, is_owner, can_manage_admins)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        '''), (login_id, name, email, hashed_password, ROLES["TENANT_ADMIN"], tid, active, 1, 1))
+        
+        # 中間テーブルにも追加
+        cur.execute(_sql(conn, 'SELECT id FROM \"T_管理者\" WHERE login_id = %s'), (login_id,))
+        new_admin_id = cur.fetchone()[0]
+        cur.execute(_sql(conn, '''
+            INSERT INTO \"T_テナント管理者_テナント\" (tenant_admin_id, tenant_id)
+            VALUES (%s, %s)
+        '''), (new_admin_id, tid))
+        
         conn.commit()
         conn.close()
         
@@ -344,6 +354,7 @@ def tenant_admin_edit(tid, admin_id):
     if request.method == 'POST':
         login_id = request.form.get('login_id', '').strip()
         name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
         password = request.form.get('password', '').strip()
         active = 1 if request.form.get('active') == '1' else 0
         
@@ -359,15 +370,15 @@ def tenant_admin_edit(tid, admin_id):
                     hashed_pw = generate_password_hash(password)
                     cur.execute(_sql(conn, '''
                         UPDATE "T_管理者"
-                        SET login_id = %s, name = %s, password = %s, active = %s
+                        SET login_id = %s, name = %s, email = %s, password_hash = %s, active = %s
                         WHERE id = %s AND tenant_id = %s AND role = %s
-                    '''), (login_id, name, hashed_pw, active, admin_id, tid, ROLES["TENANT_ADMIN"]))
+                    '''), (login_id, name, email, hashed_pw, active, admin_id, tid, ROLES["TENANT_ADMIN"]))
                 else:
                     cur.execute(_sql(conn, '''
                         UPDATE "T_管理者"
-                        SET login_id = %s, name = %s, active = %s
+                        SET login_id = %s, name = %s, email = %s, active = %s
                         WHERE id = %s AND tenant_id = %s AND role = %s
-                    '''), (login_id, name, active, admin_id, tid, ROLES["TENANT_ADMIN"]))
+                    '''), (login_id, name, email, active, admin_id, tid, ROLES["TENANT_ADMIN"]))
                 
                 conn.commit()
                 conn.close()
@@ -376,7 +387,7 @@ def tenant_admin_edit(tid, admin_id):
     
     # GETリクエスト時は現在の情報を表示
     cur.execute(_sql(conn, '''
-        SELECT id, login_id, name, active
+        SELECT id, login_id, name, email, active
         FROM "T_管理者"
         WHERE id = %s AND tenant_id = %s AND role = %s
     '''), (admin_id, tid, ROLES["TENANT_ADMIN"]))
@@ -392,7 +403,8 @@ def tenant_admin_edit(tid, admin_id):
         'id': admin_row[0],
         'login_id': admin_row[1],
         'name': admin_row[2],
-        'active': admin_row[3]
+        'email': admin_row[3],
+        'active': admin_row[4]
     }
     
     return render_template('sys_tenant_admin_edit.html', tenant=tenant, admin=admin)
@@ -461,6 +473,7 @@ def system_admin_new():
     if request.method == 'POST':
         login_id = request.form.get('login_id', '').strip()
         name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
         password = request.form.get('password', '')
         password_confirm = request.form.get('password_confirm', '')
         
@@ -485,9 +498,9 @@ def system_admin_new():
         # システム管理者作成
         password_hash = generate_password_hash(password)
         cur.execute(_sql(conn, '''
-            INSERT INTO "T_管理者" (login_id, name, password_hash, role, tenant_id, active)
-            VALUES (%s, %s, %s, %s, NULL, 1)
-        '''), (login_id, name, password_hash, ROLES["SYSTEM_ADMIN"]))
+            INSERT INTO "T_管理者" (login_id, name, email, password_hash, role, tenant_id, active)
+            VALUES (%s, %s, %s, %s, %s, NULL, 1)
+        '''), (login_id, name, email, password_hash, ROLES["SYSTEM_ADMIN"]))
         
         conn.close()
         flash(f'システム管理者「{name}」を作成しました', 'success')
@@ -619,7 +632,7 @@ def system_admin_edit(admin_id):
     cur = conn.cursor()
     
     # システム管理者情報を取得（can_manage_adminsも取得）
-    cur.execute('SELECT id, login_id, name, active, can_manage_admins, is_owner FROM "T_管理者" WHERE id = %s AND role = %s',
+    cur.execute(_sql(conn, 'SELECT id, login_id, name, email, active, can_manage_admins, is_owner FROM "T_管理者" WHERE id = %s AND role = %s'),
                 (admin_id, ROLES["SYSTEM_ADMIN"]))
     row = cur.fetchone()
     if not row:
@@ -627,8 +640,8 @@ def system_admin_edit(admin_id):
         conn.close()
         return redirect(url_for('system_admin.system_admins'))
     
-    target_can_manage = row[4]
-    target_is_owner = row[5]
+    target_can_manage = row[5]
+    target_is_owner = row[6]
     
     # オーナー以外の場合、同じ権限を持つユーザーは編集不可
     if not is_owner() and (target_can_manage == 1 or target_is_owner == 1):
@@ -640,13 +653,16 @@ def system_admin_edit(admin_id):
         'id': row[0],
         'login_id': row[1],
         'name': row[2],
-        'active': row[3]
+        'email': row[3],
+        'active': row[4]
     }
     
     if request.method == 'POST':
         login_id = request.form.get('login_id', '').strip()
         name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
         password = request.form.get('password', '').strip()
+        password_confirm = request.form.get('password_confirm', '').strip()
         
         # バリデーション
         if not login_id or not name:
@@ -655,10 +671,16 @@ def system_admin_edit(admin_id):
             return render_template('sys_system_admin_edit.html', admin=admin)
         
         # ログインID重複チェック（自分以外）
-        cur.execute('SELECT id FROM "T_管理者" WHERE login_id = %s AND id != %s',
+        cur.execute(_sql(conn, 'SELECT id FROM "T_管理者" WHERE login_id = %s AND id != %s'),
                     (login_id, admin_id))
         if cur.fetchone():
             flash('このログインIDは既に使用されています', 'error')
+            conn.close()
+            return render_template('sys_system_admin_edit.html', admin=admin)
+        
+        # パスワード一致チェック（パスワードが入力されている場合）
+        if password and password != password_confirm:
+            flash('パスワードが一致しません', 'error')
             conn.close()
             return render_template('sys_system_admin_edit.html', admin=admin)
         
@@ -668,17 +690,18 @@ def system_admin_edit(admin_id):
             password_hash = generate_password_hash(password)
             cur.execute(_sql(conn, '''
                 UPDATE "T_管理者" 
-                SET login_id = %s, name = %s, password_hash = %s, updated_at = CURRENT_TIMESTAMP
+                SET login_id = %s, name = %s, email = %s, password_hash = %s, updated_at = CURRENT_TIMESTAMP
                 WHERE id = %s
-            '''), (login_id, name, password_hash, admin_id))
+            '''), (login_id, name, email, password_hash, admin_id))
         else:
             # パスワードは更新しない
             cur.execute(_sql(conn, '''
                 UPDATE "T_管理者" 
-                SET login_id = %s, name = %s, updated_at = CURRENT_TIMESTAMP
+                SET login_id = %s, name = %s, email = %s, updated_at = CURRENT_TIMESTAMP
                 WHERE id = %s
-            '''), (login_id, name, admin_id))
+            '''), (login_id, name, email, admin_id))
         
+        conn.commit()
         conn.close()
         flash(f'システム管理者「{name}」を更新しました', 'success')
         return redirect(url_for('system_admin.system_admins'))
@@ -737,7 +760,7 @@ def toggle_manage_permission(admin_id):
 # システム管理者マイページ
 # ========================================
 
-@bp.route('/mypage')
+@bp.route('/mypage', methods=['GET', 'POST'])
 @require_roles(ROLES["SYSTEM_ADMIN"])
 def mypage():
     """システム管理者マイページ"""
@@ -746,15 +769,15 @@ def mypage():
     cur = conn.cursor()
     
     cur.execute(_sql(conn, '''
-        SELECT id, login_id, name, is_owner, can_manage_admins, created_at
+        SELECT id, login_id, name, email, is_owner, can_manage_admins, created_at, updated_at
         FROM "T_管理者"
         WHERE id = %s AND role = %s
     '''), (user_id, ROLES["SYSTEM_ADMIN"]))
     
     row = cur.fetchone()
-    conn.close()
     
     if not row:
+        conn.close()
         flash('ユーザー情報が見つかりません', 'error')
         return redirect(url_for('system_admin.dashboard'))
     
@@ -762,9 +785,192 @@ def mypage():
         'id': row[0],
         'login_id': row[1],
         'name': row[2],
-        'is_owner': row[3],
-        'can_manage_admins': row[4],
-        'created_at': row[5]
+        'email': row[3],
+        'is_owner': row[4],
+        'can_manage_admins': row[5],
+        'role': ROLES["SYSTEM_ADMIN"],
+        'created_at': row[6],
+        'updated_at': row[7]
     }
     
-    return render_template('sys_mypage.html', user=user)
+    # POSTリクエスト（プロフィール編集またはパスワード変更）
+    if request.method == 'POST':
+        action = request.form.get('action', '')
+        
+        if action == 'update_profile':
+            # プロフィール編集
+            login_id = request.form.get('login_id', '').strip()
+            name = request.form.get('name', '').strip()
+            email = request.form.get('email', '').strip()
+            
+            if not login_id or not name:
+                conn.close()
+                flash('ログインIDと氏名は必須です', 'error')
+                return render_template('sys_mypage.html', user=user, tenant_list=[], store_list=[])
+            
+            # ログインID重複チェック（自分以外）
+            cur.execute(_sql(conn, 'SELECT id FROM "T_管理者" WHERE login_id = %s AND id != %s'), (login_id, user_id))
+            if cur.fetchone():
+                conn.close()
+                flash('このログインIDは既に使用されています', 'error')
+                return render_template('sys_mypage.html', user=user, tenant_list=[], store_list=[])
+            
+            # プロフィール更新
+            cur.execute(_sql(conn, '''
+                UPDATE "T_管理者"
+                SET login_id = %s, name = %s, email = %s, updated_at = CURRENT_TIMESTAMP
+                WHERE id = %s
+            '''), (login_id, name, email, user_id))
+            conn.commit()
+            conn.close()
+            
+            flash('プロフィール情報を更新しました', 'success')
+            return redirect(url_for('system_admin.mypage'))
+        
+        elif action == 'change_password':
+            # パスワード変更
+            current_password = request.form.get('current_password', '').strip()
+            new_password = request.form.get('new_password', '').strip()
+            new_password_confirm = request.form.get('new_password_confirm', '').strip()
+        
+            # パスワード一致チェック
+            if new_password != new_password_confirm:
+                conn.close()
+                flash('パスワードが一致しません', 'error')
+                # テナント・店舗リストを取得してテンプレートに渡す
+                conn = get_db_connection()
+                cur = conn.cursor()
+                cur.execute(_sql(conn, 'SELECT id, "名称" FROM "T_テナント" WHERE "有効" = 1 ORDER BY id'))
+                tenant_list = [{'id': row[0], 'name': row[1]} for row in cur.fetchall()]
+                cur.execute(_sql(conn, 'SELECT id, "名称", tenant_id FROM "T_店舗" WHERE "有効" = 1 ORDER BY tenant_id, id'))
+                store_list = [{'id': row[0], 'name': row[1], 'tenant_id': row[2]} for row in cur.fetchall()]
+                for store in store_list:
+                    cur.execute(_sql(conn, 'SELECT "名称" FROM "T_テナント" WHERE id = %s'), (store['tenant_id'],))
+                    tenant_row = cur.fetchone()
+                    if tenant_row:
+                        store['tenant_name'] = tenant_row[0]
+                conn.close()
+                return render_template('sys_mypage.html', user=user, tenant_list=tenant_list, store_list=store_list)
+        
+            # 現在のパスワードを確認
+            cur.execute(_sql(conn, 'SELECT password_hash FROM "T_管理者" WHERE id = %s'), (user_id,))
+            row = cur.fetchone()
+            if not row or not check_password_hash(row[0], current_password):
+                conn.close()
+                flash('現在のパスワードが正しくありません', 'error')
+                # テナント・店舗リストを取得してテンプレートに渡す
+                conn = get_db_connection()
+                cur = conn.cursor()
+                cur.execute(_sql(conn, 'SELECT id, "名称" FROM "T_テナント" WHERE "有効" = 1 ORDER BY id'))
+                tenant_list = [{'id': row[0], 'name': row[1]} for row in cur.fetchall()]
+                cur.execute(_sql(conn, 'SELECT id, "名称", tenant_id FROM "T_店舗" WHERE "有効" = 1 ORDER BY tenant_id, id'))
+                store_list = [{'id': row[0], 'name': row[1], 'tenant_id': row[2]} for row in cur.fetchall()]
+                for store in store_list:
+                    cur.execute(_sql(conn, 'SELECT "名称" FROM "T_テナント" WHERE id = %s'), (store['tenant_id'],))
+                    tenant_row = cur.fetchone()
+                    if tenant_row:
+                        store['tenant_name'] = tenant_row[0]
+                conn.close()
+                return render_template('sys_mypage.html', user=user, tenant_list=tenant_list, store_list=store_list)
+        
+            # パスワードを更新
+            password_hash = generate_password_hash(new_password)
+            cur.execute(_sql(conn, '''
+                UPDATE "T_管理者"
+                SET password_hash = %s, updated_at = CURRENT_TIMESTAMP
+                WHERE id = %s
+            '''), (password_hash, user_id))
+            conn.commit()
+            conn.close()
+            
+            flash('パスワードを変更しました', 'success')
+            return redirect(url_for('system_admin.mypage'))
+    
+    # テナントリストを取得
+    cur = conn.cursor()
+    cur.execute(_sql(conn, 'SELECT id, "名称" FROM "T_テナント" WHERE "有効" = 1 ORDER BY id'))
+    tenant_list = [{'id': row[0], 'name': row[1]} for row in cur.fetchall()]
+    
+    # 店舗リストを取得
+    cur.execute(_sql(conn, 'SELECT id, "名称", tenant_id FROM "T_店舗" WHERE "有効" = 1 ORDER BY tenant_id, id'))
+    store_list = [{'id': row[0], 'name': row[1], 'tenant_id': row[2]} for row in cur.fetchall()]
+    
+    # テナント名を店舗リストに追加
+    for store in store_list:
+        cur.execute(_sql(conn, 'SELECT "名称" FROM "T_テナント" WHERE id = %s'), (store['tenant_id'],))
+        tenant_row = cur.fetchone()
+        if tenant_row:
+            store['tenant_name'] = tenant_row[0]
+    
+    conn.close()
+    return render_template('sys_mypage.html', user=user, tenant_list=tenant_list, store_list=store_list)
+
+
+@bp.route('/select_tenant_from_mypage', methods=['POST'])
+@require_roles(ROLES["SYSTEM_ADMIN"])
+def select_tenant_from_mypage():
+    """マイページからテナントを選択してテナント管理者ダッシュボードへ"""
+    tenant_id = request.form.get('tenant_id')
+    
+    if not tenant_id:
+        flash('テナントを選択してください', 'error')
+        return redirect(url_for('system_admin.mypage'))
+    
+    # テナントが存在するか確認
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(_sql(conn, 'SELECT id, "名称" FROM "T_テナント" WHERE id = %s AND "有効" = 1'), (tenant_id,))
+    tenant = cur.fetchone()
+    conn.close()
+    
+    if not tenant:
+        flash('選択したテナントが見つかりません', 'error')
+        return redirect(url_for('system_admin.mypage'))
+    
+    # セッションにテナント情報を保存
+    session['tenant_id'] = tenant[0]
+    session['store_id'] = None  # 店舗選択をクリア
+    
+    flash(f'テナント「{tenant[1]}」を選択しました', 'success')
+    
+    # テナント管理者ダッシュボードへリダイレクト
+    return redirect('/tenant_admin/')
+
+
+@bp.route('/select_store_from_mypage', methods=['POST'])
+@require_roles(ROLES["SYSTEM_ADMIN"])
+def select_store_from_mypage():
+    """マイページから店舗を選択して店舗管理者ダッシュボードへ"""
+    store_id = request.form.get('store_id')
+    
+    if not store_id:
+        flash('店舗を選択してください', 'error')
+        return redirect(url_for('system_admin.mypage'))
+    
+    # 店舗が存在するか確認
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(_sql(conn, 'SELECT id, "名称", tenant_id FROM "T_店舗" WHERE id = %s AND "有効" = 1'), (store_id,))
+    store = cur.fetchone()
+    
+    if not store:
+        conn.close()
+        flash('選択した店舗が見つかりません', 'error')
+        return redirect(url_for('system_admin.mypage'))
+    
+    # テナント名も取得
+    cur.execute(_sql(conn, 'SELECT "名称" FROM "T_テナント" WHERE id = %s'), (store[2],))
+    tenant = cur.fetchone()
+    conn.close()
+    
+    # セッションに店舗情報とテナント情報を保存
+    session['store_id'] = store[0]
+    session['tenant_id'] = store[2]
+    
+    if tenant:
+        flash(f'店舗「{store[1]}」（テナント: {tenant[0]}）を選択しました', 'success')
+    else:
+        flash(f'店舗「{store[1]}」を選択しました', 'success')
+    
+    # 店舗管理者ダッシュボードへリダイレクト
+    return redirect('/admin/')
