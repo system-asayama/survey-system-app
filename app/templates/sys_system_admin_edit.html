@@ -15,6 +15,15 @@
            value="{{ admin.name }}"
            autocomplete="off">
 
+    <label style="margin-top:16px">メールアドレス</label>
+    <input name="email" type="email" 
+           value="{{ admin.email or '' }}"
+           placeholder="例: admin@example.com"
+           autocomplete="off">
+    <div class="small" style="color:#666;margin-top:4px">
+      連絡先や通知用のメールアドレスです。
+    </div>
+
     <label style="margin-top:16px">新しいパスワード（変更する場合のみ）</label>
     <input name="password" type="password" 
            minlength="8"
@@ -22,6 +31,15 @@
            autocomplete="new-password">
     <div class="small" style="color:#666;margin-top:4px">
       パスワードを変更する場合は8文字以上で入力してください。変更しない場合は空欄のままにしてください。
+    </div>
+
+    <label style="margin-top:16px">パスワード（確認）</label>
+    <input name="password_confirm" type="password" 
+           minlength="8"
+           placeholder="もう一度入力"
+           autocomplete="new-password">
+    <div class="small" style="color:#666;margin-top:4px">
+      パスワードを変更する場合は、上記と同じパスワードを入力してください。
     </div>
 
     <div style="margin-top:24px;display:flex;gap:8px">

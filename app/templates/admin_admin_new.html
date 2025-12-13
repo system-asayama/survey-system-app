@@ -16,8 +16,18 @@
     </div>
 
     <div style="margin-bottom:16px">
+      <label style="display:block;margin-bottom:4px">メールアドレス</label>
+      <input type="email" name="email" placeholder="例）admin@example.com" style="width:100%;padding:8px">
+    </div>
+
+    <div style="margin-bottom:16px">
       <label style="display:block;margin-bottom:4px">パスワード <span style="color:red">*</span></label>
-      <input type="password" name="password" required style="width:100%;padding:8px">
+      <input type="password" name="password" required minlength="8" placeholder="8文字以上" style="width:100%;padding:8px">
+    </div>
+
+    <div style="margin-bottom:16px">
+      <label style="display:block;margin-bottom:4px">パスワード（確認） <span style="color:red">*</span></label>
+      <input type="password" name="password_confirm" required minlength="8" placeholder="もう一度入力" style="width:100%;padding:8px">
     </div>
 
     <div style="display:flex;gap:8px;margin-top:20px">

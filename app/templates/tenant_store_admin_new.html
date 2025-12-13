@@ -27,8 +27,18 @@
     </div>
 
     <div class="form-row">
+      <label for="email">メールアドレス</label>
+      <input id="email" name="email" type="email" placeholder="例）admin@example.com">
+    </div>
+
+    <div class="form-row">
       <label for="password">パスワード</label>
-      <input id="password" name="password" type="password" required autocomplete="new-password">
+      <input id="password" name="password" type="password" required minlength="8" placeholder="8文字以上" autocomplete="new-password">
+    </div>
+
+    <div class="form-row">
+      <label for="password_confirm">パスワード（確認）</label>
+      <input id="password_confirm" name="password_confirm" type="password" required minlength="8" placeholder="もう一度入力" autocomplete="new-password">
     </div>
 
     <div class="actions" style="margin-top:12px; display:flex; gap:8px;">
