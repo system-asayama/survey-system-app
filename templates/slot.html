@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>スロットマシン（5スピン合計）</title>
-  <link rel="stylesheet" href="{{ url_for('static_files', filename='slot.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='slot.css') }}">
 </head>
 <body>
   <header class="bar">
@@ -143,7 +143,10 @@
     const tmaxInput = document.getElementById("threshold-max").value.trim();
     const tmax = tmaxInput === "" ? null : parseFloat(tmaxInput);
 
-    const res = await fetch("/calc_prob", {
+    // 現在のURLから店舗slugを取得
+    const pathParts = window.location.pathname.split('/');
+    const storeSlug = pathParts[2]; // /store/{slug}/slot の形式を想定
+    const res = await fetch(`/store/${storeSlug}/calc_prob`, {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({threshold_min: tmin, threshold_max: tmax, spins: 5})
@@ -163,6 +166,6 @@
   };
   </script>
 
-  <script src="{{ url_for('static_files', filename='slot.js') }}"></script>
+  <script src="{{ url_for('static', filename='slot.js') }}"></script>
 </body>
 </html>

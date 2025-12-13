@@ -422,7 +422,10 @@ function previewRecalcProb(){
 
 async function loadConfig(){
   try {
-    const cfg = await fetchJSON('/config');
+    // 現在のURLから店舗slugを取得
+    const pathParts = window.location.pathname.split('/');
+    const storeSlug = pathParts[2]; // /store/{slug}/slot の形式を想定
+    const cfg = await fetchJSON(`/store/${storeSlug}/config`);
     window.__symbols = cfg.symbols;
     
     // 設定ダイアログが存在する場合のみ更新
@@ -481,7 +484,10 @@ async function saveConfig(){
   const headers = {'Content-Type':'application/json'};
   if(adminToken) headers['X-Admin-Token'] = adminToken;
 
-  await fetchJSON('/config', { method:'POST', headers, body: JSON.stringify(body) });
+  // 現在のURLから店舗slugを取得
+  const pathParts = window.location.pathname.split('/');
+  const storeSlug = pathParts[2]; // /store/{slug}/slot の形式を想定
+  await fetchJSON(`/store/${storeSlug}/config`, { method:'POST', headers, body: JSON.stringify(body) });
   await loadConfig();
   alert('保存しました（確率を再計算して保存）');
 }
@@ -622,7 +628,10 @@ async function play(){
 
   let data;
   try{
-    data = await fetchJSON('/spin', { method:'POST', body: JSON.stringify({}) });
+    // 現在のURLから店舗slugを取得
+    const pathParts = window.location.pathname.split('/');
+    const storeSlug = pathParts[2]; // /store/{slug}/slot の形式を想定
+    data = await fetchJSON(`/store/${storeSlug}/spin`, { method:'POST', body: JSON.stringify({}) });
   }catch(e){
     $('#status').textContent = 'エラー: ' + (e.message || e);
     spinning = false;

@@ -252,17 +252,20 @@ def index():
     return render_template("store_select.html")
 
 @app.get("/store/<store_slug>/")
-@require_store
-def store_index():
+def store_index(store_slug):
     """店舗トップ - アンケートへリダイレクト"""
+    store = store_db.get_store_by_slug(store_slug)
+    if not store:
+        return "店舗が見つかりません", 404
+    
     # アンケート未回答の場合はアンケートページへ
-    if not session.get(f'survey_completed_{g.store_id}'):
-        return redirect(url_for('survey', store_slug=g.store_slug))
-    return redirect(url_for('slot_page', store_slug=g.store_slug))
+    if not session.get(f'survey_completed_{store["id"]}'):
+        return redirect(url_for('survey', store_slug=store_slug))
+    return redirect(url_for('slot_page', store_slug=store_slug))
 
 @app.get("/store/<store_slug>/survey")
 @require_store
-def survey():
+def survey(store_slug):
     """アンケートページ"""
     survey_config = store_db.get_survey_config(g.store_id)
     return render_template("survey.html", 
@@ -271,7 +274,7 @@ def survey():
 
 @app.post("/store/<store_slug>/submit_survey")
 @require_store
-def submit_survey():
+def submit_survey(store_slug):
     body = request.get_json(silent=True) or {}
     
     # バリデーション
@@ -314,31 +317,29 @@ def submit_survey():
         "message": "アンケートを受け付けました",
         "rating": rating,
         "generated_review": generated_review,
-        "redirect_url": url_for('review_confirm', store_slug=g.store_slug)
+        "redirect_url": url_for('review_confirm', store_slug=store_slug)
     })
 
 @app.get("/store/<store_slug>/review_confirm")
 @require_store
-def review_confirm():
+def review_confirm(store_slug):
     """口コミ確認ページ"""
     generated_review = session.get(f'generated_review_{g.store_id}', '')
     google_review_url = store_db.get_google_review_url(g.store_id)
-    rating = session.get(f'survey_rating_{g.store_id}', 0)
     
     return render_template("review_confirm.html",
         store=g.store,
         generated_review=generated_review,
-        google_review_url=google_review_url,
-        rating=rating
+        google_review_url=google_review_url
     )
 
 @app.get("/store/<store_slug>/slot")
 @require_store
-def slot_page():
+def slot_page(store_slug):
     """スロットページ"""
     # アンケート未回答の場合はアンケートページへリダイレクト
     if not session.get(f'survey_completed_{g.store_id}'):
-        return redirect(url_for('survey', store_slug=g.store_slug))
+        return redirect(url_for('survey', store_slug=store_slug))
     
     # 店舗の景品データを読み込み
     prizes = store_db.get_prizes_config(g.store_id)
@@ -352,14 +353,14 @@ def slot_page():
 
 @app.get("/store/<store_slug>/demo")
 @require_store
-def demo():
+def demo(store_slug):
     """デモページ"""
     prizes = store_db.get_prizes_config(g.store_id)
     return render_template("demo.html", store=g.store, prizes=prizes)
 
 @app.post("/store/<store_slug>/reset_survey")
 @require_store
-def reset_survey():
+def reset_survey(store_slug):
     """アンケートをリセットして再度回答できるようにする"""
     session.pop(f'survey_completed_{g.store_id}', None)
     session.pop(f'survey_timestamp_{g.store_id}', None)
@@ -369,14 +370,14 @@ def reset_survey():
 
 @app.get("/store/<store_slug>/config")
 @require_store
-def get_config():
+def get_config(store_slug):
     """スロット設定を取得"""
     cfg_dict = store_db.get_slot_config(g.store_id)
     return jsonify(cfg_dict)
 
 @app.post("/store/<store_slug>/config")
 @require_store
-def set_config():
+def set_config(store_slug):
     """スロット設定を保存"""
     body = request.get_json(silent=True) or {}
     
@@ -387,41 +388,25 @@ def set_config():
 
 @app.post("/store/<store_slug>/spin")
 @require_store
-def spin():
-    """スロット回転（5回分）"""
+def spin(store_slug):
+    """スロット回転"""
     cfg_dict = store_db.get_slot_config(g.store_id)
     symbols = [Symbol(**s) for s in cfg_dict["symbols"]]
     reels = cfg_dict.get("reels", 3)
     
-    # 5回分のスピン結果を生成
-    spins = []
-    for _ in range(5):
-        # 確率に基づいてシンボルを選択
-        result = [_choice_by_prob(symbols) for _ in range(reels)]
-        
-        # 全て同じシンボルかチェック
-        matched = len(set(s.id for s in result)) == 1
-        if matched:
-            payout = result[0].payout_3
-            symbol = {"id": result[0].id, "label": result[0].label}
-        else:
-            payout = 0
-            symbol = None
-        
-        # リーチ判定（最初の2つが同じ）
-        is_reach = result[0].id == result[1].id and not matched
-        
-        spins.append({
-            "reels": [{"id": s.id, "label": s.label} for s in result],
-            "payout": payout,
-            "matched": matched,
-            "is_reach": is_reach,
-            "symbol": symbol
-        })
+    # 確率に基づいてシンボルを選択
+    result = [_choice_by_prob(symbols) for _ in range(reels)]
+    
+    # 全て同じシンボルかチェック
+    if len(set(s.id for s in result)) == 1:
+        payout = result[0].payout_3
+    else:
+        payout = 0
     
     return jsonify({
         "ok": True,
-        "spins": spins
+        "result": [s.id for s in result],
+        "payout": payout
     })
 
 # ===== 静的ファイル =====
@@ -437,7 +422,6 @@ try:
     from blueprints.tenant_admin import tenant_admin_bp
     from blueprints.admin import admin_bp
     from blueprints.employee import employee_bp
-    # store_settingsは後で追加
     
     app.register_blueprint(auth_bp)
     app.register_blueprint(system_admin_bp, url_prefix='/system_admin')
@@ -448,14 +432,6 @@ try:
     print("✅ 管理画面blueprints登録完了")
 except Exception as e:
     print(f"⚠️ 管理画面blueprints登録エラー: {e}")
-
-# ===== 店舗設定ルート =====
-try:
-    from store_settings_routes import register_store_settings_routes
-    register_store_settings_routes(app)
-    print("✅ 店舗設定ルート登録完了")
-except Exception as e:
-    print(f"⚠️ 店舗設定ルート登録エラー: {e}")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)
