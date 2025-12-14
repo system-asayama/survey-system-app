@@ -305,32 +305,53 @@
       const targetExpected = parseFloat(document.getElementById('expected_total_5').value) || 100.0;
       const missProbability = parseFloat(document.getElementById('miss_probability').value) || 0.0;
       
+      // 不使用フラグを含めてシンボルデータを収集
+      const symbolsWithFlags = [];
+      rows.forEach(row => {
+        const id = row.querySelector('input[name^="symbol_id_"]').value;
+        const label = row.querySelector('input[name^="symbol_label_"]').value;
+        const payout = parseFloat(row.querySelector('input[name^="symbol_payout_"]').value) || 0;
+        const prob = parseFloat(row.querySelector('input[name^="symbol_prob_"]').value) || 0;
+        const color = row.querySelector('input[name^="symbol_color_"]').value;
+        const disabledCheckbox = row.querySelector('input[name^="symbol_disabled_"]');
+        const isDisabled = disabledCheckbox ? disabledCheckbox.checked : false;
+        const isDefaultInput = row.querySelector('input[name^="symbol_is_default_"]');
+        const isDefault = isDefaultInput ? isDefaultInput.value === 'true' : false;
+        
+        symbolsWithFlags.push({
+          id: id,
+          label: label,
+          payout_3: payout,
+          prob: prob,
+          color: color,
+          is_disabled: isDisabled,
+          is_default: isDefault
+        });
+      });
+      
+      const storeId = {{ store.id }};
+      
       try {
-        const response = await fetch('/config', {
+        const response = await fetch(`/admin/store/${storeId}/optimize_probabilities`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            symbols: symbols,
-            target_expected_total_5: targetExpected,
-            miss_probability: missProbability,
-            reels: 3,
-            base_bet: 1
+            symbols: symbolsWithFlags,
+            expected_total_5: targetExpected
           })
         });
         
         const data = await response.json();
         
         if (data.ok) {
-          // 更新された設定を取得
-          const configResponse = await fetch('/config');
-          const configData = await configResponse.json();
-          
           // 確率を更新
           rows.forEach((row, index) => {
             const probInput = row.querySelector('input[name^="symbol_prob_"]');
-            probInput.value = configData.symbols[index].prob.toFixed(4);
+            if (data.symbols[index]) {
+              probInput.value = data.symbols[index].prob.toFixed(4);
+            }
           });
           
           alert('確率を自動調整しました！期待値: ' + targetExpected + '点（5回スピン）');
