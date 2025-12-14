@@ -15,6 +15,12 @@
       <input type="text" name="slug" value="{{ store.slug }}" required style="width:100%;padding:8px">
     </div>
 
+    <div style="margin-bottom:16px">
+      <label style="display:block;margin-bottom:4px">OpenAI APIキー</label>
+      <input type="password" name="openai_api_key" value="{{ store.openai_api_key or '' }}" placeholder="sk-..." style="width:100%;padding:8px">
+      <p style="font-size:12px;color:#666;margin-top:4px">この店舗配下のアプリに適用されます。未設定の場合はテナント設定のキーが使用されます。</p>
+    </div>
+
     <div style="display:flex;gap:8px;margin-top:20px">
       <button class="btn" type="submit">更新</button>
       <a class="btn sub" href="{{ back_url }}">キャンセル</a>

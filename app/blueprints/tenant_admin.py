@@ -249,6 +249,7 @@ def store_edit(store_id):
     if request.method == 'POST':
         name = request.form.get('名称', '').strip()
         slug = request.form.get('slug', '').strip()
+        openai_api_key = request.form.get('openai_api_key', '').strip()
         
         if not name or not slug:
             flash('名称とslugは必須です', 'error')
@@ -261,9 +262,9 @@ def store_edit(store_id):
             else:
                 cur.execute(_sql(conn, '''
                     UPDATE "T_店舗"
-                    SET 名称 = %s, slug = %s, updated_at = CURRENT_TIMESTAMP
+                    SET 名称 = %s, slug = %s, openai_api_key = %s, updated_at = CURRENT_TIMESTAMP
                     WHERE id = %s AND tenant_id = %s
-                '''), (name, slug, store_id, tenant_id))
+                '''), (name, slug, openai_api_key if openai_api_key else None, store_id, tenant_id))
                 conn.commit()
                 flash('店舗情報を更新しました', 'success')
                 conn.close()
@@ -271,7 +272,7 @@ def store_edit(store_id):
     
     # GETリクエスト：店舗情報を取得
     cur.execute(_sql(conn, '''
-        SELECT id, 名称, slug
+        SELECT id, 名称, slug, openai_api_key
         FROM "T_店舗"
         WHERE id = %s AND tenant_id = %s
     '''), (store_id, tenant_id))
@@ -282,7 +283,7 @@ def store_edit(store_id):
         flash('店舗が見つかりません', 'error')
         return redirect(url_for('tenant_admin.stores'))
     
-    store = {'id': row[0], '名称': row[1], 'slug': row[2]}
+    store = {'id': row[0], '名称': row[1], 'slug': row[2], 'openai_api_key': row[3] if len(row) > 3 else None}
     return render_template('tenant_store_edit.html', store=store)
 
 

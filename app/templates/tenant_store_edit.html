@@ -16,6 +16,12 @@
     <input type="text" id="slug" name="slug" value="{{ store.slug }}" required>
   </div>
   
+  <div class="form-group">
+    <label for="openai_api_key">OpenAI APIキー</label>
+    <input type="password" id="openai_api_key" name="openai_api_key" value="{{ store.openai_api_key or '' }}" placeholder="sk-...">
+    <p class="small" style="color:#666">この店舗配下のアプリに適用されます。未設定の場合はテナント設定のキーが使用されます。</p>
+  </div>
+  
   <div class="actions">
     <button type="submit" class="btn">更新</button>
     <a href="{{ url_for('tenant_admin.store_detail', store_id=store.id) }}" class="btn sub">キャンセル</a>
