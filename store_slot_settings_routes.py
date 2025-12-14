@@ -170,6 +170,52 @@ def register_store_slot_settings_routes(app):
                              slot_config=asdict(slot_config))
     
     
+    @app.route('/admin/save_prizes', methods=['POST'])
+    @require_roles(ROLES["ADMIN"], ROLES["TENANT_ADMIN"], ROLES["SYSTEM_ADMIN"])
+    def admin_save_prizes():
+        """景品設定を保存"""
+        try:
+            data = request.get_json()
+            prizes = data.get('prizes', [])
+            
+            # 点数で降順ソート
+            prizes.sort(key=lambda x: x.get("min", 0), reverse=True)
+            
+            # セッションから店舗IDを取得
+            store_id = session.get('store_id')
+            if not store_id:
+                return jsonify({"ok": False, "error": "店舗が選択されていません"}), 400
+            
+            conn = get_db_connection()
+            cur = conn.cursor()
+            
+            # 既存の景品設定を取得
+            cur.execute(_sql(conn, 'SELECT prizes_json FROM "T_店舗_景品設定" WHERE store_id = %s'), (store_id,))
+            row = cur.fetchone()
+            
+            # JSON形式で保存
+            prizes_json = json.dumps(prizes, ensure_ascii=False)
+            
+            if row:
+                cur.execute(_sql(conn, '''
+                    UPDATE "T_店舗_景品設定"
+                    SET prizes_json = %s, updated_at = CURRENT_TIMESTAMP
+                    WHERE store_id = %s
+                '''), (prizes_json, store_id))
+            else:
+                cur.execute(_sql(conn, '''
+                    INSERT INTO "T_店舗_景品設定" (store_id, prizes_json)
+                    VALUES (%s, %s)
+                '''), (store_id, prizes_json))
+            
+            conn.commit()
+            conn.close()
+            
+            return jsonify({"ok": True})
+        except Exception as e:
+            return jsonify({"ok": False, "error": str(e)}), 500
+    
+    
     @app.route('/admin/store/<int:store_id>/save_slot_config', methods=['POST'])
     @require_roles(ROLES["ADMIN"], ROLES["TENANT_ADMIN"], ROLES["SYSTEM_ADMIN"])
     def store_save_slot_config(store_id):
