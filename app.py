@@ -468,13 +468,7 @@ try:
 except Exception as e:
     print(f"⚠️ 店舗スロット設定ルート登録エラー: {e}")
 
-# ===== 店舗アプリ一覧ルート =====
-try:
-    from store_apps_routes import register_store_apps_routes
-    register_store_apps_routes(app)
-    print("✅ 店舗アプリ一覧ルート登録完了")
-except Exception as e:
-    print(f"⚠️ 店舗アプリ一覧ルート登録エラー: {e}")
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)

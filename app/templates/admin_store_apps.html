@@ -9,7 +9,7 @@
   <div class="store-info-card">
     <h2>{{ store.store_name }}</h2>
     <p><strong>店舗ID:</strong> {{ store.id }}</p>
-    <p><strong>Slug:</strong> {{ store.store_code }}</p>
+    <p><strong>Slug:</strong> {{ store.slug }}</p>
   </div>
   
   <div class="apps-grid">
@@ -20,7 +20,7 @@
       <p>アンケート回答後にスロットゲームを提供し、景品を獲得できるアプリです。</p>
       <div class="app-actions">
         <a href="{{ url_for('store_slot_settings', store_id=store.id) }}" class="btn btn-primary">設定</a>
-        <a href="{{ url_for('store_survey', store_slug=store.store_code) }}" class="btn btn-secondary" target="_blank">プレビュー</a>
+        <a href="{{ url_for('survey', store_slug=store.slug) }}" class="btn btn-secondary" target="_blank">プレビュー</a>
       </div>
       <div class="app-status">
         <span class="status-badge status-active">有効</span>
