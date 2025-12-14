@@ -11,7 +11,7 @@ def register_qr_print_routes(app):
     def qr_print(store_id):
         """QRコード印刷ページ（3つのバージョン）"""
         from flask import session
-        from db import get_db_connection, _sql
+        from app.utils.db import get_db_connection, _sql
         
         tenant_id = session.get('tenant_id')
         conn = get_db_connection()
