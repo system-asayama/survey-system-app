@@ -5,7 +5,6 @@
 from flask import render_template, request, redirect, url_for, flash, session
 from app.utils import require_roles, ROLES, get_db_connection
 from app.utils.db import _sql
-import json
 
 
 def register_store_settings_routes(app):
@@ -69,21 +68,24 @@ def register_store_settings_routes(app):
             'slug': store_row[2]
         }
         
-        # 景品設定をJSON形式で取得
+        # 景品一覧を取得
         cur.execute(_sql(conn, '''
-            SELECT prizes_json 
-            FROM "T_店舗_景品設定" 
-            WHERE store_id = %s
+            SELECT id, 景品名, 最小得点, 最大得点, 在庫数, 有効フラグ 
+            FROM "T_店舗景品設定" 
+            WHERE 店舗ID = %s 
+            ORDER BY 最小得点
         '''), (store_id,))
         
-        prizes_row = cur.fetchone()
         prizes = []
-        
-        if prizes_row and prizes_row[0]:
-            try:
-                prizes = json.loads(prizes_row[0])
-            except:
-                prizes = []
+        for row in cur.fetchall():
+            prizes.append({
+                'id': row[0],
+                'name': row[1],
+                'min_score': row[2],
+                'max_score': row[3],
+                'stock': row[4],
+                'enabled': row[5]
+            })
         
         conn.close()
         return render_template('store_settings/prizes.html', store=store, prizes=prizes)
@@ -96,7 +98,7 @@ def register_store_settings_routes(app):
         name = request.form.get('name')
         min_score = request.form.get('min_score', type=float)
         max_score = request.form.get('max_score', type=float)
-        stock = request.form.get('stock', type=int, default=0)
+        stock = request.form.get('stock', type=int)
         enabled = request.form.get('enabled') == 'on'
         
         if not name or min_score is None or max_score is None:
@@ -106,42 +108,10 @@ def register_store_settings_routes(app):
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # 既存の景品設定を取得
-        cur.execute(_sql(conn, 'SELECT prizes_json FROM "T_店舗_景品設定" WHERE store_id = %s'), (store_id,))
-        prizes_row = cur.fetchone()
-        
-        prizes = []
-        if prizes_row and prizes_row[0]:
-            try:
-                prizes = json.loads(prizes_row[0])
-            except:
-                prizes = []
-        
-        # 新しい景品を追加
-        new_prize = {
-            'id': len(prizes) + 1,
-            'name': name,
-            'min_score': min_score,
-            'max_score': max_score,
-            'stock': stock,
-            'enabled': enabled
-        }
-        prizes.append(new_prize)
-        
-        prizes_json = json.dumps(prizes, ensure_ascii=False)
-        
-        # 既存レコードがあれば更新、なければ挿入
-        if prizes_row:
-            cur.execute(_sql(conn, '''
-                UPDATE "T_店舗_景品設定" 
-                SET prizes_json = %s, updated_at = CURRENT_TIMESTAMP 
-                WHERE store_id = %s
-            '''), (prizes_json, store_id))
-        else:
-            cur.execute(_sql(conn, '''
-                INSERT INTO "T_店舗_景品設定" (store_id, prizes_json)
-                VALUES (%s, %s)
-            '''), (store_id, prizes_json))
+        cur.execute(_sql(conn, '''
+            INSERT INTO "T_店舗景品設定" (店舗ID, 景品名, 最小得点, 最大得点, 在庫数, 有効フラグ)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        '''), (store_id, name, min_score, max_score, stock or 0, enabled))
         
         conn.commit()
         conn.close()
@@ -157,29 +127,12 @@ def register_store_settings_routes(app):
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # 既存の景品設定を取得
-        cur.execute(_sql(conn, 'SELECT prizes_json FROM "T_店舗_景品設定" WHERE store_id = %s'), (store_id,))
-        prizes_row = cur.fetchone()
+        cur.execute(_sql(conn, 'DELETE FROM "T_店舗景品設定" WHERE id = %s AND 店舗ID = %s'), (prize_id, store_id))
         
-        if prizes_row and prizes_row[0]:
-            try:
-                prizes = json.loads(prizes_row[0])
-                # 指定されたIDの景品を削除
-                prizes = [p for p in prizes if p.get('id') != prize_id]
-                
-                prizes_json = json.dumps(prizes, ensure_ascii=False)
-                cur.execute(_sql(conn, '''
-                    UPDATE "T_店舗_景品設定" 
-                    SET prizes_json = %s, updated_at = CURRENT_TIMESTAMP 
-                    WHERE store_id = %s
-                '''), (prizes_json, store_id))
-                
-                conn.commit()
-                flash('景品を削除しました', 'success')
-            except:
-                flash('景品の削除に失敗しました', 'error')
-        
+        conn.commit()
         conn.close()
+        
+        flash('景品を削除しました', 'success')
         return redirect(url_for('store_settings_prizes', store_id=store_id))
     
     
@@ -205,11 +158,11 @@ def register_store_settings_routes(app):
             'slug': store_row[2]
         }
         
-        # Google口コミURL設定を取得（T_店舗_Google設定テーブルを使用）
+        # Google口コミURL設定を取得
         cur.execute(_sql(conn, '''
-            SELECT review_url 
-            FROM "T_店舗_Google設定" 
-            WHERE store_id = %s
+            SELECT Google口コミURL 
+            FROM "T_店舗Google口コミ設定" 
+            WHERE 店舗ID = %s
         '''), (store_id,))
         
         url_row = cur.fetchone()
@@ -229,20 +182,20 @@ def register_store_settings_routes(app):
         cur = conn.cursor()
         
         # 既存の設定があるか確認
-        cur.execute(_sql(conn, 'SELECT id FROM "T_店舗_Google設定" WHERE store_id = %s'), (store_id,))
+        cur.execute(_sql(conn, 'SELECT id FROM "T_店舗Google口コミ設定" WHERE 店舗ID = %s'), (store_id,))
         existing = cur.fetchone()
         
         if existing:
             # 更新
             cur.execute(_sql(conn, '''
-                UPDATE "T_店舗_Google設定" 
-                SET review_url = %s, updated_at = CURRENT_TIMESTAMP 
-                WHERE store_id = %s
+                UPDATE "T_店舗Google口コミ設定" 
+                SET Google口コミURL = %s, 更新日時 = CURRENT_TIMESTAMP 
+                WHERE 店舗ID = %s
             '''), (google_review_url, store_id))
         else:
             # 新規作成
             cur.execute(_sql(conn, '''
-                INSERT INTO "T_店舗_Google設定" (store_id, review_url)
+                INSERT INTO "T_店舗Google口コミ設定" (店舗ID, Google口コミURL)
                 VALUES (%s, %s)
             '''), (store_id, google_review_url))
         
