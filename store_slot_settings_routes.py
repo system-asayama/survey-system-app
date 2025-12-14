@@ -9,6 +9,9 @@ import json
 from dataclasses import dataclass, asdict
 from typing import List, Dict, Any
 from optimizer import optimize_symbol_probabilities as _optimize_symbol_probabilities
+import store_db
+from decimal import Decimal
+import math
 
 
 @dataclass
@@ -31,6 +34,63 @@ class Config:
     miss_probability: float = 20.0
     target_probabilities: Dict[str, float] | None = None
 
+
+def _decimal_scale(values: List[float]) -> int:
+    max_dec = 0
+    for v in values:
+        s = f"{Decimal(v):f}"
+        if "." in s:
+            d = len(s.split(".")[1].rstrip("0"))
+            if d > max_dec:
+                max_dec = d
+    return 10 ** max_dec
+
+def _prob_total_ge(symbols: List[Symbol], spins: int, threshold: float) -> float:
+    vs = [float(s.payout_3) for s in symbols]
+    ps = [float(s.prob) / 100.0 for s in symbols]
+    if not vs or not ps:
+        return 0.0
+    S = sum(ps) or 1.0
+    ps = [p / S for p in ps]
+    scale = _decimal_scale(vs + [threshold])
+    ivs = [int(round(v * scale)) for v in vs]
+    thr = int(round(threshold * scale))
+    max_sum = spins * max(ivs)
+    pmf = [0.0] * (max_sum + 1)
+    pmf[0] = 1.0
+    for _ in range(spins):
+        nxt = [0.0] * (max_sum + 1)
+        for ssum, pcur in enumerate(pmf):
+            if pcur == 0.0:
+                continue
+            for vi, pi in zip(ivs, ps):
+                nxt[ssum + vi] += pcur * pi
+        pmf = nxt
+    return float(sum(pmf[thr:]))
+
+def _prob_total_le(symbols: List[Symbol], spins: int, threshold: float) -> float:
+    """spins 回の合計配当が threshold 以下となる確率"""
+    vs = [float(s.payout_3) for s in symbols]
+    ps = [float(s.prob) / 100.0 for s in symbols]
+    if not vs or not ps:
+        return 0.0
+    S = sum(ps) or 1.0
+    ps = [p / S for p in ps]
+    scale = _decimal_scale(vs + [threshold])
+    ivs = [int(round(v * scale)) for v in vs]
+    thr = int(round(threshold * scale))
+    max_sum = spins * max(ivs)
+    pmf = [0.0] * (max_sum + 1)
+    pmf[0] = 1.0
+    for _ in range(spins):
+        nxt = [0.0] * (max_sum + 1)
+        for ssum, pcur in enumerate(pmf):
+            if pcur == 0.0:
+                continue
+            for vi, pi in zip(ivs, ps):
+                nxt[ssum + vi] += pcur * pi
+        pmf = nxt
+    return float(sum(pmf[:thr + 1]))
 
 def _default_config() -> Config:
     """デフォルトのスロット設定"""
