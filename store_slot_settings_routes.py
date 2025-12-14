@@ -316,3 +316,56 @@ def register_store_slot_settings_routes(app):
             
         except Exception as e:
             return jsonify({"ok": False, "error": str(e)}), 500
+
+    
+    @app.route('/admin/store/<int:store_id>/calc_prob', methods=['POST'])
+    @require_roles(ROLES["ADMIN"], ROLES["TENANT_ADMIN"], ROLES["SYSTEM_ADMIN"])
+    def store_calc_prob(store_id):
+        """店舗ごとの確率計算"""
+        try:
+            body = request.get_json(silent=True) or {}
+            tmin = float(body.get("threshold_min", 0))
+            tmax = body.get("threshold_max")
+            tmax = None if tmax in (None, "", "null") else float(tmax)
+            spins = int(body.get("spins", 5))
+            spins = max(1, spins)
+            
+            # データベースから設定を取得
+            cfg_dict = store_db.get_slot_config(store_id)
+            symbols = [Symbol(**s) for s in cfg_dict["symbols"]]
+            miss_probability = cfg_dict.get("miss_probability", 0.0)
+            
+            # ハズレ確率を考慮するため、ハズレ（0点）をシンボルリストに追加
+            symbols_with_miss = list(symbols)
+            
+            # ハズレシンボルを追加
+            miss_symbol = Symbol(
+                id="miss",
+                label="ハズレ",
+                payout_3=0.0,
+                prob=miss_probability,
+                color="#000000"
+            )
+            symbols_with_miss.append(miss_symbol)
+            
+            # 確率を正規化（ハズレ確率 + シンボル確率の合計 = 100%）
+            psum = sum(float(s.prob) for s in symbols_with_miss)
+            for s in symbols_with_miss:
+                s.prob = float(s.prob) * 100.0 / psum
+            
+            prob_ge = _prob_total_ge(symbols_with_miss, spins, tmin)
+            prob_le = 1.0 if tmax is None else _prob_total_le(symbols_with_miss, spins, tmax)
+            prob_range = max(0.0, prob_le - (1.0 - prob_ge))
+            
+            return jsonify({
+                "ok": True,
+                "prob_ge": prob_ge,
+                "prob_le": prob_le,
+                "prob_range": prob_range,
+                "tmin": tmin,
+                "tmax": tmax,
+                "spins": spins
+            })
+            
+        except Exception as e:
+            return jsonify({"ok": False, "error": str(e)}), 500

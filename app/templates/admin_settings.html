@@ -368,7 +368,8 @@
       });
       
       try {
-        const response = await fetch('/calc_prob', {
+        const storeId = window.location.pathname.split('/')[3];
+        const response = await fetch(`/admin/store/${storeId}/calc_prob`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
