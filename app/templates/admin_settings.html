@@ -160,12 +160,37 @@
       countInput.value = prizeData.length;
     }
     
+    function updatePrizeDataFromInputs() {
+      // 現在の入力値をprizeDataに反映
+      const container = document.getElementById('prize-list');
+      if (!container) return;
+      
+      const rows = container.querySelectorAll('.prize-row');
+      rows.forEach((row, index) => {
+        if (index < prizeData.length) {
+          const minInput = row.querySelector('input[placeholder="最小得点"]');
+          const maxInput = row.querySelector('input[placeholder="最大得点"]');
+          const labelInput = row.querySelector('input[placeholder="景品名"]');
+          
+          if (minInput) prizeData[index].min = parseInt(minInput.value) || 0;
+          if (maxInput && maxInput.value) prizeData[index].max = parseInt(maxInput.value) || null;
+          if (labelInput) prizeData[index].label = labelInput.value || '';
+        }
+      });
+    }
+    
     function addPrizeRow() {
-      prizeData.push({ min_score: 0, rank: '', name: '' });
+      // 現在の入力値をprizeDataに反映
+      updatePrizeDataFromInputs();
+      // 新しい行を追加
+      prizeData.push({ min: 0, label: '' });
       renderPrizes();
     }
     
     function removePrize(index) {
+      // 現在の入力値をprizeDataに反映
+      updatePrizeDataFromInputs();
+      // 指定された行を削除
       prizeData.splice(index, 1);
       renderPrizes();
     }
