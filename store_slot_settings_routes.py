@@ -372,10 +372,18 @@ def register_store_slot_settings_routes(app):
             disabled_symbols = [s for s in symbols if s.is_disabled]
             
             # 確率を最適化（不使用役は除外）
+            # target_expected_valueは1回スピンの期待値なので5で割る
+            target_expected_value_per_spin = expected_total_5 / 5.0
+            
+            # miss_probabilityを取得（デフォルト20%）
+            config = store_db.get_slot_config(store_id)
+            miss_probability = config.get('miss_probability', 20.0)
+            
             optimized_active = _optimize_symbol_probabilities(
                 symbols=active_symbols,
-                expected_total_5=expected_total_5,
-                target_probabilities=target_probabilities if target_probabilities else None
+                target_probs=target_probabilities if target_probabilities else {},
+                target_expected_value=target_expected_value_per_spin,
+                miss_probability=miss_probability
             )
             
             # 不使用役の確率を0に設定
