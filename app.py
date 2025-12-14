@@ -23,32 +23,49 @@ app = Flask(__name__,
 app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 
 # OpenAI クライアントを動的に取得する関数
-def get_openai_client(store_id=None):
+def get_openai_client(store_id=None, tenant_id=None):
     """
-    OpenAIクライアントを取得。
-    store_idが指定されている場合は、その店舗のAPIキーを使用。
-    指定がない場合は環境変数から取得。
+    OpenAIクライアントを階層的に取得。
+    優先順位: 店舗設定 > テナント設定 > 環境変数
     """
     api_key = None
     
-    if store_id:
-        try:
-            conn = store_db.get_db_connection()
-            cursor = conn.cursor()
-            cursor.execute("SELECT openai_api_key FROM T_店舗 WHERE id = ?", (store_id,))
+    try:
+        conn = store_db.get_db_connection()
+        cursor = conn.cursor()
+        
+        # 1. 店舗設定のキーを確認
+        if store_id:
+            cursor.execute("SELECT openai_api_key, tenant_id FROM T_店舗 WHERE id = ?", (store_id,))
             result = cursor.fetchone()
-            conn.close()
+            if result:
+                if result[0]:  # 店舗にAPIキーが設定されている
+                    api_key = result[0]
+                    conn.close()
+                    return OpenAI(api_key=api_key)
+                # 店舗にキーがない場合、tenant_idを取得
+                if not tenant_id and result[1]:
+                    tenant_id = result[1]
+        
+        # 2. テナント設定のキーを確認
+        if tenant_id:
+            cursor.execute("SELECT openai_api_key FROM T_テナント WHERE id = ?", (tenant_id,))
+            result = cursor.fetchone()
             if result and result[0]:
                 api_key = result[0]
-        except Exception as e:
-            print(f"Error getting OpenAI API key from database: {e}")
+                conn.close()
+                return OpenAI(api_key=api_key)
+        
+        conn.close()
+    except Exception as e:
+        print(f"Error getting OpenAI API key from database: {e}")
     
-    # データベースにキーがない場合は環境変数を使用
+    # 3. 環境変数を確認
     if not api_key:
         api_key = os.environ.get('OPENAI_API_KEY')
     
     if not api_key:
-        raise ValueError("OpenAI APIキーが設定されていません。管理画面でAPIキーを設定してください。")
+        raise ValueError("OpenAI APIキーが設定されていません。テナントまたは店舗の管理画面でAPIキーを設定してください。")
     
     return OpenAI(api_key=api_key)
 
