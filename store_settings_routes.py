@@ -93,13 +93,11 @@ def register_store_settings_routes(app):
     @require_roles(ROLES["ADMIN"], ROLES["TENANT_ADMIN"], ROLES["SYSTEM_ADMIN"])
     def store_settings_add_prize(store_id):
         """景品追加"""
-        name = request.form.get('name')
-        min_score = request.form.get('min_score', type=float)
-        max_score = request.form.get('max_score', type=float)
-        stock = request.form.get('stock', type=int, default=0)
-        enabled = request.form.get('enabled') == 'on'
+        label = request.form.get('label')
+        min_val = request.form.get('min', type=float)
+        max_val = request.form.get('max', type=float)
         
-        if not name or min_score is None or max_score is None:
+        if not label or min_val is None:
             flash('必須項目を入力してください', 'error')
             return redirect(url_for('store_settings_prizes', store_id=store_id))
         
@@ -119,12 +117,9 @@ def register_store_settings_routes(app):
         
         # 新しい景品を追加
         new_prize = {
-            'id': len(prizes) + 1,
-            'name': name,
-            'min_score': min_score,
-            'max_score': max_score,
-            'stock': stock,
-            'enabled': enabled
+            'label': label,
+            'min': min_val,
+            'max': max_val
         }
         prizes.append(new_prize)
         
@@ -164,8 +159,9 @@ def register_store_settings_routes(app):
         if prizes_row and prizes_row[0]:
             try:
                 prizes = json.loads(prizes_row[0])
-                # 指定されたIDの景品を削除
-                prizes = [p for p in prizes if p.get('id') != prize_id]
+                # 指定されたインデックスの景品を削除
+                if 0 <= prize_id < len(prizes):
+                    prizes.pop(prize_id)
                 
                 prizes_json = json.dumps(prizes, ensure_ascii=False)
                 cur.execute(_sql(conn, '''
