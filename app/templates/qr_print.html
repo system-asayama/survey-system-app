@@ -197,7 +197,7 @@
         <h2>{{ store.name }}</h2>
         <p style="font-size: 18px; margin-bottom: 30px; color: #6b7280;">アンケートにご協力ください</p>
         <div class="qr-container">
-          <canvas id="qr-simple"></canvas>
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=400x400&data={{ survey_url|urlencode }}" alt="QR Code" style="width: 400px; height: 400px;">
         </div>
         <p style="margin-top: 20px; font-size: 14px; color: #6b7280;">{{ survey_url }}</p>
       </div>
@@ -212,7 +212,7 @@
         <h2>🎁 アンケートに答えて<br>スロットに挑戦！</h2>
         <p class="subtitle">{{ store.name }}</p>
         <div class="qr-container">
-          <canvas id="qr-poster"></canvas>
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={{ survey_url|urlencode }}" alt="QR Code" style="width: 300px; height: 300px;">
         </div>
         <div class="instructions">
           📱 スマホでQRコードを読み取って<br>
@@ -232,7 +232,7 @@
           <h3>{{ store.name }}</h3>
           <p style="font-size: 14px; margin-bottom: 15px;">アンケートにご協力ください</p>
           <div class="qr-container">
-            <canvas id="qr-card-1"></canvas>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ survey_url|urlencode }}" alt="QR Code" style="width: 150px; height: 150px;">
           </div>
           <p class="url">{{ survey_url }}</p>
         </div>
@@ -240,7 +240,7 @@
           <h3>{{ store.name }}</h3>
           <p style="font-size: 14px; margin-bottom: 15px;">アンケートにご協力ください</p>
           <div class="qr-container">
-            <canvas id="qr-card-2"></canvas>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ survey_url|urlencode }}" alt="QR Code" style="width: 150px; height: 150px;">
           </div>
           <p class="url">{{ survey_url }}</p>
         </div>
@@ -248,7 +248,7 @@
           <h3>{{ store.name }}</h3>
           <p style="font-size: 14px; margin-bottom: 15px;">アンケートにご協力ください</p>
           <div class="qr-container">
-            <canvas id="qr-card-3"></canvas>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ survey_url|urlencode }}" alt="QR Code" style="width: 150px; height: 150px;">
           </div>
           <p class="url">{{ survey_url }}</p>
         </div>
@@ -256,7 +256,7 @@
           <h3>{{ store.name }}</h3>
           <p style="font-size: 14px; margin-bottom: 15px;">アンケートにご協力ください</p>
           <div class="qr-container">
-            <canvas id="qr-card-4"></canvas>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ survey_url|urlencode }}" alt="QR Code" style="width: 150px; height: 150px;">
           </div>
           <p class="url">{{ survey_url }}</p>
         </div>
