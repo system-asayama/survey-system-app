@@ -50,6 +50,7 @@
           <td>{{ store.created_at }}</td>
           <td>
             <a class="btn" href="{{ url_for('admin.store_edit', store_id=store.id) }}" style="margin-right:4px">編集</a>
+            <a class="btn" href="{{ url_for('store_slot_settings', store_id=store.id) }}" style="margin-right:4px">スロット設定</a>
             {% if session.get('role') in ['system_admin', 'tenant_admin'] %}
             <form method="post" action="{{ url_for('admin.store_delete', store_id=store.id) }}" style="display:inline" onsubmit="return confirm('本当に削除しますか？');">
               <button class="btn danger" type="submit">削除</button>
