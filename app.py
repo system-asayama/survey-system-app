@@ -341,8 +341,11 @@ def review_confirm():
 @require_store
 def slot_page():
     """スロットページ"""
-    # アンケート未回答の場合はアンケートページへリダイレクト
-    if not session.get(f'survey_completed_{g.store_id}'):
+    # デモプレイモードの場合はセッションチェックをスキップ
+    is_demo = request.args.get('demo') == 'true'
+    
+    # アンケート未回答の場合はアンケートページへリダイレクト（デモモード除く）
+    if not is_demo and not session.get(f'survey_completed_{g.store_id}'):
         return redirect(url_for('survey', store_slug=g.store_slug))
     
     # 店舗の景品データを読み込み
