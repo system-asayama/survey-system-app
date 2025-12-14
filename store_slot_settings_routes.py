@@ -149,7 +149,7 @@ def register_store_slot_settings_routes(app):
         user_id = session.get('user_id')
         admin_conn = get_db_connection()
         admin_cur = admin_conn.cursor()
-        admin_cur.execute(_sql(admin_conn, 'SELECT login_id, 名前 FROM "T_管理者" WHERE id = %s'), (user_id,))
+        admin_cur.execute(_sql(admin_conn, 'SELECT login_id, name, email FROM "T_管理者" WHERE id = %s'), (user_id,))
         admin_row = admin_cur.fetchone()
         admin_conn.close()
         
@@ -157,7 +157,7 @@ def register_store_slot_settings_routes(app):
             'store_code': store.get('slug', ''),
             'login_id': admin_row[0] if admin_row else '',
             'name': admin_row[1] if admin_row else '',
-            'email': '',
+            'email': admin_row[2] if admin_row else '',
             'last_login': ''
         }
         
