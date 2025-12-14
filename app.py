@@ -35,6 +35,8 @@ class Symbol:
     prob: float = 0.0  # 保存時は [%]
     is_reach: bool = False  # リーチ専用シンボルかどうか
     reach_symbol: str | None = None  # リーチ時に表示する元のシンボルID
+    is_disabled: bool = False  # 不使用フラグ
+    is_default: bool = False  # デフォルト役フラグ
 
 @dataclass
 class Config:
