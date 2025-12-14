@@ -317,6 +317,10 @@
         const isDisabled = disabledCheckbox ? disabledCheckbox.checked : false;
         const isDefaultInput = row.querySelector('input[name^="symbol_is_default_"]');
         const isDefault = isDefaultInput ? isDefaultInput.value === 'true' : false;
+        const isReachInput = row.querySelector('input[name^="symbol_is_reach_"]');
+        const isReach = isReachInput ? isReachInput.value === 'true' : false;
+        const reachSymbolInput = row.querySelector('input[name^="symbol_reach_symbol_"]');
+        const reachSymbol = reachSymbolInput ? reachSymbolInput.value : null;
         
         symbolsWithFlags.push({
           id: id,
@@ -325,7 +329,9 @@
           prob: prob,
           color: color,
           is_disabled: isDisabled,
-          is_default: isDefault
+          is_default: isDefault,
+          is_reach: isReach,
+          reach_symbol: reachSymbol
         });
       });
       
@@ -535,6 +541,8 @@
                   <input type="checkbox" name="symbol_disabled_{{ loop.index0 }}" disabled>
                   {% endif %}
                   <input type="hidden" name="symbol_is_default_{{ loop.index0 }}" value="{{ symbol.is_default|default(false)|lower }}">
+                  <input type="hidden" name="symbol_is_reach_{{ loop.index0 }}" value="{{ symbol.is_reach|default(false)|lower }}">
+                  <input type="hidden" name="symbol_reach_symbol_{{ loop.index0 }}" value="{{ symbol.reach_symbol|default('') }}">
                 </td>
                 <td>
                   {% if symbol.is_default %}
