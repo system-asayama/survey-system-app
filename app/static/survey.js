@@ -106,7 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
     submitBtn.textContent = '送信中...';
 
     try {
-      const response = await fetch('/submit_survey', {
+      const response = await fetch(window.location.pathname.replace('/survey', '/submit_survey'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
