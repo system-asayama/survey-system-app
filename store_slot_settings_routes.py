@@ -37,6 +37,46 @@ class Config:
     target_probabilities: Dict[str, float] | None = None
 
 
+def _solve_probs_for_target_expectation(payouts: List[float], target_e1: float) -> List[float]:
+    """目標期待値から各シンボルの確率を逆算"""
+    vs = [float(v) for v in payouts if float(v) >= 0]
+    n = len(vs)
+    if n == 0:
+        return []
+    vmin, vmax = min(vs), max(vs)
+    if target_e1 <= vmin + 1e-12:
+        return [1.0 if v == vmin else 0.0 for v in vs]
+    if target_e1 >= vmax - 1e-12:
+        return [1.0 if v == vmax else 0.0 for v in vs]
+    
+    def e_for_beta(beta: float) -> float:
+        ws = [math.exp(beta * v) for v in vs]
+        Z = sum(ws)
+        ps = [w / Z for w in ws]
+        return sum(p * v for p, v in zip(ps, vs))
+    
+    lo, hi = -1.0, 1.0
+    for _ in range(60):
+        elo, ehi = e_for_beta(lo), e_for_beta(hi)
+        if elo > target_e1:
+            lo *= 2
+            continue
+        if ehi < target_e1:
+            hi *= 2
+            continue
+        break
+    for _ in range(80):
+        mid = (lo + hi) / 2.0
+        em = e_for_beta(mid)
+        if em < target_e1:
+            lo = mid
+        else:
+            hi = mid
+    beta = (lo + hi) / 2.0
+    ws = [math.exp(beta * v) for v in vs]
+    Z = sum(ws)
+    return [w / Z for w in ws]
+
 def _decimal_scale(values: List[float]) -> int:
     max_dec = 0
     for v in values:
@@ -373,18 +413,30 @@ def register_store_slot_settings_routes(app):
             
             # 確率を最適化（不使用役は除外）
             # target_expected_valueは1回スピンの期待値なので5で割る
-            target_expected_value_per_spin = expected_total_5 / 5.0
+            target_e1 = expected_total_5 / 5.0
             
             # miss_probabilityを取得（デフォルト20%）
             config = store_db.get_slot_config(store_id)
             miss_probability = config.get('miss_probability', 20.0)
+            miss_rate = miss_probability / 100.0
             
-            optimized_active = _optimize_symbol_probabilities(
-                symbols=active_symbols,
-                target_probs=target_probabilities if target_probabilities else {},
-                target_expected_value=target_expected_value_per_spin,
-                miss_probability=miss_probability
-            )
+            if miss_rate >= 1.0:
+                return jsonify({"ok": False, "error": "ハズレ確率は100%未満である必要があります"}), 400
+            
+            # ハズレ確率を考慮した期待値を計算
+            adjusted_target_e1 = target_e1 / (1.0 - miss_rate)
+            
+            # 配当のリストを取得
+            payouts = [s.payout_3 for s in active_symbols]
+            
+            # 期待値から確率を逆算
+            probs = _solve_probs_for_target_expectation(payouts, adjusted_target_e1)
+            
+            # 各シンボルに確率を設定
+            for s, p in zip(active_symbols, probs):
+                s.prob = float(p) * 100.0
+            
+            optimized_active = active_symbols
             
             # 不使用役の確率を0に設定
             for s in disabled_symbols:
