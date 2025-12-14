@@ -488,6 +488,56 @@ def spin():
         "total_payout": total_payout
     })
 
+@app.post("/store/<store_slug>/calc_prob")
+@require_store
+def calc_prob():
+    """
+    body: {"threshold_min":200, "threshold_max":500, "spins":5}
+    - threshold_maxがNoneまたは未指定なら上限なし（∞）
+    """
+    body = request.get_json(silent=True) or {}
+    tmin = float(body.get("threshold_min", 0))
+    tmax = body.get("threshold_max")
+    tmax = None if tmax in (None, "", "null") else float(tmax)
+    spins = int(body.get("spins", 5))
+    spins = max(1, spins)
+    
+    cfg_dict = store_db.get_slot_config(g.store_id)
+    symbols = [Symbol(**s) for s in cfg_dict["symbols"]]
+    miss_probability = cfg_dict.get("miss_probability", 0.0)
+    
+    # ハズレ確率を考慮するため、ハズレ（0点）をシンボルリストに追加
+    symbols_with_miss = list(symbols)
+    
+    # ハズレシンボルを追加
+    miss_symbol = Symbol(
+        id="miss",
+        label="ハズレ",
+        payout_3=0.0,
+        prob=miss_probability,
+        color="#000000"
+    )
+    symbols_with_miss.append(miss_symbol)
+    
+    # 確率を正規化（ハズレ確率 + シンボル確率の合計 = 100%）
+    psum = sum(float(s.prob) for s in symbols_with_miss)
+    for s in symbols_with_miss:
+        s.prob = float(s.prob) * 100.0 / psum
+    
+    prob_ge = _prob_total_ge(symbols_with_miss, spins, tmin)
+    prob_le = 1.0 if tmax is None else _prob_total_le(symbols_with_miss, spins, tmax)
+    prob_range = max(0.0, prob_le - (1.0 - prob_ge))
+    
+    return jsonify({
+        "ok": True,
+        "prob_ge": prob_ge,
+        "prob_le": prob_le,
+        "prob_range": prob_range,
+        "tmin": tmin,
+        "tmax": tmax,
+        "spins": spins
+    })
+
 # ===== 静的ファイル =====
 @app.get("/static/<path:filename>")
 def serve_static(filename):
