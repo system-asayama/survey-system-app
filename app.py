@@ -329,6 +329,7 @@ def review_confirm():
     
     return render_template("review_confirm.html",
         store=g.store,
+        store_slug=g.store_slug,
         generated_review=generated_review,
         google_review_url=google_review_url,
         rating=rating

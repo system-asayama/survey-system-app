@@ -196,13 +196,13 @@
         }
         // その後スロットページへ
         setTimeout(() => {
-          window.location.href = '/slot';
+          window.location.href = '{{ url_for("slot_page", store_slug=store_slug) }}';
         }, 1000);
       }, 500);
     }
 
     function goToSlot() {
-      window.location.href = '/slot';
+      window.location.href = '{{ url_for("slot_page", store_slug=store_slug) }}';
     }
   </script>
 </body>
