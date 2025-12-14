@@ -422,7 +422,8 @@ function previewRecalcProb(){
 
 async function loadConfig(){
   try {
-    const cfg = await fetchJSON('/config');
+    const storeSlug = window.location.pathname.split('/')[2];
+    const cfg = await fetchJSON(`/store/${storeSlug}/config`);
     window.__symbols = cfg.symbols;
     
     // 設定ダイアログが存在する場合のみ更新
@@ -622,7 +623,8 @@ async function play(){
 
   let data;
   try{
-    data = await fetchJSON('/spin', { method:'POST', body: JSON.stringify({}) });
+    const storeSlug = window.location.pathname.split('/')[2];
+    data = await fetchJSON(`/store/${storeSlug}/spin`, { method:'POST', body: JSON.stringify({}) });
   }catch(e){
     $('#status').textContent = 'エラー: ' + (e.message || e);
     spinning = false;
@@ -692,7 +694,8 @@ document.addEventListener('DOMContentLoaded', ()=>{
     if(tmax !== null && Number.isFinite(tmax)) payload.threshold_max = tmax;
 
     try{
-      const j = await fetchJSON('/calc_prob', { method:'POST', body: JSON.stringify(payload) });
+      const storeSlug = window.location.pathname.split('/')[2];
+      const j = await fetchJSON(`/store/${storeSlug}/calc_prob`, { method:'POST', body: JSON.stringify(payload) });
       const el = $('#prob-result');
       if(!el) return;
       if('prob_range' in j && tmax !== null){
@@ -713,8 +716,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
   $('#btn-reset-survey')?.addEventListener('click', async ()=>{
     if(confirm('アンケートをリセットして最初からやり直しますか？')){
       try{
-        await fetchJSON('/reset_survey', { method:'POST', body: JSON.stringify({}) });
-        window.location.href = '/survey';
+        const storeSlug = window.location.pathname.split('/')[2];
+        await fetchJSON(`/store/${storeSlug}/reset_survey`, { method:'POST', body: JSON.stringify({}) });
+        window.location.href = `/store/${storeSlug}/survey`;
       }catch(e){
         alert('リセットに失敗しました: ' + (e.message || e));
       }
