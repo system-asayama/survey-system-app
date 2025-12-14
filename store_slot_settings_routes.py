@@ -442,13 +442,27 @@ def register_store_slot_settings_routes(app):
             for s in disabled_symbols:
                 s.prob = 0.0
             
-            # 結果を結合
-            optimized_symbols = optimized_active + disabled_symbols
+            # 元の順序を保持して結果を返す
+            # symbolsの順序で確率を設定
+            result_symbols = []
+            for original_symbol in symbols:
+                # active_symbolsまたはdisabled_symbolsから対応するシンボルを探す
+                found = False
+                for s in optimized_active:
+                    if s.id == original_symbol.id:
+                        result_symbols.append(s)
+                        found = True
+                        break
+                if not found:
+                    for s in disabled_symbols:
+                        if s.id == original_symbol.id:
+                            result_symbols.append(s)
+                            break
             
             # 結果を返す
             return jsonify({
                 "ok": True,
-                "symbols": [asdict(s) for s in optimized_symbols]
+                "symbols": [asdict(s) for s in result_symbols]
             })
             
         except Exception as e:
