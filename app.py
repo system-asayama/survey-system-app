@@ -392,39 +392,100 @@ def set_config():
 @require_store
 def spin():
     """スロット回転（5回分）"""
+    import random
+    
     cfg_dict = store_db.get_slot_config(g.store_id)
     symbols = [Symbol(**s) for s in cfg_dict["symbols"]]
-    reels = cfg_dict.get("reels", 3)
     
-    # 5回分のスピン結果を生成
+    # 確率の正規化
+    psum = sum(float(s.prob) for s in symbols) or 100.0
+    for s in symbols:
+        s.prob = float(s.prob) / psum * 100.0
+    
     spins = []
+    total_payout = 0.0
+    miss_rate = cfg_dict.get("miss_probability", 0.0) / 100.0
+    
+    # 通常シンボルとリーチ専用シンボルを分類
+    normal_symbols = [s for s in symbols if not (hasattr(s, 'is_reach') and s.is_reach)]
+    reach_symbols = [s for s in symbols if hasattr(s, 'is_reach') and s.is_reach]
+    
+    # 5回スピン
     for _ in range(5):
-        # 確率に基づいてシンボルを選択
-        result = [_choice_by_prob(symbols) for _ in range(reels)]
-        
-        # 全て同じシンボルかチェック
-        matched = len(set(s.id for s in result)) == 1
-        if matched:
-            payout = result[0].payout_3
-            symbol = {"id": result[0].id, "label": result[0].label}
+        # まずハズレかどうかを判定
+        if random.random() < miss_rate:
+            # ハズレ：1コマ目と2コマ目は必ず異なるシンボル
+            reel1 = random.choice(normal_symbols)
+            # reel2はreel1と異なるものを選ぶ
+            other_symbols = [s for s in normal_symbols if s.id != reel1.id]
+            if other_symbols:
+                reel2 = random.choice(other_symbols)
+            else:
+                reel2 = reel1  # シンボルが1つしかない場合
+            reel3 = random.choice(normal_symbols)
+            
+            spins.append({
+                "reels": [
+                    {"id": reel1.id, "label": reel1.label, "color": reel1.color},
+                    {"id": reel2.id, "label": reel2.label, "color": reel2.color},
+                    {"id": reel3.id, "label": reel3.label, "color": reel3.color}
+                ],
+                "matched": False,
+                "is_reach": False,
+                "payout": 0
+            })
         else:
-            payout = 0
-            symbol = None
-        
-        # リーチ判定（最初の2つが同じ）
-        is_reach = result[0].id == result[1].id and not matched
-        
-        spins.append({
-            "reels": [{"id": s.id, "label": s.label} for s in result],
-            "payout": payout,
-            "matched": matched,
-            "is_reach": is_reach,
-            "symbol": symbol
-        })
+            # 当たりまたはリーチハズレ：シンボルを確率で抽選
+            symbol = _choice_by_prob(symbols)
+            
+            # リーチ専用シンボルの場合
+            is_reach_symbol = hasattr(symbol, 'is_reach') and symbol.is_reach
+            
+            if is_reach_symbol:
+                # リーチハズレ：1,2コマ目は同じ、3コマ目は必ず異なる
+                reach_symbol_id = symbol.reach_symbol if hasattr(symbol, 'reach_symbol') else symbol.id
+                # 元のシンボルを探す
+                original_symbol = next((s for s in normal_symbols if s.id == reach_symbol_id), symbol)
+                
+                # リール3用に異なるシンボルを選ぶ（リーチ専用シンボルも除外）
+                other_symbols = [s for s in normal_symbols if s.id != reach_symbol_id]
+                if other_symbols:
+                    reel3_symbol = random.choice(other_symbols)
+                else:
+                    reel3_symbol = original_symbol
+                
+                spins.append({
+                    "reels": [
+                        {"id": original_symbol.id, "label": original_symbol.label, "color": original_symbol.color},
+                        {"id": original_symbol.id, "label": original_symbol.label, "color": original_symbol.color},
+                        {"id": reel3_symbol.id, "label": reel3_symbol.label, "color": reel3_symbol.color}
+                    ],
+                    "matched": False,
+                    "is_reach": True,
+                    "reach_symbol": {"id": original_symbol.id, "label": original_symbol.label, "color": original_symbol.color},
+                    "payout": 0
+                })
+            else:
+                # 通常の当たり：3つ揃い
+                payout = symbol.payout_3
+                total_payout += payout
+                
+                spins.append({
+                    "reels": [
+                        {"id": symbol.id, "label": symbol.label, "color": symbol.color},
+                        {"id": symbol.id, "label": symbol.label, "color": symbol.color},
+                        {"id": symbol.id, "label": symbol.label, "color": symbol.color}
+                    ],
+                    "matched": True,
+                    "is_reach": False,
+                    "symbol": {"id": symbol.id, "label": symbol.label, "color": symbol.color},
+                    "payout": payout
+                })
     
     return jsonify({
         "ok": True,
-        "spins": spins
+        "spins": spins,
+        "total_payout": total_payout
     })
 
 # ===== 静的ファイル =====
