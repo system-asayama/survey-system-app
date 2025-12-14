@@ -22,8 +22,35 @@ app = Flask(__name__,
             static_folder='app/static')
 app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 
-# OpenAI クライアント初期化
-openai_client = OpenAI()
+# OpenAI クライアントを動的に取得する関数
+def get_openai_client(store_id=None):
+    """
+    OpenAIクライアントを取得。
+    store_idが指定されている場合は、その店舗のAPIキーを使用。
+    指定がない場合は環境変数から取得。
+    """
+    api_key = None
+    
+    if store_id:
+        try:
+            conn = store_db.get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT openai_api_key FROM T_店舗 WHERE id = ?", (store_id,))
+            result = cursor.fetchone()
+            conn.close()
+            if result and result[0]:
+                api_key = result[0]
+        except Exception as e:
+            print(f"Error getting OpenAI API key from database: {e}")
+    
+    # データベースにキーがない場合は環境変数を使用
+    if not api_key:
+        api_key = os.environ.get('OPENAI_API_KEY')
+    
+    if not api_key:
+        raise ValueError("OpenAI APIキーが設定されていません。管理画面でAPIキーを設定してください。")
+    
+    return OpenAI(api_key=api_key)
 
 # ===== モデル =====
 @dataclass
@@ -205,7 +232,7 @@ def _prob_total_le(symbols: List[Symbol], spins: int, threshold: float) -> float
         pmf = nxt
     return float(sum(pmf[:thr + 1]))
 
-def _generate_review_text(survey_data):
+def _generate_review_text(survey_data, store_id=None):
     """
     アンケートデータからAIを使って口コミ投稿文を生成
     """
@@ -235,7 +262,9 @@ def _generate_review_text(survey_data):
 口コミ投稿文:"""
     
     try:
-        response = openai_client.chat.completions.create(
+        # 店舗IDに応じたOpenAIクライアントを取得
+        client = get_openai_client(store_id)
+        response = client.chat.completions.create(
             model="gpt-4.1-mini",
             messages=[
                 {"role": "system", "content": "あなたは自然で読みやすい口コミ投稿文を作成する専門家です。"},
@@ -252,8 +281,8 @@ def _generate_review_text(survey_data):
 # ===== ルート =====
 @app.get("/")
 def index():
-    """トップページ - 店舗選択またはリダイレクト"""
-    return render_template("store_select.html")
+    """トップページ - 管理画面ログインへリダイレクト"""
+    return redirect(url_for('auth.select_login'))
 
 @app.get("/store/<store_slug>/")
 @require_store
@@ -288,7 +317,7 @@ def submit_survey():
     
     # 星4以上の場合のみAI投稿文を生成
     if rating >= 4:
-        generated_review = _generate_review_text(body)
+        generated_review = _generate_review_text(body, g.store_id)
         body['generated_review'] = generated_review
     else:
         generated_review = ''
@@ -611,15 +640,25 @@ try:
 except Exception as e:
     print(f"⚠️ 店舗スロット設定ルート登録エラー: {e}")
 
-# ===== QRコード印刷ルート =====
+## ===== QRコード印刷ルート =====
 try:
     from qr_print_routes import register_qr_print_routes
     register_qr_print_routes(app)
     print("✅ QRコード印刷ルート登録完了")
 except Exception as e:
-    print(f"⚠️ QRコード印刷ルート登録エラー: {e}")
+    print(f"⚠️ QRコード印刷ルート登録失敗: {e}")
+
+# ===== OpenAI APIキー設定ルート =====
+try:
+    from openai_key_routes import openai_key_bp
+    app.register_blueprint(openai_key_bp)
+    print("✅ OpenAI APIキー設定ルート登録完了")
+except Exception as e:
+    print(f"⚠️ OpenAI APIキー設定ルート登録失敗: {e}")
 
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000, debug=True)
+    import sys
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
+    app.run(host="0.0.0.0", port=port, debug=True)

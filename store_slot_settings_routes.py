@@ -159,7 +159,7 @@ def register_store_slot_settings_routes(app):
         cur = conn.cursor()
         
         # 店舗情報を取得
-        cur.execute(_sql(conn, 'SELECT id, 名称, slug FROM "T_店舗" WHERE id = %s AND tenant_id = %s'), 
+        cur.execute(_sql(conn, 'SELECT id, 名称, slug, openai_api_key FROM "T_店舗" WHERE id = %s AND tenant_id = %s'), 
                    (store_id, tenant_id))
         store_row = cur.fetchone()
         
@@ -171,7 +171,8 @@ def register_store_slot_settings_routes(app):
         store = {
             'id': store_row[0],
             'name': store_row[1],
-            'slug': store_row[2]
+            'slug': store_row[2],
+            'openai_api_key': store_row[3] if len(store_row) > 3 else None
         }
         
         # Google設定を取得
