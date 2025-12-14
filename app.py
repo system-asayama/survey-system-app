@@ -74,27 +74,19 @@ def require_store(f):
 
 # ===== ユーティリティ =====
 def _choice_by_prob(symbols: List[Symbol]) -> Symbol:
-    """確率に基づいてシンボルを選択（リーチシンボルを除外）"""
-    # リーチシンボル（payout_3 == 0）を除外
-    valid_symbols = [s for s in symbols if s.payout_3 > 0]
-    if not valid_symbols:
-        return symbols[0]  # フォールバック
-    
     buckets = []
     acc = 0
-    for s in valid_symbols:
+    for s in symbols:
         w = max(0, int(round(float(s.prob) * 100)))
         acc += w
         buckets.append((acc, s))
-    
     if acc <= 0:
-        return valid_symbols[0]
-    
+        return symbols[-1]
     r = secrets.randbelow(acc)
     for edge, s in buckets:
         if r < edge:
             return s
-    return valid_symbols[-1]
+    return symbols[-1]
 
 # --- 期待値関連 ---
 def _expected_total5_from_inverse(payouts: List[float]) -> float:
