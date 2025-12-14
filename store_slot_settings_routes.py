@@ -23,6 +23,8 @@ class Symbol:
     prob: float = 0.0
     is_reach: bool = False
     reach_symbol: str | None = None
+    is_disabled: bool = False  # 不使用フラグ
+    is_default: bool = False  # デフォルト役フラグ（削除不可）
 
 
 @dataclass
@@ -95,12 +97,12 @@ def _prob_total_le(symbols: List[Symbol], spins: int, threshold: float) -> float
 def _default_config() -> Config:
     """デフォルトのスロット設定"""
     defaults = [
-        {"id": "seven", "label": "7", "payout_3": 100, "color": "#ff0000"},
-        {"id": "bell", "label": "🔔", "payout_3": 50, "color": "#fbbf24"},
-        {"id": "bar", "label": "BAR", "payout_3": 25, "color": "#ffffff"},
-        {"id": "grape", "label": "🍇", "payout_3": 20, "color": "#7c3aed"},
-        {"id": "cherry", "label": "🍒", "payout_3": 12.5, "color": "#ef4444"},
-        {"id": "lemon", "label": "🍋", "payout_3": 12.5, "color": "#fde047"},
+        {"id": "seven", "label": "7", "payout_3": 100, "color": "#ff0000", "is_default": True},
+        {"id": "bell", "label": "🔔", "payout_3": 50, "color": "#fbbf24", "is_default": True},
+        {"id": "bar", "label": "BAR", "payout_3": 25, "color": "#ffffff", "is_default": True},
+        {"id": "grape", "label": "🍇", "payout_3": 20, "color": "#7c3aed", "is_default": True},
+        {"id": "cherry", "label": "🍒", "payout_3": 12.5, "color": "#ef4444", "is_default": True},
+        {"id": "lemon", "label": "🍋", "payout_3": 12.5, "color": "#fde047", "is_default": True},
     ]
     return Config(symbols=[Symbol(**d) for d in defaults])
 
@@ -300,6 +302,8 @@ def register_store_slot_settings_routes(app):
                 symbol_payout = float(request.form.get(f"symbol_payout_{i}", 0))
                 symbol_prob = float(request.form.get(f"symbol_prob_{i}", 0))
                 symbol_color = request.form.get(f"symbol_color_{i}", "#888888")
+                symbol_disabled = request.form.get(f"symbol_disabled_{i}") == "on"
+                symbol_is_default = request.form.get(f"symbol_is_default_{i}", "false") == "true"
                 
                 if symbol_id and symbol_label:
                     symbols.append(Symbol(
@@ -307,7 +311,9 @@ def register_store_slot_settings_routes(app):
                         label=symbol_label,
                         payout_3=symbol_payout,
                         color=symbol_color,
-                        prob=symbol_prob
+                        prob=symbol_prob,
+                        is_disabled=symbol_disabled,
+                        is_default=symbol_is_default
                     ))
             
             # 設定オブジェクトを作成
@@ -361,12 +367,23 @@ def register_store_slot_settings_routes(app):
             # Symbolオブジェクトに変換
             symbols = [Symbol(**s) for s in symbols_data]
             
-            # 確率を最適化
-            optimized_symbols = _optimize_symbol_probabilities(
-                symbols=symbols,
+            # 不使用役を除外して最適化
+            active_symbols = [s for s in symbols if not s.is_disabled]
+            disabled_symbols = [s for s in symbols if s.is_disabled]
+            
+            # 確率を最適化（不使用役は除外）
+            optimized_active = _optimize_symbol_probabilities(
+                symbols=active_symbols,
                 expected_total_5=expected_total_5,
                 target_probabilities=target_probabilities if target_probabilities else None
             )
+            
+            # 不使用役の確率を0に設定
+            for s in disabled_symbols:
+                s.prob = 0.0
+            
+            # 結果を結合
+            optimized_symbols = optimized_active + disabled_symbols
             
             # 結果を返す
             return jsonify({
