@@ -487,11 +487,37 @@ def spin():
                     "payout": payout
                 })
     
-    return jsonify({
+    # 景品判定
+    prizes = store_db.get_prizes_config(g.store_id)
+    matched_prize = None
+    for prize in prizes:
+        min_score = prize.get('min_score', 0)
+        max_score = prize.get('max_score')
+        if max_score is None:
+            # 上限なし
+            if total_payout >= min_score:
+                matched_prize = prize
+                break
+        else:
+            # 範囲内
+            if min_score <= total_payout <= max_score:
+                matched_prize = prize
+                break
+    
+    result = {
         "ok": True,
         "spins": spins,
-        "total_payout": total_payout
-    })
+        "total_payout": total_payout,
+        "ts": int(time.time())
+    }
+    
+    if matched_prize:
+        result["prize"] = {
+            "rank": matched_prize.get('rank', ''),
+            "name": matched_prize.get('name', '')
+        }
+    
+    return jsonify(result)
 
 @app.post("/store/<store_slug>/calc_prob")
 @require_store
