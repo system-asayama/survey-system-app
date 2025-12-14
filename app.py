@@ -611,6 +611,14 @@ try:
 except Exception as e:
     print(f"⚠️ 店舗スロット設定ルート登録エラー: {e}")
 
+# ===== QRコード印刷ルート =====
+try:
+    from qr_print_routes import register_qr_print_routes
+    register_qr_print_routes(app)
+    print("✅ QRコード印刷ルート登録完了")
+except Exception as e:
+    print(f"⚠️ QRコード印刷ルート登録エラー: {e}")
+
 
 
 if __name__ == "__main__":
