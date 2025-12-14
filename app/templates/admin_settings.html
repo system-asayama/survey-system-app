@@ -168,13 +168,19 @@
       const rows = container.querySelectorAll('.prize-row');
       rows.forEach((row, index) => {
         if (index < prizeData.length) {
-          const minInput = row.querySelector('input[placeholder="最小得点"]');
-          const maxInput = row.querySelector('input[placeholder="最大得点"]');
-          const labelInput = row.querySelector('input[placeholder="景品名"]');
+          const minInput = row.querySelector('input[name^="prize_min_score_"]');
+          const maxInput = row.querySelector('input[name^="prize_max_score_"]');
+          const rankInput = row.querySelector('input[name^="prize_rank_"]');
+          const nameInput = row.querySelector('input[name^="prize_name_"]');
           
-          if (minInput) prizeData[index].min = parseInt(minInput.value) || 0;
-          if (maxInput && maxInput.value) prizeData[index].max = parseInt(maxInput.value) || null;
-          if (labelInput) prizeData[index].label = labelInput.value || '';
+          if (minInput) prizeData[index].min_score = parseInt(minInput.value) || 0;
+          if (maxInput && maxInput.value) {
+            prizeData[index].max_score = parseInt(maxInput.value);
+          } else {
+            prizeData[index].max_score = undefined;
+          }
+          if (rankInput) prizeData[index].rank = rankInput.value || '';
+          if (nameInput) prizeData[index].name = nameInput.value || '';
         }
       });
     }
@@ -183,7 +189,7 @@
       // 現在の入力値をprizeDataに反映
       updatePrizeDataFromInputs();
       // 新しい行を追加
-      prizeData.push({ min: 0, label: '' });
+      prizeData.push({ min_score: 0, rank: '', name: '' });
       renderPrizes();
     }
     
