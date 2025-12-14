@@ -293,13 +293,16 @@
     }
     
     // ページ読み込み時にQRコードを生成
-    window.addEventListener('load', () => {
-      generateQR('qr-simple', 400);
-      generateQR('qr-poster', 300);
-      generateQR('qr-card-1', 150);
-      generateQR('qr-card-2', 150);
-      generateQR('qr-card-3', 150);
-      generateQR('qr-card-4', 150);
+    document.addEventListener('DOMContentLoaded', () => {
+      // QRCodeライブラリが読み込まれるまで少し待つ
+      setTimeout(() => {
+        generateQR('qr-simple', 400);
+        generateQR('qr-poster', 300);
+        generateQR('qr-card-1', 150);
+        generateQR('qr-card-2', 150);
+        generateQR('qr-card-3', 150);
+        generateQR('qr-card-4', 150);
+      }, 100);
     });
   </script>
 </body>
