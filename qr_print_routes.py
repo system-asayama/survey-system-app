@@ -1,6 +1,6 @@
 """QRコード印刷ページのルート"""
 from flask import render_template, g
-from admin_auth import require_roles, ROLES
+from app.utils.decorators import require_roles, ROLES
 import store_db
 
 def register_qr_print_routes(app):
