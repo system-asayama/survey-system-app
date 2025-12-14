@@ -404,8 +404,26 @@ def register_store_slot_settings_routes(app):
             symbols_data = data.get('symbols', [])
             target_probabilities = data.get('target_probabilities', {})
             
-            # Symbolオブジェクトに変換
-            symbols = [Symbol(**s) for s in symbols_data]
+            # データベースから現在のシンボル情報を取得（is_reach, reach_symbolなどを保持）
+            config = store_db.get_slot_config(store_id)
+            db_symbols = {s['id']: s for s in config['symbols']}
+            
+            # フロントエンドから受け取ったデータとマージ
+            symbols = []
+            for s_data in symbols_data:
+                # データベースのシンボル情報をベースにする
+                if s_data['id'] in db_symbols:
+                    merged = db_symbols[s_data['id']].copy()
+                    # フロントエンドから受け取った値で更新（配当、無効フラグなど）
+                    merged.update({
+                        'payout_3': s_data.get('payout_3', merged.get('payout_3', 0)),
+                        'is_disabled': s_data.get('is_disabled', merged.get('is_disabled', False)),
+                        'prob': s_data.get('prob', merged.get('prob', 0))
+                    })
+                    symbols.append(Symbol(**merged))
+                else:
+                    # 新しいシンボルの場合はそのまま使用
+                    symbols.append(Symbol(**s_data))
             
             # 不使用役を除外して最適化
             active_symbols = [s for s in symbols if not s.is_disabled]
