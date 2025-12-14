@@ -145,8 +145,25 @@ def register_store_slot_settings_routes(app):
             flash('設定を更新しました', 'success')
             return redirect(url_for('store_slot_settings', store_id=store_id))
         
+        # 管理者情報を取得
+        user_id = session.get('user_id')
+        admin_conn = get_db_connection()
+        admin_cur = admin_conn.cursor()
+        admin_cur.execute(_sql(admin_conn, 'SELECT login_id, 名前 FROM "T_管理者" WHERE id = %s'), (user_id,))
+        admin_row = admin_cur.fetchone()
+        admin_conn.close()
+        
+        admin = {
+            'store_code': store.get('slug', ''),
+            'login_id': admin_row[0] if admin_row else '',
+            'name': admin_row[1] if admin_row else '',
+            'email': '',
+            'last_login': ''
+        }
+        
         return render_template('admin_settings.html',
                              store=store,
+                             admin=admin,
                              google_review_url=google_review_url,
                              survey_complete_message="アンケートにご協力いただきありがとうございます！スロットをお楽しみください。",
                              prizes=prizes,
