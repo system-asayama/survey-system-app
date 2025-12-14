@@ -334,6 +334,10 @@ def register_store_slot_settings_routes(app):
             # シンボル数を取得
             symbol_count = int(request.form.get("symbol_count", 0))
             
+            # データベースから現在のシンボル情報を取得（is_reach, reach_symbolを保持するため）
+            current_config = store_db.get_slot_config(store_id)
+            current_symbols = {s['id']: s for s in current_config['symbols']}
+            
             # シンボルデータを収集
             symbols = []
             for i in range(symbol_count):
@@ -344,6 +348,13 @@ def register_store_slot_settings_routes(app):
                 symbol_color = request.form.get(f"symbol_color_{i}", "#888888")
                 symbol_disabled = request.form.get(f"symbol_disabled_{i}") == "on"
                 symbol_is_default = request.form.get(f"symbol_is_default_{i}", "false") == "true"
+                symbol_is_reach = request.form.get(f"symbol_is_reach_{i}", "false") == "true"
+                symbol_reach_symbol = request.form.get(f"symbol_reach_symbol_{i}", "").strip() or None
+                
+                # データベースから is_reach と reach_symbol を取得（フォームから送信されていない場合）
+                if symbol_id in current_symbols and not symbol_is_reach:
+                    symbol_is_reach = current_symbols[symbol_id].get('is_reach', False)
+                    symbol_reach_symbol = current_symbols[symbol_id].get('reach_symbol', None)
                 
                 if symbol_id and symbol_label:
                     symbols.append(Symbol(
@@ -353,7 +364,9 @@ def register_store_slot_settings_routes(app):
                         color=symbol_color,
                         prob=symbol_prob,
                         is_disabled=symbol_disabled,
-                        is_default=symbol_is_default
+                        is_default=symbol_is_default,
+                        is_reach=symbol_is_reach,
+                        reach_symbol=symbol_reach_symbol
                     ))
             
             # 設定オブジェクトを作成
