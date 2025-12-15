@@ -352,11 +352,15 @@
         const data = await response.json();
         
         if (data.ok) {
-          // 確率を更新
-          rows.forEach((row, index) => {
+          // 確率を更新（IDで照合）
+          rows.forEach((row) => {
+            const symbolId = row.querySelector('input[name^="symbol_id_"]').value;
             const probInput = row.querySelector('input[name^="symbol_prob_"]');
-            if (data.symbols[index]) {
-              probInput.value = data.symbols[index].prob.toFixed(4);
+            
+            // data.symbolsから対応するシンボルを探す
+            const matchedSymbol = data.symbols.find(s => s.id === symbolId);
+            if (matchedSymbol) {
+              probInput.value = matchedSymbol.prob.toFixed(4);
             }
           });
           
