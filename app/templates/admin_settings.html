@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>設定 - 管理画面</title>
+  <title>アンケートアプリ設定 - 管理画面</title>
   <link rel="stylesheet" href="/static/slot.css">
   <style>
     body {
@@ -434,7 +434,7 @@
 </head>
 <body>
   <div class="admin-header">
-    <h1>⚙️ 設定</h1>
+    <h1>📋 アンケートアプリ設定</h1>
     <div style="display: flex; gap: 10px;">
       <a href="/admin/store/{{ store.id }}/qr_print" target="_blank" style="padding: 8px 16px; background: #10b981; color: white; text-decoration: none; border-radius: 6px; font-size: 14px;">📱 QR印刷</a>
       <a href="/store/{{ store.slug }}/slot?demo=true" target="_blank" style="padding: 8px 16px; background: #3b82f6; color: white; text-decoration: none; border-radius: 6px; font-size: 14px;">🎰 デモプレイ</a>
@@ -449,6 +449,17 @@
         {% endfor %}
       {% endif %}
     {% endwith %}
+
+    <div class="section">
+      <h2>📝 アンケート設定</h2>
+      <p class="help-text" style="margin-bottom: 20px;">アンケートの質問項目を設定できます。</p>
+      <div style="margin-bottom: 20px;">
+        <a href="{{ url_for('survey_admin.admin_survey_editor') }}" class="btn-primary" style="text-decoration: none; display: inline-block; padding: 12px 24px;">📝 アンケートを編集</a>
+      </div>
+      <div class="help-text">
+        アンケートの質問内容、選択肢、必須項目などを詳細に設定できます。
+      </div>
+    </div>
 
     <div class="section">
       <h2>アンケート完了メッセージ</h2>
