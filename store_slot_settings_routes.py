@@ -363,8 +363,8 @@ def register_store_slot_settings_routes(app):
                     symbol_is_reach = current_symbols[symbol_id].get('is_reach', False)
                     symbol_reach_symbol = current_symbols[symbol_id].get('reach_symbol', None)
                 
-                # 確率が0の場合は、データベースから既存の確率を取得
-                if symbol_prob == 0 and symbol_id in current_symbols:
+                # 確率が0の場合は、データベースから既存の確率を取得（ただし、不使用の場合は0のまま）
+                if symbol_prob == 0 and symbol_id in current_symbols and not symbol_disabled:
                     symbol_prob = current_symbols[symbol_id].get('prob', 0)
                 
                 if symbol_id and symbol_label:
