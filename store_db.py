@@ -202,10 +202,11 @@ def save_google_review_url(store_id: int, review_url: str) -> None:
 
 # ===== アンケート回答保存 =====
 def save_survey_response(store_id: int, response_data: Dict[str, Any]) -> int:
-    """アンケート回答を保存"""
+    """アンケート回答を保存（動的な質問に対応）"""
     conn = get_db_connection()
     cur = conn.cursor()
     
+    # 動的な質問に対応：response_jsonのみを保存
     cur.execute("""
         INSERT INTO T_アンケート回答 (
             store_id, rating, visit_purpose, atmosphere, 
@@ -213,10 +214,10 @@ def save_survey_response(store_id: int, response_data: Dict[str, Any]) -> int:
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         store_id,
-        response_data.get('rating'),
-        response_data.get('visit_purpose', ''),
+        response_data.get('rating', 3),  # デフォルト値を設定
+        response_data.get('visit_purpose', 'その他'),
         json.dumps(response_data.get('atmosphere', []), ensure_ascii=False),
-        response_data.get('recommend', ''),
+        response_data.get('recommend', '普通'),
         response_data.get('comment', ''),
         response_data.get('generated_review', ''),
         json.dumps(response_data, ensure_ascii=False)

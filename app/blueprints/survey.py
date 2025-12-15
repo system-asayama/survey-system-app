@@ -203,10 +203,7 @@ def submit_survey():
     """アンケート送信"""
     body = request.get_json(silent=True) or {}
     
-    # アンケート回答を保存
-    store_db.save_survey_response(g.store_id, body)
-    
-    # 最初の質問の回答を評価として使用（5段階評価の場合）
+    # 最初の質問の回答を評価として使用（５段階評価の場合）
     rating = 3  # デフォルト
     first_answer = body.get('q1', '')
     if '非常に満足' in first_answer or '強く思う' in first_answer or '非常に良い' in first_answer:
@@ -219,6 +216,12 @@ def submit_survey():
         rating = 2
     else:
         rating = 1
+    
+    # ratingをbodyに追加
+    body['rating'] = rating
+    
+    # アンケート回答を保存
+    store_db.save_survey_response(g.store_id, body)
     
     # 星4以上の場合のみAI投稿文を生成
     generated_review = ''
@@ -233,22 +236,20 @@ def submit_survey():
     session[f'survey_rating_{g.store_id}'] = rating
     session[f'generated_review_{g.store_id}'] = generated_review
     
-    # 星3以下の場合は直接スロットページへ
+    # 星3以下の場合はメッセージを表示
     if rating <= 3:
         return jsonify({
             "ok": True, 
             "message": "貴重なご意見をありがとうございます。社内で改善に活用させていただきます。",
-            "rating": rating,
-            "redirect_url": url_for('slot.slot_page', store_slug=g.store_slug)
+            "rating": rating
         })
     
-    # 星4以上の場合は口コミ確認ページへ（TODO: 実装）
+    # 星4以上の場合は口コミ投稿文を表示
     return jsonify({
         "ok": True, 
-        "message": "アンケートを受け付けました",
+        "message": "アンケートにご協力いただきありがとうございます！",
         "rating": rating,
-        "generated_review": generated_review,
-        "redirect_url": url_for('slot.slot_page', store_slug=g.store_slug)
+        "generated_review": generated_review
     })
 
 @bp.post("/store/<store_slug>/reset_survey")

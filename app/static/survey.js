@@ -155,12 +155,18 @@ document.addEventListener('DOMContentLoaded', () => {
       const result = await response.json();
 
       if (result.ok) {
-        // 星3以下の場合はメッセージを表示してからリダイレクト
-        if (result.rating && result.rating <= 3) {
-          alert(result.message);
+        // メッセージを表示
+        alert(result.message);
+        
+        // 口コミ投稿文がある場合は追加で表示
+        if (result.generated_review) {
+          alert('以下の口コミ投稿文を生成しました：\n\n' + result.generated_review);
         }
-        // 成功したら指定されたページへリダイレクト
-        window.location.href = result.redirect_url || '/slot';
+        
+        // フォームをリセット
+        form.reset();
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'アンケートを送信してスロットへ';
       } else {
         alert('エラーが発生しました: ' + (result.error || '不明なエラー'));
         submitBtn.disabled = false;
