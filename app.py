@@ -674,12 +674,12 @@ try:
     from app.blueprints.employee import bp as employee_bp
     from app.blueprints.survey_admin import bp as survey_admin_bp
     
-    app.register_blueprint(auth_bp)
-    app.register_blueprint(system_admin_bp)
-    app.register_blueprint(tenant_admin_bp)
-    app.register_blueprint(admin_bp)
-    app.register_blueprint(employee_bp)
-    app.register_blueprint(survey_admin_bp)
+    app.register_blueprint(auth_bp, url_prefix='/auth')
+    app.register_blueprint(system_admin_bp, url_prefix='/system_admin')
+    app.register_blueprint(tenant_admin_bp, url_prefix='/tenant_admin')
+    app.register_blueprint(admin_bp, url_prefix='/admin')
+    app.register_blueprint(employee_bp, url_prefix='/employee')
+    app.register_blueprint(survey_admin_bp, url_prefix='/survey_admin')
     
     print("✅ 管理画面blueprints登録完了")
 except Exception as e:
