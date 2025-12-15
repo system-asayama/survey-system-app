@@ -464,6 +464,30 @@
     // ページ読み込み時に上下移動ボタンの状態を更新
     document.addEventListener('DOMContentLoaded', function() {
       updateQuestionNumbers();
+      
+      // フォーム送信前に質問のinput nameを更新
+      document.getElementById('surveyForm').addEventListener('submit', function(e) {
+        const questions = document.querySelectorAll('.question-card');
+        questions.forEach((card, index) => {
+          // 質問文
+          const textInput = card.querySelector('input[name^="questions["]');
+          if (textInput) {
+            textInput.name = `questions[${index}][text]`;
+          }
+          
+          // 質問タイプ
+          const typeSelect = card.querySelector('select[name^="questions["]');
+          if (typeSelect) {
+            typeSelect.name = `questions[${index}][type]`;
+          }
+          
+          // 選択肢
+          const optionInputs = card.querySelectorAll('input[name^="questions["][name$="[options][]"]');
+          optionInputs.forEach(input => {
+            input.name = `questions[${index}][options][]`;
+          });
+        });
+      });
     });
   </script>
 </body>
