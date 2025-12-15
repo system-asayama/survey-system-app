@@ -424,7 +424,11 @@ async function loadConfig(){
   try {
     const storeSlug = window.location.pathname.split('/')[2];
     const cfg = await fetchJSON(`/store/${storeSlug}/config`);
+    console.log('[loadConfig] cfg.symbols:', cfg.symbols);
     window.__symbols = cfg.symbols;
+    console.log('[loadConfig] window.__symbols set:', window.__symbols);
+    const lemon = window.__symbols.find(s => s.id === 'lemon');
+    console.log('[loadConfig] lemon symbol:', lemon);
     
     // 設定ダイアログが存在する場合のみ更新
     const rowsEl = $('#rows');
@@ -440,19 +444,8 @@ async function loadConfig(){
     previewRecalcProb();
   } catch (e) {
     console.error('Failed to load config:', e);
-    // フォールバック: デフォルトシンボルでリールを構築
-    const defaultSymbols = [
-      {id:'GOD', label:'GOD', payout_3:300, color:'#ff8800', prob:0.4079},
-      {id:'seven', label:'７', payout_3:100, color:'#ff0000', prob:2.0394},
-      {id:'bar', label:'BAR', payout_3:50, color:'#0066ff', prob:4.0789},
-      {id:'bell', label:'🔔', payout_3:20, color:'#8b4513', prob:10.1971},
-      {id:'grape', label:'🍇', payout_3:12, color:'#9370db', prob:16.9952},
-      {id:'cherry', label:'🍒', payout_3:8, color:'#ff0000', prob:25.4929},
-      {id:'lemon', label:'🍋', payout_3:5, color:'#ffff00', prob:40.7886}
-    ];
-    window.__symbols = defaultSymbols;
-    buildAllReels(defaultSymbols);
-    renderPayoutTableFromSymbols(); // 配当表を描画
+    alert('設定の読み込みに失敗しました: ' + e.message);
+    throw e;
   }
 }
 
