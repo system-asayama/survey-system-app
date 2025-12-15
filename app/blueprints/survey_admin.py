@@ -8,13 +8,8 @@ import json
 import csv
 from io import StringIO
 from dataclasses import asdict
-from ..utils.admin_auth import (
-    authenticate_admin,
-    login_admin_session,
-    logout_admin_session,
-    require_admin_login,
-    get_current_admin
-)
+from ..utils.decorators import require_roles
+from ..utils import ROLES
 from ..utils.config import load_config, save_config
 from ..models import Symbol
 
@@ -392,11 +387,16 @@ def admin_survey_config_editor():
 
 
 @bp.route("/survey_editor", methods=["GET", "POST"])
-@require_admin_login
+@require_roles(ROLES["ADMIN"], ROLES["TENANT_ADMIN"], ROLES["SYSTEM_ADMIN"])
 def admin_survey_editor():
     """アンケート作成・編集画面"""
     from datetime import datetime
-    admin = get_current_admin()
+    from flask import session
+    admin = {
+        'id': session.get('user_id'),
+        'name': session.get('user_name'),
+        'store_code': ''
+    }
     
     # アンケート設定ファイルのパス
     survey_config_path = os.path.join(DATA_DIR, "survey_config.json")
