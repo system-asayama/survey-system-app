@@ -460,6 +460,11 @@
         alert('最低1つの選択肢が必要です');
       }
     }
+    
+    // ページ読み込み時に上下移動ボタンの状態を更新
+    document.addEventListener('DOMContentLoaded', function() {
+      updateQuestionNumbers();
+    });
   </script>
 </body>
 </html>
