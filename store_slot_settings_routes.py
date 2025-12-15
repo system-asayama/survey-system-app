@@ -207,9 +207,9 @@ def register_store_slot_settings_routes(app):
             'openai_api_key': slot_row[2] if slot_row and len(slot_row) > 2 else None
         }
         
-        if slot_row and slot_row[0]:
+        if slot_row and slot_row[1]:
             try:
-                slot_config_dict = json.loads(slot_row[0])
+                slot_config_dict = json.loads(slot_row[1])
                 slot_config = Config(
                     symbols=[Symbol(**s) for s in slot_config_dict.get('symbols', [])],
                     reels=slot_config_dict.get('reels', 3),
