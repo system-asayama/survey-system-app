@@ -323,8 +323,8 @@ def admin_optimize_probabilities():
 
 @bp.route("/survey/editor", methods=["GET", "POST"])
 @require_admin_login
-def admin_survey_editor():
-    """アンケート設定エディタ"""
+def admin_survey_config_editor():
+    """アンケート設定エディタ (API用)"""
     admin = get_current_admin()
     survey_config_path = os.path.join(DATA_DIR, "survey_config.json")
     
