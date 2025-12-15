@@ -391,9 +391,14 @@ def admin_survey_editor():
         
         # データベースに保存（現在の店舗に対して）
         store_id = session.get('store_id')
+        print(f"DEBUG: store_id = {store_id}")
+        print(f"DEBUG: questions count = {len(questions)}")
         if store_id:
             import store_db
             store_db.save_survey_config(store_id, survey_config)
+            print(f"DEBUG: Saved to database for store_id {store_id}")
+        else:
+            print("DEBUG: No store_id in session, not saved to database")
         
         flash("アンケート設定を保存しました", "success")
         return redirect(url_for("survey_admin.admin_survey_editor"))

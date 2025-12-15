@@ -4,6 +4,12 @@
   "questions": [
     {
       "id": 1,
+      "text": "本日の満足度",
+      "type": "rating",
+      "required": true
+    },
+    {
+      "id": 2,
       "text": "本日の利用目的",
       "type": "radio",
       "required": true,
@@ -16,7 +22,7 @@
       ]
     },
     {
-      "id": 2,
+      "id": 3,
       "text": "料理の味はいかがでしたか？",
       "type": "radio",
       "required": true,
@@ -29,7 +35,7 @@
       ]
     },
     {
-      "id": 3,
+      "id": 4,
       "text": "料理の提供スピードはいかがでしたか？",
       "type": "radio",
       "required": true,
@@ -42,7 +48,7 @@
       ]
     },
     {
-      "id": 4,
+      "id": 5,
       "text": "メニューの種類・選びやすさはいかがでしたか？",
       "type": "radio",
       "required": true,
@@ -55,7 +61,7 @@
       ]
     },
     {
-      "id": 5,
+      "id": 6,
       "text": "スタッフの接客態度はいかがでしたか？",
       "type": "radio",
       "required": true,
@@ -68,7 +74,7 @@
       ]
     },
     {
-      "id": 6,
+      "id": 7,
       "text": "注文や説明の分かりやすさはいかがでしたか？",
       "type": "radio",
       "required": true,
@@ -81,7 +87,7 @@
       ]
     },
     {
-      "id": 7,
+      "id": 8,
       "text": "店内の清潔感はいかがでしたか？",
       "type": "radio",
       "required": true,
@@ -94,7 +100,7 @@
       ]
     },
     {
-      "id": 8,
+      "id": 9,
       "text": "店内の雰囲気（照明・音楽・居心地）はいかがでしたか？",
       "type": "radio",
       "required": true,
@@ -107,7 +113,7 @@
       ]
     },
     {
-      "id": 9,
+      "id": 10,
       "text": "価格に対する満足度はいかがでしたか？",
       "type": "radio",
       "required": true,
@@ -120,7 +126,7 @@
       ]
     },
     {
-      "id": 10,
+      "id": 11,
       "text": "今後も当店を利用したいと思いますか？",
       "type": "radio",
       "required": true,
@@ -133,7 +139,7 @@
       ]
     },
     {
-      "id": 11,
+      "id": 12,
       "text": "ご家族やご友人に当店をおすすめしたいと思いますか？",
       "type": "radio",
       "required": true,
@@ -146,12 +152,6 @@
       ]
     },
     {
-      "id": 12,
-      "text": "本日の満足度",
-      "type": "rating",
-      "required": true
-    },
-    {
       "id": 13,
       "text": "いちばん美味しかったメニュを教えてください。",
       "type": "text",
@@ -160,9 +160,9 @@
     {
       "id": 14,
       "text": "ご自由にご感想をお書きください。",
-      "type": "rating",
+      "type": "text",
       "required": true
     }
   ],
-  "updated_at": "2025-12-15T01:47:40.901485"
+  "updated_at": "2025-12-15T02:12:13.757319"
 }
