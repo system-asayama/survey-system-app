@@ -96,6 +96,27 @@
       align-items: center;
       margin-bottom: 16px;
     }
+    .question-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .btn-move {
+      padding: 4px 8px;
+      background: #6b7280;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .btn-move:hover {
+      background: #4b5563;
+    }
+    .btn-move:disabled {
+      background: #d1d5db;
+      cursor: not-allowed;
+    }
     .question-number {
       font-weight: 700;
       color: #3b82f6;
@@ -236,7 +257,11 @@
           <div class="question-card" data-question-index="{{ loop.index0 }}">
             <div class="question-header">
               <span class="question-number">質問 {{ loop.index }}</span>
-              <button type="button" class="btn-remove" onclick="removeQuestion(this)">削除</button>
+              <div class="question-controls">
+                <button type="button" class="btn-move" onclick="moveQuestionUp(this)" title="上へ移動">▲</button>
+                <button type="button" class="btn-move" onclick="moveQuestionDown(this)" title="下へ移動">▼</button>
+                <button type="button" class="btn-remove" onclick="removeQuestion(this)">削除</button>
+              </div>
             </div>
 
             <div class="form-group">
@@ -306,7 +331,11 @@
       questionCard.innerHTML = `
         <div class="question-header">
           <span class="question-number">質問 ${questionIndex + 1}</span>
-          <button type="button" class="btn-remove" onclick="removeQuestion(this)">削除</button>
+          <div class="question-controls">
+            <button type="button" class="btn-move" onclick="moveQuestionUp(this)" title="上へ移動">▲</button>
+            <button type="button" class="btn-move" onclick="moveQuestionDown(this)" title="下へ移動">▼</button>
+            <button type="button" class="btn-remove" onclick="removeQuestion(this)">削除</button>
+          </div>
         </div>
 
         <div class="form-group">
@@ -346,7 +375,32 @@
       const questions = document.querySelectorAll('.question-card');
       questions.forEach((card, index) => {
         card.querySelector('.question-number').textContent = `質問 ${index + 1}`;
+        card.setAttribute('data-question-index', index);
+        
+        // 上下移動ボタンの有効/無効化
+        const upBtn = card.querySelector('.btn-move:first-of-type');
+        const downBtn = card.querySelector('.btn-move:nth-of-type(2)');
+        if (upBtn) upBtn.disabled = (index === 0);
+        if (downBtn) downBtn.disabled = (index === questions.length - 1);
       });
+    }
+    
+    function moveQuestionUp(button) {
+      const card = button.closest('.question-card');
+      const prev = card.previousElementSibling;
+      if (prev && prev.classList.contains('question-card')) {
+        card.parentNode.insertBefore(card, prev);
+        updateQuestionNumbers();
+      }
+    }
+    
+    function moveQuestionDown(button) {
+      const card = button.closest('.question-card');
+      const next = card.nextElementSibling;
+      if (next && next.classList.contains('question-card')) {
+        card.parentNode.insertBefore(next, card);
+        updateQuestionNumbers();
+      }
     }
 
     function updateQuestionType(select) {

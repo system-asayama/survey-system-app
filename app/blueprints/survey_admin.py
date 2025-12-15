@@ -453,9 +453,16 @@ def admin_survey_editor():
             "updated_at": datetime.now().isoformat()
         }
         
+        # JSONファイルに保存
         os.makedirs(DATA_DIR, exist_ok=True)
         with open(survey_config_path, "w", encoding="utf-8") as f:
             json.dump(survey_config, f, ensure_ascii=False, indent=2)
+        
+        # データベースに保存（現在の店舗に対して）
+        store_id = session.get('store_id')
+        if store_id:
+            import store_db
+            store_db.save_survey_config(store_id, survey_config)
         
         flash("アンケート設定を保存しました", "success")
         return redirect(url_for("survey_admin.admin_survey_editor"))
