@@ -2,76 +2,160 @@
 """
 アンケート機能 Blueprint
 """
-from flask import Blueprint, jsonify, request, render_template, session, redirect, url_for
+from flask import Blueprint, jsonify, request, render_template, session, redirect, url_for, g
+from functools import wraps
 import os
-import json
-from datetime import datetime
-from openai import OpenAI
+import sys
+
+# store_dbをインポート
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+import store_db
 
 bp = Blueprint('survey', __name__)
 
-# OpenAI クライアント初期化
-openai_client = OpenAI()
+# ===== 店舗識別ミドルウェア =====
+@bp.url_value_preprocessor
+def pull_store_slug(endpoint, values):
+    """URLから店舗slugを取得してgに保存"""
+    if values and 'store_slug' in values:
+        g.store_slug = values.pop('store_slug')
+        store = store_db.get_store_by_slug(g.store_slug)
+        if store:
+            g.store = store
+            g.store_id = store['id']
+        else:
+            g.store = None
+            g.store_id = None
+    else:
+        g.store_slug = None
+        g.store = None
+        g.store_id = None
 
-# パス設定
-APP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_DIR = os.path.join(APP_DIR, "data")
-SURVEY_DATA_PATH = os.path.join(DATA_DIR, "survey_responses.json")
+def require_store(f):
+    """店舗が必須のルートで使用するデコレータ"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not g.store:
+            return "店舗が見つかりません", 404
+        return f(*args, **kwargs)
+    return decorated_function
 
-def _load_google_review_url():
-    """settings.jsonからGoogle口コミURLを読み込み"""
-    settings_path = os.path.join(DATA_DIR, "settings.json")
-    if os.path.exists(settings_path):
-        try:
-            with open(settings_path, "r", encoding="utf-8") as f:
-                settings = json.load(f)
-                return settings.get("google_review_url", "#")
-        except:
-            pass
-    return "#"
+# OpenAI クライアントを動的に取得する関数
+def get_openai_client(app_type=None, app_id=None, store_id=None, tenant_id=None):
+    """
+    OpenAIクライアントを階層的に取得。
+    優先順位: アプリ設定 > 店舗設定 > テナント設定 > 環境変数
+    """
+    from openai import OpenAI
+    api_key = None
+    
+    try:
+        conn = store_db.get_db_connection()
+        cursor = conn.cursor()
+        
+        # 1. アプリ設定のキーを確認
+        if app_type and app_id:
+            if app_type == 'survey':
+                cursor.execute("SELECT openai_api_key, store_id FROM T_店舗_アンケート設定 WHERE id = ?", (app_id,))
+            elif app_type == 'slot':
+                cursor.execute("SELECT openai_api_key, store_id FROM T_店舗_スロット設定 WHERE id = ?", (app_id,))
+            
+            result = cursor.fetchone()
+            if result:
+                if result[0]:  # アプリにAPIキーが設定されている
+                    api_key = result[0]
+                    conn.close()
+                    return OpenAI(api_key=api_key)
+                # アプリにキーがない場合、store_idを取得
+                if not store_id and result[1]:
+                    store_id = result[1]
+        
+        # 2. 店舗設定のキーを確認
+        if store_id:
+            cursor.execute("SELECT openai_api_key, tenant_id FROM T_店舗 WHERE id = ?", (store_id,))
+            result = cursor.fetchone()
+            if result:
+                if result[0]:  # 店舗にAPIキーが設定されている
+                    api_key = result[0]
+                    conn.close()
+                    return OpenAI(api_key=api_key)
+                # 店舗にキーがない場合、tenant_idを取得
+                if not tenant_id and result[1]:
+                    tenant_id = result[1]
+        
+        # 3. テナント設定のキーを確認
+        if tenant_id:
+            cursor.execute("SELECT openai_api_key FROM T_テナント WHERE id = ?", (tenant_id,))
+            result = cursor.fetchone()
+            if result and result[0]:
+                api_key = result[0]
+                conn.close()
+                return OpenAI(api_key=api_key)
+        
+        conn.close()
+    except Exception as e:
+        print(f"Error getting OpenAI API key from database: {e}")
+    
+    # 4. 環境変数を確認
+    if not api_key:
+        api_key = os.environ.get('OPENAI_API_KEY')
+    
+    if not api_key:
+        raise ValueError("OpenAI APIキーが設定されていません。アプリ、店舗、またはテナントの管理画面でAPIキーを設定してください。")
+    
+    return OpenAI(api_key=api_key)
 
-def _load_survey_responses():
-    """アンケート回答データを読み込み"""
-    if not os.path.exists(SURVEY_DATA_PATH):
-        return []
-    with open(SURVEY_DATA_PATH, "r", encoding="utf-8") as f:
-        return json.load(f)
-
-def _save_survey_response(response_data):
-    """アンケート回答データを保存"""
-    os.makedirs(DATA_DIR, exist_ok=True)
-    responses = _load_survey_responses()
-    response_data['timestamp'] = datetime.now().isoformat()
-    response_data['id'] = len(responses) + 1
-    responses.append(response_data)
-    with open(SURVEY_DATA_PATH, "w", encoding="utf-8") as f:
-        json.dump(responses, f, ensure_ascii=False, indent=2)
-
-def _generate_review_text(survey_data):
+def _generate_review_text(survey_data, store_id):
     """
     アンケートデータからAIを使って口コミ投稿文を生成
     """
-    rating = survey_data.get('rating', 3)
-    visit_purpose = survey_data.get('visit_purpose', '')
-    atmosphere = ', '.join(survey_data.get('atmosphere', []))
-    recommend = survey_data.get('recommend', '')
-    comment = survey_data.get('comment', '')
+    # アンケートアプリIDを取得
+    survey_app_id = None
+    try:
+        conn = store_db.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM T_店舗_アンケート設定 WHERE store_id = ?", (store_id,))
+        result = cursor.fetchone()
+        if result:
+            survey_app_id = result[0]
+        conn.close()
+    except Exception as e:
+        print(f"Error getting survey app ID: {e}")
+    
+    # OpenAIクライアントを取得
+    try:
+        openai_client = get_openai_client(
+            app_type='survey',
+            app_id=survey_app_id,
+            store_id=store_id
+        )
+    except Exception as e:
+        print(f"Error getting OpenAI client: {e}")
+        return "口コミ投稿文の生成に失敗しました。"
+    
+    # アンケートデータから情報を抽出
+    rating = 5  # デフォルト
+    answers = []
+    
+    for key, value in survey_data.items():
+        if key.startswith('q'):
+            if isinstance(value, list):
+                answers.append(', '.join(value))
+            else:
+                answers.append(str(value))
+    
+    answers_text = '\n- '.join(answers)
     
     # プロンプト作成
     prompt = f"""以下のアンケート回答から、自然で読みやすいお店の口コミ投稿文を日本語で作成してください。
 
-【アンケート内容】
-- 総合評価: {rating}つ星
-- 訪問目的: {visit_purpose}
-- お店の雰囲気: {atmosphere}
-- おすすめ度: {recommend}
-- 自由コメント: {comment if comment else 'なし'}
+【アンケート回答】
+- {answers_text}
 
 【要件】
 - 200文字程度で簡潔にまとめる
 - 自然な口語体で書く
 - 具体的な体験を含める
-- {rating}つ星の評価に相応しいトーンで書く
 - 「です・ます」調で統一する
 
 口コミ投稿文:"""
@@ -88,117 +172,66 @@ def _generate_review_text(survey_data):
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
-        # エラー時はデフォルトの文章を返す
-        return f"{visit_purpose}で訪問しました。{atmosphere}な雰囲気で、{recommend}と思います。{comment}"
+        print(f"Error generating review text: {e}")
+        return "口コミ投稿文の生成に失敗しました。"
 
 
 # ===== ルート =====
-@bp.get("/")
-def index():
-    """トップページ：アンケート未回答の場合はアンケートページへ"""
-    if not session.get('survey_completed'):
-        return redirect(url_for('survey.survey'))
-    return redirect(url_for('survey.slot_page'))
+@bp.get("/store/<store_slug>")
+@require_store
+def store_index():
+    """店舗トップ - アンケートへリダイレクト"""
+    # アンケート未回答の場合はアンケートページへ
+    if not session.get(f'survey_completed_{g.store_id}'):
+        return redirect(url_for('survey.survey', store_slug=g.store_slug))
+    return redirect(url_for('slot.slot_page', store_slug=g.store_slug))
 
-@bp.get("/survey")
+@bp.get("/store/<store_slug>/survey")
+@require_store
 def survey():
     """アンケートページ"""
-    survey_config_path = os.path.join(DATA_DIR, "survey_config.json")
-    
-    if os.path.exists(survey_config_path):
-        with open(survey_config_path, "r", encoding="utf-8") as f:
-            survey_config = json.load(f)
-    else:
-        # デフォルト設定
-        survey_config = {
-            "title": "お店アンケート",
-            "description": "ご来店ありがとうございます！",
-            "questions": [
-                {
-                    "id": 1,
-                    "text": "総合評価",
-                    "type": "rating",
-                    "required": True
-                },
-                {
-                    "id": 2,
-                    "text": "訪問目的",
-                    "type": "radio",
-                    "required": True,
-                    "options": ["食事", "カフェ", "買い物", "その他"]
-                },
-                {
-                    "id": 3,
-                    "text": "お店の雰囲気（複数選択可）",
-                    "type": "checkbox",
-                    "required": False,
-                    "options": ["静か", "賑やか", "落ち着く", "おしゃれ", "カジュアル"]
-                },
-                {
-                    "id": 4,
-                    "text": "おすすめ度",
-                    "type": "radio",
-                    "required": True,
-                    "options": ["ぜひおすすめしたい", "おすすめしたい", "どちらでもない", "おすすめしない"]
-                },
-                {
-                    "id": 5,
-                    "text": "ご感想・ご意見（任意）",
-                    "type": "text",
-                    "required": False
-                }
-            ]
-        }
-    
-    return render_template("survey.html", survey_config=survey_config)
+    print(f"DEBUG: survey() called, store_id={g.store_id}, store={g.store}")
+    survey_config = store_db.get_survey_config(g.store_id)
+    print(f"DEBUG: survey_config={survey_config}")
+    return render_template("survey.html", 
+                         store=g.store,
+                         survey_config=survey_config)
 
-@bp.get("/review_confirm")
-def review_confirm():
-    """口コミ確認ページ"""
-    if not session.get('survey_completed'):
-        return redirect(url_for('survey.survey'))
-    
-    rating = session.get('survey_rating', 3)
-    generated_review = session.get('generated_review', '')
-    google_review_url = _load_google_review_url()
-    
-    return render_template(
-        "review_confirm.html",
-        rating=rating,
-        generated_review=generated_review,
-        google_review_url=google_review_url
-    )
-
-@bp.post("/submit_survey")
+@bp.post("/store/<store_slug>/submit_survey")
+@require_store
 def submit_survey():
     """アンケート送信"""
     body = request.get_json(silent=True) or {}
     
-    # バリデーション
-    required_fields = ['rating', 'visit_purpose', 'atmosphere', 'recommend']
-    for field in required_fields:
-        if field not in body or not body[field]:
-            return jsonify({"ok": False, "error": f"{field}は必須項目です"}), 400
+    # アンケート回答を保存
+    store_db.save_survey_response(g.store_id, body)
     
-    rating = body.get('rating', 3)
+    # 最初の質問の回答を評価として使用（5段階評価の場合）
+    rating = 3  # デフォルト
+    first_answer = body.get('q1', '')
+    if '非常に満足' in first_answer or '強く思う' in first_answer or '非常に良い' in first_answer:
+        rating = 5
+    elif '満足' in first_answer or '思う' in first_answer or '良い' in first_answer:
+        rating = 4
+    elif '普通' in first_answer or 'どちらとも' in first_answer:
+        rating = 3
+    elif 'やや' in first_answer:
+        rating = 2
+    else:
+        rating = 1
     
     # 星4以上の場合のみAI投稿文を生成
+    generated_review = ''
     if rating >= 4:
-        generated_review = _generate_review_text(body)
-        body['generated_review'] = generated_review
-    else:
-        # 星3以下の場合はAI生成をスキップ
-        generated_review = ''
-        body['generated_review'] = ''
-    
-    # アンケートデータを保存
-    _save_survey_response(body)
+        try:
+            generated_review = _generate_review_text(body, g.store_id)
+        except Exception as e:
+            print(f"Error generating review: {e}")
     
     # セッションにアンケート完了フラグと評価を設定
-    session['survey_completed'] = True
-    session['survey_timestamp'] = datetime.now().isoformat()
-    session['survey_rating'] = rating
-    session['generated_review'] = generated_review
+    session[f'survey_completed_{g.store_id}'] = True
+    session[f'survey_rating_{g.store_id}'] = rating
+    session[f'generated_review_{g.store_id}'] = generated_review
     
     # 星3以下の場合は直接スロットページへ
     if rating <= 3:
@@ -206,55 +239,23 @@ def submit_survey():
             "ok": True, 
             "message": "貴重なご意見をありがとうございます。社内で改善に活用させていただきます。",
             "rating": rating,
-            "redirect_url": url_for('survey.slot_page')
+            "redirect_url": url_for('slot.slot_page', store_slug=g.store_slug)
         })
     
-    # 星4以上の場合は口コミ確認ページへ
+    # 星4以上の場合は口コミ確認ページへ（TODO: 実装）
     return jsonify({
         "ok": True, 
         "message": "アンケートを受け付けました",
         "rating": rating,
         "generated_review": generated_review,
-        "redirect_url": url_for('survey.review_confirm')
+        "redirect_url": url_for('slot.slot_page', store_slug=g.store_slug)
     })
 
-@bp.post("/reset_survey")
+@bp.post("/store/<store_slug>/reset_survey")
+@require_store
 def reset_survey():
     """アンケートをリセット"""
-    session.pop('survey_completed', None)
-    session.pop('survey_timestamp', None)
-    session.pop('survey_rating', None)
-    session.pop('generated_review', None)
+    session.pop(f'survey_completed_{g.store_id}', None)
+    session.pop(f'survey_rating_{g.store_id}', None)
+    session.pop(f'generated_review_{g.store_id}', None)
     return jsonify({"ok": True, "message": "アンケートをリセットしました"})
-
-@bp.get("/slot")
-def slot_page():
-    """スロットページ"""
-    if not session.get('survey_completed'):
-        return redirect(url_for('survey.survey'))
-    
-    # 設定ファイルからメッセージと景品データを読み込み
-    settings_path = os.path.join(DATA_DIR, "settings.json")
-    survey_complete_message = "アンケートにご協力いただきありがとうございます！スロットをお楽しみください。"
-    prizes = []
-    
-    if os.path.exists(settings_path):
-        with open(settings_path, "r", encoding="utf-8") as f:
-            settings = json.load(f)
-            survey_complete_message = settings.get("survey_complete_message", survey_complete_message)
-            prizes = settings.get("prizes", [])
-    
-    return render_template("slot.html", survey_complete_message=survey_complete_message, prizes=prizes)
-
-@bp.get("/demo")
-def demo_page():
-    """デモプレイページ：アンケートなしでスロットを何度でもプレイ可能"""
-    settings_path = os.path.join(DATA_DIR, "settings.json")
-    prizes = []
-    
-    if os.path.exists(settings_path):
-        with open(settings_path, "r", encoding="utf-8") as f:
-            settings = json.load(f)
-            prizes = settings.get("prizes", [])
-    
-    return render_template("demo.html", prizes=prizes)

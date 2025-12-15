@@ -334,7 +334,9 @@ def store_index():
 @require_store
 def survey():
     """アンケートページ"""
+    print(f"DEBUG: survey() called, store_id={g.store_id}, store={g.store}")
     survey_config = store_db.get_survey_config(g.store_id)
+    print(f"DEBUG: survey_config={survey_config}")
     return render_template("survey.html", 
                          store=g.store,
                          survey_config=survey_config)

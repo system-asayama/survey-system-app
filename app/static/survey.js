@@ -1,43 +1,53 @@
 /* アンケートページのJavaScript */
 
 document.addEventListener('DOMContentLoaded', () => {
-  // 星評価の処理
-  const stars = document.querySelectorAll('.star');
-  const ratingInput = document.getElementById('rating');
-  let selectedRating = 0;
+  // 星評価の処理（複数の星評価に対応）
+  const starRatings = document.querySelectorAll('.star-rating');
+  
+  starRatings.forEach(ratingContainer => {
+    const stars = ratingContainer.querySelectorAll('.star');
+    const questionId = ratingContainer.dataset.questionId;
+    const hiddenInput = document.querySelector(`input[name="q${questionId}"]`);
+    let selectedRating = 0;
 
-  stars.forEach((star, index) => {
-    // マウスホバー時
-    star.addEventListener('mouseenter', () => {
-      stars.forEach((s, i) => {
-        if (i <= index) {
-          s.classList.add('hover');
-        } else {
-          s.classList.remove('hover');
-        }
-      });
-    });
-
-    // マウスが離れた時
-    star.addEventListener('mouseleave', () => {
-      stars.forEach(s => s.classList.remove('hover'));
-    });
-
-    // クリック時
-    star.addEventListener('click', () => {
-      selectedRating = parseInt(star.dataset.value);
-      ratingInput.value = selectedRating;
-      
-      stars.forEach((s, i) => {
-        if (i < selectedRating) {
-          s.classList.add('active');
-        } else {
-          s.classList.remove('active');
-        }
+    stars.forEach((star, index) => {
+      // マウスホバー時
+      star.addEventListener('mouseenter', () => {
+        stars.forEach((s, i) => {
+          if (i <= index) {
+            s.classList.add('hover');
+          } else {
+            s.classList.remove('hover');
+          }
+        });
       });
 
-      // エラーメッセージをクリア
-      document.getElementById('rating-error').textContent = '';
+      // マウスが離れた時
+      star.addEventListener('mouseleave', () => {
+        stars.forEach(s => s.classList.remove('hover'));
+      });
+
+      // クリック時
+      star.addEventListener('click', () => {
+        selectedRating = parseInt(star.dataset.value);
+        if (hiddenInput) {
+          hiddenInput.value = selectedRating;
+        }
+        
+        stars.forEach((s, i) => {
+          if (i < selectedRating) {
+            s.classList.add('active');
+          } else {
+            s.classList.remove('active');
+          }
+        });
+
+        // エラーメッセージをクリア
+        const errorMsg = document.getElementById(`q${questionId}-error`);
+        if (errorMsg) {
+          errorMsg.textContent = '';
+        }
+      });
     });
   });
 
@@ -50,56 +60,84 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // バリデーション
     let isValid = true;
+    const formData = new FormData(form);
+    const surveyData = {};
 
-    // 星評価のチェック
-    if (!ratingInput.value) {
-      document.getElementById('rating-error').textContent = '総合評価を選択してください';
-      isValid = false;
-    } else {
-      document.getElementById('rating-error').textContent = '';
-    }
-
-    // 訪問目的のチェック
-    const visitPurpose = document.querySelector('input[name="visit_purpose"]:checked');
-    if (!visitPurpose) {
-      document.getElementById('visit_purpose-error').textContent = '訪問目的を選択してください';
-      isValid = false;
-    } else {
-      document.getElementById('visit_purpose-error').textContent = '';
-    }
-
-    // 雰囲気のチェック（少なくとも1つ選択）
-    const atmosphereChecked = document.querySelectorAll('input[name="atmosphere"]:checked');
-    if (atmosphereChecked.length === 0) {
-      document.getElementById('atmosphere-error').textContent = 'お店の雰囲気を少なくとも1つ選択してください';
-      isValid = false;
-    } else {
-      document.getElementById('atmosphere-error').textContent = '';
-    }
-
-    // おすすめ度のチェック
-    const recommend = document.querySelector('input[name="recommend"]:checked');
-    if (!recommend) {
-      document.getElementById('recommend-error').textContent = 'おすすめ度を選択してください';
-      isValid = false;
-    } else {
-      document.getElementById('recommend-error').textContent = '';
-    }
+    // すべての必須フィールドをチェック
+    const requiredInputs = form.querySelectorAll('[required]');
+    requiredInputs.forEach(input => {
+      const name = input.name;
+      const errorElement = document.getElementById(`${name}-error`);
+      
+      if (input.type === 'radio') {
+        const checked = form.querySelector(`input[name="${name}"]:checked`);
+        if (!checked) {
+          if (errorElement) {
+            errorElement.textContent = 'この項目は必須です';
+          }
+          isValid = false;
+        } else {
+          if (errorElement) {
+            errorElement.textContent = '';
+          }
+        }
+      } else if (input.type === 'hidden') {
+        // 星評価の場合
+        if (!input.value) {
+          if (errorElement) {
+            errorElement.textContent = 'この項目は必須です';
+          }
+          isValid = false;
+        } else {
+          if (errorElement) {
+            errorElement.textContent = '';
+          }
+        }
+      } else if (input.tagName === 'TEXTAREA') {
+        if (!input.value.trim()) {
+          if (errorElement) {
+            errorElement.textContent = 'この項目は必須です';
+          }
+          isValid = false;
+        } else {
+          if (errorElement) {
+            errorElement.textContent = '';
+          }
+        }
+      }
+    });
 
     if (!isValid) {
       return;
     }
 
     // フォームデータの収集
-    const atmosphereValues = Array.from(atmosphereChecked).map(cb => cb.value);
+    for (let [key, value] of formData.entries()) {
+      if (surveyData[key]) {
+        // 既に存在する場合は配列にする（チェックボックス対応）
+        if (!Array.isArray(surveyData[key])) {
+          surveyData[key] = [surveyData[key]];
+        }
+        surveyData[key].push(value);
+      } else {
+        surveyData[key] = value;
+      }
+    }
+
+    // チェックボックスの値を配列として収集
+    const checkboxGroups = {};
+    form.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
+      const name = cb.name;
+      if (!checkboxGroups[name]) {
+        checkboxGroups[name] = [];
+      }
+      checkboxGroups[name].push(cb.value);
+    });
     
-    const surveyData = {
-      rating: parseInt(ratingInput.value),
-      visit_purpose: visitPurpose.value,
-      atmosphere: atmosphereValues,
-      recommend: recommend.value,
-      comment: document.getElementById('comment').value.trim()
-    };
+    // チェックボックスの値を上書き
+    Object.keys(checkboxGroups).forEach(key => {
+      surveyData[key] = checkboxGroups[key];
+    });
 
     // 送信ボタンを無効化
     submitBtn.disabled = true;
@@ -118,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (result.ok) {
         // 星3以下の場合はメッセージを表示してからリダイレクト
-        if (result.rating <= 3) {
+        if (result.rating && result.rating <= 3) {
           alert(result.message);
         }
         // 成功したら指定されたページへリダイレクト

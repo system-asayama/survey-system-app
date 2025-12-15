@@ -3,118 +3,68 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>お店アンケート</title>
+  <title>{{ survey_config.title or 'お店アンケート' }}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='slot.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='survey.css') }}">
 </head>
 <body>
   <header class="bar">
-    <h1>📝 お店アンケート</h1>
+    <h1>📝 {{ survey_config.title or 'お店アンケート' }}</h1>
   </header>
 
   <main class="wrap survey-container">
     <section class="survey-card">
       <div class="survey-intro">
         <h2>ご来店ありがとうございます！</h2>
-        <p>アンケートにご協力いただくと、スロットマシンを1回プレイできます。</p>
+        <p>{{ survey_config.description or 'アンケートにご協力いただくと、スロットマシンを1回プレイできます。' }}</p>
       </div>
 
       <form id="survey-form">
-        <!-- 星評価 -->
+        {% for question in survey_config.questions %}
         <div class="form-group">
-          <label class="form-label required">総合評価</label>
-          <div class="star-rating" id="star-rating">
+          <label class="form-label {% if question.required %}required{% endif %}">
+            {{ question.text }}
+          </label>
+          
+          {% if question.type == 'radio' %}
+          <div class="radio-group">
+            {% for option in question.options %}
+            <label class="radio-label">
+              <input type="radio" name="q{{ question.id }}" value="{{ option }}" {% if question.required %}required{% endif %}>
+              <span>{{ option }}</span>
+            </label>
+            {% endfor %}
+          </div>
+          <span class="error-message" id="q{{ question.id }}-error"></span>
+          
+          {% elif question.type == 'checkbox' %}
+          <div class="checkbox-group">
+            {% for option in question.options %}
+            <label class="checkbox-label">
+              <input type="checkbox" name="q{{ question.id }}" value="{{ option }}">
+              <span>{{ option }}</span>
+            </label>
+            {% endfor %}
+          </div>
+          <span class="error-message" id="q{{ question.id }}-error"></span>
+          
+          {% elif question.type == 'text' %}
+          <textarea name="q{{ question.id }}" rows="4" placeholder="{{ question.placeholder or '' }}" {% if question.required %}required{% endif %}></textarea>
+          <span class="error-message" id="q{{ question.id }}-error"></span>
+          
+          {% elif question.type == 'rating' %}
+          <div class="star-rating" data-question-id="{{ question.id }}">
             <span class="star" data-value="1">★</span>
             <span class="star" data-value="2">★</span>
             <span class="star" data-value="3">★</span>
             <span class="star" data-value="4">★</span>
             <span class="star" data-value="5">★</span>
           </div>
-          <input type="hidden" id="rating" name="rating" required>
-          <span class="error-message" id="rating-error"></span>
+          <input type="hidden" name="q{{ question.id }}" {% if question.required %}required{% endif %}>
+          <span class="error-message" id="q{{ question.id }}-error"></span>
+          {% endif %}
         </div>
-
-        <!-- 訪問目的 -->
-        <div class="form-group">
-          <label class="form-label required">訪問目的</label>
-          <div class="radio-group">
-            <label class="radio-label">
-              <input type="radio" name="visit_purpose" value="食事" required>
-              <span>食事</span>
-            </label>
-            <label class="radio-label">
-              <input type="radio" name="visit_purpose" value="カフェ">
-              <span>カフェ</span>
-            </label>
-            <label class="radio-label">
-              <input type="radio" name="visit_purpose" value="買い物">
-              <span>買い物</span>
-            </label>
-            <label class="radio-label">
-              <input type="radio" name="visit_purpose" value="その他">
-              <span>その他</span>
-            </label>
-          </div>
-          <span class="error-message" id="visit_purpose-error"></span>
-        </div>
-
-        <!-- 雰囲気評価 -->
-        <div class="form-group">
-          <label class="form-label required">お店の雰囲気</label>
-          <div class="checkbox-group">
-            <label class="checkbox-label">
-              <input type="checkbox" name="atmosphere" value="静か">
-              <span>静か</span>
-            </label>
-            <label class="checkbox-label">
-              <input type="checkbox" name="atmosphere" value="賑やか">
-              <span>賑やか</span>
-            </label>
-            <label class="checkbox-label">
-              <input type="checkbox" name="atmosphere" value="落ち着く">
-              <span>落ち着く</span>
-            </label>
-            <label class="checkbox-label">
-              <input type="checkbox" name="atmosphere" value="おしゃれ">
-              <span>おしゃれ</span>
-            </label>
-            <label class="checkbox-label">
-              <input type="checkbox" name="atmosphere" value="カジュアル">
-              <span>カジュアル</span>
-            </label>
-          </div>
-          <span class="error-message" id="atmosphere-error"></span>
-        </div>
-
-        <!-- おすすめ度 -->
-        <div class="form-group">
-          <label class="form-label required">友人におすすめしたいですか？</label>
-          <div class="radio-group">
-            <label class="radio-label">
-              <input type="radio" name="recommend" value="ぜひおすすめしたい" required>
-              <span>ぜひおすすめしたい</span>
-            </label>
-            <label class="radio-label">
-              <input type="radio" name="recommend" value="おすすめしたい">
-              <span>おすすめしたい</span>
-            </label>
-            <label class="radio-label">
-              <input type="radio" name="recommend" value="どちらでもない">
-              <span>どちらでもない</span>
-            </label>
-            <label class="radio-label">
-              <input type="radio" name="recommend" value="おすすめしない">
-              <span>おすすめしない</span>
-            </label>
-          </div>
-          <span class="error-message" id="recommend-error"></span>
-        </div>
-
-        <!-- 自由コメント -->
-        <div class="form-group">
-          <label class="form-label">ご感想・ご意見（任意）</label>
-          <textarea id="comment" name="comment" rows="4" placeholder="お店の良かった点や改善点など、自由にご記入ください"></textarea>
-        </div>
+        {% endfor %}
 
         <!-- 送信ボタン -->
         <div class="form-actions">
