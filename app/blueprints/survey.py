@@ -65,7 +65,7 @@ def get_openai_client(app_type=None, app_id=None, store_id=None, tenant_id=None)
                 if result[0]:  # アプリにAPIキーが設定されている
                     api_key = result[0]
                     conn.close()
-                    return OpenAI(api_key=api_key)
+                    return OpenAI(api_key=api_key, base_url='https://api.openai.com/v1')
                 # アプリにキーがない場合、store_idを取得
                 if not store_id and result[1]:
                     store_id = result[1]
@@ -78,7 +78,7 @@ def get_openai_client(app_type=None, app_id=None, store_id=None, tenant_id=None)
                 if result[0]:  # 店舗にAPIキーが設定されている
                     api_key = result[0]
                     conn.close()
-                    return OpenAI(api_key=api_key)
+                    return OpenAI(api_key=api_key, base_url='https://api.openai.com/v1')
                 # 店舗にキーがない場合、tenant_idを取得
                 if not tenant_id and result[1]:
                     tenant_id = result[1]
@@ -90,7 +90,7 @@ def get_openai_client(app_type=None, app_id=None, store_id=None, tenant_id=None)
             if result and result[0]:
                 api_key = result[0]
                 conn.close()
-                return OpenAI(api_key=api_key)
+                return OpenAI(api_key=api_key, base_url='https://api.openai.com/v1')
         
         conn.close()
     except Exception as e:
@@ -103,7 +103,7 @@ def get_openai_client(app_type=None, app_id=None, store_id=None, tenant_id=None)
     if not api_key:
         raise ValueError("OpenAI APIキーが設定されていません。アプリ、店舗、またはテナントの管理画面でAPIキーを設定してください。")
     
-    return OpenAI(api_key=api_key)
+    return OpenAI(api_key=api_key, base_url='https://api.openai.com/v1')
 
 def _generate_review_text(survey_data, store_id):
     """
@@ -222,14 +222,14 @@ def submit_survey():
     
     # アンケート回答を保存
     store_db.save_survey_response(g.store_id, body)
-    
-    # 星4以上の場合のみAI投稿文を生成
+     # 星4以上の場合のAI投稿文を生成（OpenAI APIキーが必要）
     generated_review = ''
-    if rating >= 4:
-        try:
-            generated_review = _generate_review_text(body, g.store_id)
-        except Exception as e:
-            print(f"Error generating review: {e}")
+    # 一時的に無効化：有効なOpenAI APIキーが必要です
+    # if rating >= 4:
+    #     try:
+    #         generated_review = _generate_review_text(body, g.store_id)
+    #     except Exception as e:
+    #         print(f"Error generating review: {e}")
     
     # セッションにアンケート完了フラグと評価を設定
     session[f'survey_completed_{g.store_id}'] = True
