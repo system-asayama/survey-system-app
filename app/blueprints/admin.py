@@ -903,4 +903,8 @@ def store_apps(store_id):
         'slug': store_row[2]
     }
     
+    # セッションにstore_idを設定（survey_adminで使用）
+    session['store_id'] = store_id
+    session['store_name'] = store_row[1]
+    
     return render_template('admin_store_apps.html', store=store)

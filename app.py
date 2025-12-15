@@ -710,9 +710,17 @@ try:
 except Exception as e:
     print(f"⚠️ OpenAI APIキー設定ルート登録失敗: {e}")
 
+# ===== Slot Blueprint =====
+try:
+    from app.blueprints.slot import bp as slot_bp
+    app.register_blueprint(slot_bp)
+    print("✅ Slot Blueprint登録完了")
+except Exception as e:
+    print(f"⚠️ Slot Blueprint登録失敗: {e}")
+
 
 
 if __name__ == "__main__":
     import sys
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="0.0.0.0", port=port, debug=False)

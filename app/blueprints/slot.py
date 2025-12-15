@@ -205,11 +205,25 @@ def calc_prob():
     spins = int(body.get("spins", 5))
     spins = max(1, spins)
 
-    cfg = load_config()
+    # リクエストボディにsymbolsが含まれている場合はそれを使用
+    if "symbols" in body and body["symbols"]:
+        symbols_data = body["symbols"]
+        symbols = [Symbol(
+            id=s.get("id", ""),
+            label=s.get("label", ""),
+            payout_3=float(s.get("payout_3", 0)),
+            prob=float(s.get("prob", 0)),
+            color=s.get("color", "#000000")
+        ) for s in symbols_data]
+        miss_rate = float(body.get("miss_probability", 0.0))
+    else:
+        # ファイルから設定を読み込む
+        cfg = load_config()
+        symbols = list(cfg.symbols)
+        miss_rate = cfg.miss_probability
     
     # ハズレ確率を考慮するため、ハズレ（0点）をシンボルリストに追加
-    miss_rate = cfg.miss_probability
-    symbols_with_miss = list(cfg.symbols)
+    symbols_with_miss = list(symbols)
     
     # ハズレシンボルを追加
     miss_symbol = Symbol(

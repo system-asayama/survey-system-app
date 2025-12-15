@@ -2,7 +2,7 @@
 """
 アンケート管理画面 Blueprint
 """
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, make_response
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, make_response, session, g
 import os
 import json
 import csv
@@ -60,10 +60,15 @@ def admin_logout():
 
 # ===== ダッシュボード =====
 @bp.route("")
-@require_admin_login
+@require_roles(ROLES["ADMIN"])
 def admin_dashboard():
     """管理画面ダッシュボード"""
-    admin = get_current_admin()
+# 統一認証システムからユーザー情報を取得
+    admin = {
+        'name': session.get('user_name', '管理者'),
+        'login_id': session.get('login_id', ''),
+        'store_name': session.get('store_name', '')
+    }
     
     # アンケート回答データを読み込み
     survey_responses = []
@@ -94,10 +99,15 @@ def admin_dashboard():
 
 
 @bp.route("/responses")
-@require_admin_login
+@require_roles(ROLES["ADMIN"])
 def admin_responses():
     """全回答データを表示"""
-    admin = get_current_admin()
+# 統一認証システムからユーザー情報を取得
+    admin = {
+        'name': session.get('user_name', '管理者'),
+        'login_id': session.get('login_id', ''),
+        'store_name': session.get('store_name', '')
+    }
     
     survey_responses = []
     if os.path.exists(SURVEY_DATA_PATH):
@@ -113,7 +123,7 @@ def admin_responses():
 
 
 @bp.route("/export/csv")
-@require_admin_login
+@require_roles(ROLES["ADMIN"])
 def admin_export_csv():
     """回答データをCSVでエクスポート"""
     survey_responses = []
@@ -151,10 +161,15 @@ def admin_export_csv():
 
 # ===== 設定 =====
 @bp.route("/settings", methods=["GET", "POST"])
-@require_admin_login
+@require_roles(ROLES["ADMIN"])
 def admin_settings():
     """管理画面設定"""
-    admin = get_current_admin()
+# 統一認証システムからユーザー情報を取得
+    admin = {
+        'name': session.get('user_name', '管理者'),
+        'login_id': session.get('login_id', ''),
+        'store_name': session.get('store_name', '')
+    }
     
     # 設定ファイルのパス
     settings_path = os.path.join(DATA_DIR, "settings.json")
@@ -220,8 +235,29 @@ def admin_settings():
     # スロット設定を読み込み
     slot_config = load_config()
     
+    # 店舗情報を取得
+    from ..utils.db import get_db, _sql
+    db = get_db()
+    store_id = session.get('store_id')
+    import sys
+    sys.stderr.write(f"DEBUG admin_settings: store_id from session = {store_id}\n")
+    sys.stderr.write(f"DEBUG admin_settings: session keys = {list(session.keys())}\n")
+    sys.stderr.flush()
+    store = None
+    if store_id:
+        cur = db.cursor()
+        cur.execute(_sql(db, 'SELECT * FROM "T_店舗" WHERE id = %s'), (store_id,))
+        store = cur.fetchone()
+        sys.stderr.write(f"DEBUG admin_settings: store = {store}\n")
+        sys.stderr.flush()
+    else:
+        sys.stderr.write("DEBUG admin_settings: store_id is None, cannot fetch store\n")
+        sys.stderr.flush()
+    
     return render_template("admin_settings.html",
                          admin=admin,
+                         store=store,
+                         slot_app=store,  # slot_appとstoreは同じオブジェクト
                          google_review_url=settings.get("google_review_url", "#"),
                          survey_complete_message=settings.get("survey_complete_message", "アンケートにご協力いただきありがとうございます！スロットをお楽しみください。"),
                          prizes=settings.get("prizes", default_prizes),
@@ -229,7 +265,7 @@ def admin_settings():
 
 
 @bp.route("/save_prizes", methods=["POST"])
-@require_admin_login
+@require_roles(ROLES["ADMIN"])
 def admin_save_prizes():
     """景品設定を保存"""
     try:
@@ -262,7 +298,7 @@ def admin_save_prizes():
 
 
 @bp.route("/save_slot_config", methods=["POST"])
-@require_admin_login
+@require_roles(ROLES["ADMIN"])
 def admin_save_slot_config():
     """スロット設定を保存"""
     from ..utils.slot_logic import recalc_probs_inverse_and_expected
@@ -290,7 +326,7 @@ def admin_save_slot_config():
 
 
 @bp.route("/optimize_probabilities", methods=["POST"])
-@require_admin_login
+@require_roles(ROLES["ADMIN"])
 def admin_optimize_probabilities():
     """確率を最適化"""
     try:
