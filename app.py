@@ -490,7 +490,8 @@ def spin():
     import random
     
     cfg_dict = store_db.get_slot_config(g.store_id)
-    symbols = [Symbol(**s) for s in cfg_dict["symbols"]]
+    # is_disabled=Falseのシンボルのみを使用
+    symbols = [Symbol(**s) for s in cfg_dict["symbols"] if not s.get('is_disabled', False)]
     
     # 確率の正規化
     psum = sum(float(s.prob) for s in symbols) or 100.0
