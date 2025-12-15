@@ -5,7 +5,7 @@ openai_key_bp = Blueprint('openai_key', __name__)
 
 @openai_key_bp.route('/admin/save_openai_key', methods=['POST'])
 def save_openai_key():
-    """OpenAI APIキーを保存"""
+    """OpenAI APIキーを保存（アプリ個別）"""
     if 'user_id' not in session:
         return redirect(url_for('auth.select_login'))
     
@@ -27,12 +27,25 @@ def save_openai_key():
         
         store_id = result[0]
         
-        # OpenAI APIキーを更新
+        # スロットアプリ設定のOpenAI APIキーを更新
         cursor.execute("""
-            UPDATE T_店舗
-            SET openai_api_key = ?, updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-        """, (openai_api_key if openai_api_key else None, store_id))
+            SELECT id FROM T_店舗_スロット設定 WHERE store_id = ?
+        """, (store_id,))
+        slot_result = cursor.fetchone()
+        
+        if slot_result:
+            # 既存のスロット設定がある場合は更新
+            cursor.execute("""
+                UPDATE T_店舗_スロット設定
+                SET openai_api_key = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE store_id = ?
+            """, (openai_api_key if openai_api_key else None, store_id))
+        else:
+            # スロット設定がない場合は新規作成
+            cursor.execute("""
+                INSERT INTO T_店舗_スロット設定 (store_id, openai_api_key, config_json)
+                VALUES (?, ?, '{}')
+            """, (store_id, openai_api_key if openai_api_key else None))
         
         conn.commit()
         conn.close()

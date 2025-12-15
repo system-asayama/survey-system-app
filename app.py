@@ -23,10 +23,13 @@ app = Flask(__name__,
 app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 
 # OpenAI クライアントを動的に取得する関数
-def get_openai_client(store_id=None, tenant_id=None):
+def get_openai_client(app_type=None, app_id=None, store_id=None, tenant_id=None):
     """
     OpenAIクライアントを階層的に取得。
-    優先順位: 店舗設定 > テナント設定 > 環境変数
+    優先順位: アプリ設定 > 店舗設定 > テナント設定 > 環境変数
+    
+    app_type: 'survey' または 'slot'
+    app_id: アプリ設定ID (T_店舗_アンケート設定.id または T_店舗_スロット設定.id)
     """
     api_key = None
     
@@ -34,7 +37,24 @@ def get_openai_client(store_id=None, tenant_id=None):
         conn = store_db.get_db_connection()
         cursor = conn.cursor()
         
-        # 1. 店舗設定のキーを確認
+        # 1. アプリ設定のキーを確認
+        if app_type and app_id:
+            if app_type == 'survey':
+                cursor.execute("SELECT openai_api_key, store_id FROM T_店舗_アンケート設定 WHERE id = ?", (app_id,))
+            elif app_type == 'slot':
+                cursor.execute("SELECT openai_api_key, store_id FROM T_店舗_スロット設定 WHERE id = ?", (app_id,))
+            
+            result = cursor.fetchone()
+            if result:
+                if result[0]:  # アプリにAPIキーが設定されている
+                    api_key = result[0]
+                    conn.close()
+                    return OpenAI(api_key=api_key)
+                # アプリにキーがない場合、store_idを取得
+                if not store_id and result[1]:
+                    store_id = result[1]
+        
+        # 2. 店舗設定のキーを確認
         if store_id:
             cursor.execute("SELECT openai_api_key, tenant_id FROM T_店舗 WHERE id = ?", (store_id,))
             result = cursor.fetchone()
@@ -47,7 +67,7 @@ def get_openai_client(store_id=None, tenant_id=None):
                 if not tenant_id and result[1]:
                     tenant_id = result[1]
         
-        # 2. テナント設定のキーを確認
+        # 3. テナント設定のキーを確認
         if tenant_id:
             cursor.execute("SELECT openai_api_key FROM T_テナント WHERE id = ?", (tenant_id,))
             result = cursor.fetchone()
@@ -60,12 +80,12 @@ def get_openai_client(store_id=None, tenant_id=None):
     except Exception as e:
         print(f"Error getting OpenAI API key from database: {e}")
     
-    # 3. 環境変数を確認
+    # 4. 環境変数を確認
     if not api_key:
         api_key = os.environ.get('OPENAI_API_KEY')
     
     if not api_key:
-        raise ValueError("OpenAI APIキーが設定されていません。テナントまたは店舗の管理画面でAPIキーを設定してください。")
+        raise ValueError("OpenAI APIキーが設定されていません。アプリ、店舗、またはテナントの管理画面でAPIキーを設定してください。")
     
     return OpenAI(api_key=api_key)
 
@@ -249,7 +269,7 @@ def _prob_total_le(symbols: List[Symbol], spins: int, threshold: float) -> float
         pmf = nxt
     return float(sum(pmf[:thr + 1]))
 
-def _generate_review_text(survey_data, store_id=None):
+def _generate_review_text(survey_data, store_id=None, app_id=None):
     """
     アンケートデータからAIを使って口コミ投稿文を生成
     """
@@ -279,8 +299,8 @@ def _generate_review_text(survey_data, store_id=None):
 口コミ投稿文:"""
     
     try:
-        # 店舗IDに応じたOpenAIクライアントを取得
-        client = get_openai_client(store_id)
+        # アプリ設定に応じたOpenAIクライアントを取得
+        client = get_openai_client(app_type='survey', app_id=app_id, store_id=store_id)
         response = client.chat.completions.create(
             model="gpt-4.1-mini",
             messages=[
@@ -332,9 +352,22 @@ def submit_survey():
     
     rating = body.get('rating', 3)
     
+    # アンケートアプリIDを取得
+    survey_app_id = None
+    try:
+        conn = store_db.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM T_店舗_アンケート設定 WHERE store_id = ?", (g.store_id,))
+        result = cursor.fetchone()
+        if result:
+            survey_app_id = result[0]
+        conn.close()
+    except Exception as e:
+        print(f"Error getting survey app id: {e}")
+    
     # 星4以上の場合のみAI投稿文を生成
     if rating >= 4:
-        generated_review = _generate_review_text(body, g.store_id)
+        generated_review = _generate_review_text(body, g.store_id, survey_app_id)
         body['generated_review'] = generated_review
     else:
         generated_review = ''

@@ -199,8 +199,13 @@ def register_store_slot_settings_routes(app):
             ]
         
         # スロット設定を取得
-        cur.execute(_sql(conn, 'SELECT config_json FROM "T_店舗_スロット設定" WHERE store_id = %s'), (store_id,))
+        cur.execute(_sql(conn, 'SELECT id, config_json, openai_api_key FROM "T_店舗_スロット設定" WHERE store_id = %s'), (store_id,))
         slot_row = cur.fetchone()
+        
+        slot_app = {
+            'id': slot_row[0] if slot_row else None,
+            'openai_api_key': slot_row[2] if slot_row and len(slot_row) > 2 else None
+        }
         
         if slot_row and slot_row[0]:
             try:
@@ -267,6 +272,7 @@ def register_store_slot_settings_routes(app):
         return render_template('admin_settings.html',
                              store=store,
                              admin=admin,
+                             slot_app=slot_app,
                              google_review_url=google_review_url,
                              survey_complete_message="アンケートにご協力いただきありがとうございます！スロットをお楽しみください。",
                              prizes=prizes,

@@ -605,13 +605,13 @@
     </div>
 
     <div class="section">
-      <h2>🤖 OpenAI API設定（店舗個別）</h2>
-      <p class="help-text" style="margin-bottom: 20px;">この店舗専用のOpenAI APIキーを設定できます。未設定の場合はテナント設定のキーが使用されます。</p>
+      <h2>🤖 OpenAI API設定（アプリ個別）</h2>
+      <p class="help-text" style="margin-bottom: 20px;">このアプリ専用のOpenAI APIキーを設定できます。未設定の場合は店舗設定またはテナント設定のキーが使用されます。</p>
       <form method="post" action="/admin/save_openai_key">
         <div class="form-group">
           <label for="openai_api_key">OpenAI APIキー</label>
-          <input type="password" id="openai_api_key" name="openai_api_key" value="{{ store.openai_api_key or '' }}" placeholder="sk-...">
-          <p class="help-text">APIキーは <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI Platform</a> で取得できます。<br>優先順位: <strong>店舗設定 > テナント設定 > 環境変数</strong></p>
+          <input type="password" id="openai_api_key" name="openai_api_key" value="{{ slot_app.openai_api_key or '' }}" placeholder="sk-...">
+          <p class="help-text">APIキーは <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI Platform</a> で取得できます。<br>優先順位: <strong>アプリ設定 > 店舗設定 > テナント設定 > 環境変数</strong></p>
         </div>
         <button type="submit" class="btn-primary">💾 APIキーを保存</button>
       </form>
