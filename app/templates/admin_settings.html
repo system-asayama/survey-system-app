@@ -539,7 +539,6 @@
                 <th style="width: 120px;">抽選確率(%)*</th>
                 <th style="width: 100px;">色</th>
                 <th style="width: 80px;">不使用</th>
-                <th style="width: 80px;"></th>
               </tr>
             </thead>
             <tbody id="slot-symbols">
@@ -553,21 +552,10 @@
                   <input type="color" name="symbol_color_{{ loop.index0 }}" value="{{ symbol.color }}" style="width: 60px; height: 36px;">
                 </td>
                 <td style="text-align: center;">
-                  {% if symbol.is_default %}
                   <input type="checkbox" name="symbol_disabled_{{ loop.index0 }}" {% if symbol.is_disabled %}checked{% endif %}>
-                  {% else %}
-                  <input type="checkbox" name="symbol_disabled_{{ loop.index0 }}" disabled>
-                  {% endif %}
                   <input type="hidden" name="symbol_is_default_{{ loop.index0 }}" value="{{ symbol.is_default|default(false)|lower }}">
                   <input type="hidden" name="symbol_is_reach_{{ loop.index0 }}" value="{{ symbol.is_reach|default(false)|lower }}">
                   <input type="hidden" name="symbol_reach_symbol_{{ loop.index0 }}" value="{{ symbol.reach_symbol|default('') }}">
-                </td>
-                <td>
-                  {% if symbol.is_default %}
-                  <button type="button" class="btn-remove" disabled style="opacity: 0.5; cursor: not-allowed;">削除不可</button>
-                  {% else %}
-                  <button type="button" class="btn-remove" onclick="removeSlotSymbol(this)">削除</button>
-                  {% endif %}
                 </td>
               </tr>
               {% endfor %}
