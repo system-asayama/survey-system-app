@@ -1,0 +1,56 @@
+{
+  "title": "お店アンケート",
+  "description": "ご来店ありがとうございます！",
+  "questions": [
+    {
+      "id": 1,
+      "text": "総合評価",
+      "type": "rating",
+      "required": true
+    },
+    {
+      "id": 2,
+      "text": "訪問目的",
+      "type": "radio",
+      "required": true,
+      "options": [
+        "食事",
+        "カフェ",
+        "買い物",
+        "その他"
+      ]
+    },
+    {
+      "id": 3,
+      "text": "お店の雰囲気（複数選択可）",
+      "type": "checkbox",
+      "required": true,
+      "options": [
+        "静か",
+        "賑やか",
+        "落ち着く",
+        "おしゃれ",
+        "カジュアル"
+      ]
+    },
+    {
+      "id": 4,
+      "text": "おすすめ度",
+      "type": "radio",
+      "required": true,
+      "options": [
+        "ぜひおすすめしたい",
+        "おすすめしたい",
+        "どちらでもない",
+        "おすすめしない"
+      ]
+    },
+    {
+      "id": 5,
+      "text": "ご感想・ご意見（任意）",
+      "type": "text",
+      "required": true
+    }
+  ],
+  "updated_at": "2025-12-15T01:07:18.189779"
+}

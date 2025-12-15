@@ -467,11 +467,28 @@ def admin_survey_editor():
         flash("アンケート設定を保存しました", "success")
         return redirect(url_for("survey_admin.admin_survey_editor"))
     
-    # GET: 既存の設定を読み込み
-    if os.path.exists(survey_config_path):
-        with open(survey_config_path, "r", encoding="utf-8") as f:
-            survey_config = json.load(f)
-    else:
+    # GET: データベースから設定を読み込み
+    store_id = session.get('store_id')
+    survey_config = None
+    
+    if store_id:
+        import store_db
+        survey_config = store_db.get_survey_config(store_id)
+        if survey_config and survey_config.get('questions'):
+            # データベースから読み込めた
+            pass
+        else:
+            survey_config = None
+    
+    if not survey_config:
+        # データベースになければJSONファイルから
+        if os.path.exists(survey_config_path):
+            with open(survey_config_path, "r", encoding="utf-8") as f:
+                survey_config = json.load(f)
+        else:
+            survey_config = None
+    
+    if not survey_config:
         # デフォルト設定
         survey_config = {
             "title": "お店アンケート",
