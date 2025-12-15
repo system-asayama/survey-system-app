@@ -163,10 +163,15 @@ document.addEventListener('DOMContentLoaded', () => {
           alert('以下の口コミ投稿文を生成しました：\n\n' + result.generated_review);
         }
         
-        // フォームをリセット
-        form.reset();
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'アンケートを送信してスロットへ';
+        // リダイレクトURLがある場合は遷移
+        if (result.redirect_url) {
+          window.location.href = result.redirect_url;
+        } else {
+          // フォームをリセット
+          form.reset();
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'アンケートを送信してスロットへ';
+        }
       } else {
         alert('エラーが発生しました: ' + (result.error || '不明なエラー'));
         submitBtn.disabled = false;

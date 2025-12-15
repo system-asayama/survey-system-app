@@ -17,9 +17,16 @@ bp = Blueprint('survey', __name__)
 @bp.url_value_preprocessor
 def pull_store_slug(endpoint, values):
     """URLから店舗slugを取得してgに保存"""
+    import sys
+    sys.stderr.write(f"DEBUG pull_store_slug: endpoint={endpoint}, values={values}\n")
+    sys.stderr.flush()
     if values and 'store_slug' in values:
         g.store_slug = values.pop('store_slug')
+        sys.stderr.write(f"DEBUG pull_store_slug: store_slug={g.store_slug}\n")
+        sys.stderr.flush()
         store = store_db.get_store_by_slug(g.store_slug)
+        sys.stderr.write(f"DEBUG pull_store_slug: store={store}\n")
+        sys.stderr.flush()
         if store:
             g.store = store
             g.store_id = store['id']
@@ -201,57 +208,70 @@ def survey():
 @require_store
 def submit_survey():
     """アンケート送信"""
-    body = request.get_json(silent=True) or {}
+    try:
+        body = request.get_json(silent=True) or {}
+        import sys
+        sys.stderr.write(f"DEBUG submit_survey: body = {body}\n")
+        sys.stderr.flush()
     
-    # 最初の質問の回答を評価として使用（５段階評価の場合）
-    rating = 3  # デフォルト
-    first_answer = body.get('q1', '')
-    if '非常に満足' in first_answer or '強く思う' in first_answer or '非常に良い' in first_answer:
-        rating = 5
-    elif '満足' in first_answer or '思う' in first_answer or '良い' in first_answer:
-        rating = 4
-    elif '普通' in first_answer or 'どちらとも' in first_answer:
-        rating = 3
-    elif 'やや' in first_answer:
-        rating = 2
-    else:
-        rating = 1
-    
-    # ratingをbodyに追加
-    body['rating'] = rating
-    
-    # アンケート回答を保存
-    store_db.save_survey_response(g.store_id, body)
-     # 星4以上の場合のAI投稿文を生成（OpenAI APIキーが必要）
-    generated_review = ''
-    # 一時的に無効化：有効なOpenAI APIキーが必要です
-    # if rating >= 4:
-    #     try:
-    #         generated_review = _generate_review_text(body, g.store_id)
-    #     except Exception as e:
-    #         print(f"Error generating review: {e}")
-    
-    # セッションにアンケート完了フラグと評価を設定
-    session[f'survey_completed_{g.store_id}'] = True
-    session[f'survey_rating_{g.store_id}'] = rating
-    session[f'generated_review_{g.store_id}'] = generated_review
-    
-    # 星3以下の場合はメッセージを表示
-    if rating <= 3:
+        # 最初の質問の回答を評価として使用（５段階評価の場合）
+        rating = 3  # デフォルト
+        first_answer = body.get('q1', '')
+        if '非常に満足' in first_answer or '強く思う' in first_answer or '非常に良い' in first_answer:
+            rating = 5
+        elif '満足' in first_answer or '思う' in first_answer or '良い' in first_answer:
+            rating = 4
+        elif '普通' in first_answer or 'どちらとも' in first_answer:
+            rating = 3
+        elif 'やや' in first_answer:
+            rating = 2
+        else:
+            rating = 1
+        
+        # ratingをbodyに追加
+        body['rating'] = rating
+        
+        # アンケート回答を保存
+        sys.stderr.write(f"DEBUG submit_survey: rating = {rating}, store_id = {g.store_id}\n")
+        sys.stderr.flush()
+        store_db.save_survey_response(g.store_id, body)
+        
+        # 星4以上の場合のAI投稿文を生成（OpenAI APIキーが必要）
+        generated_review = ''
+        # 一時的に無効化：有効なOpenAI APIキーが必要です
+        # if rating >= 4:
+        #     try:
+        #         generated_review = _generate_review_text(body, g.store_id)
+        #     except Exception as e:
+        #         print(f"Error generating review: {e}")
+        
+        # セッションにアンケート完了フラグと評価を設定
+        session[f'survey_completed_{g.store_id}'] = True
+        session[f'survey_rating_{g.store_id}'] = rating
+        session[f'generated_review_{g.store_id}'] = generated_review
+        
+        # 星3以下の場合はメッセージを表示
+        if rating <= 3:
+            return jsonify({
+                "ok": True, 
+                "message": "貴重なご意見をありがとうございます。社内で改善に活用させていただきます。",
+                "rating": rating
+            })
+        
+        # 星4以上の場合は口コミ投稿文を表示
         return jsonify({
             "ok": True, 
-            "message": "貴重なご意見をありがとうございます。社内で改善に活用させていただきます。",
-            "rating": rating
+            "message": "アンケートにご協力いただきありがとうございます！",
+            "rating": rating,
+            "generated_review": generated_review
         })
-    
-    # 星4以上の場合は口コミ投稿文を表示
-    return jsonify({
-        "ok": True, 
-        "message": "アンケートにご協力いただきありがとうございます！",
-        "rating": rating,
-        "generated_review": generated_review
-    })
-
+    except Exception as e:
+        import sys
+        sys.stderr.write(f"ERROR submit_survey: {e}\n")
+        sys.stderr.flush()
+        import traceback
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)}), 400
 @bp.post("/store/<store_slug>/reset_survey")
 @require_store
 def reset_survey():

@@ -346,13 +346,22 @@ def survey():
 def submit_survey():
     body = request.get_json(silent=True) or {}
     
-    # バリデーション
-    required_fields = ['rating', 'visit_purpose', 'atmosphere', 'recommend']
-    for field in required_fields:
-        if field not in body or not body[field]:
-            return jsonify({"ok": False, "error": f"{field}は必須項目です"}), 400
+    # 最初の質問の回答を評価として使用（５段階評価の場合）
+    rating = 3  # デフォルト
+    first_answer = body.get('q1', '')
+    if '非常に満足' in first_answer or '強く思う' in first_answer or '非常に良い' in first_answer:
+        rating = 5
+    elif '満足' in first_answer or '思う' in first_answer or '良い' in first_answer:
+        rating = 4
+    elif '普通' in first_answer or 'どちらとも' in first_answer:
+        rating = 3
+    elif 'やや' in first_answer:
+        rating = 2
+    else:
+        rating = 1
     
-    rating = body.get('rating', 3)
+    # ratingをbodyに追加
+    body['rating'] = rating
     
     # アンケートアプリIDを取得
     survey_app_id = None
