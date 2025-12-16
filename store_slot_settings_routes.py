@@ -137,6 +137,7 @@ def _prob_total_le(symbols: List[Symbol], spins: int, threshold: float) -> float
 def _default_config() -> Config:
     """デフォルトのスロット設定"""
     defaults = [
+        {"id": "god", "label": "GOD", "payout_3": 300, "color": "#ffd700", "is_default": True},
         {"id": "seven", "label": "7", "payout_3": 100, "color": "#ff0000", "is_default": True},
         {"id": "bell", "label": "🔔", "payout_3": 50, "color": "#fbbf24", "is_default": True},
         {"id": "bar", "label": "BAR", "payout_3": 25, "color": "#ffffff", "is_default": True},
@@ -144,6 +145,7 @@ def _default_config() -> Config:
         {"id": "cherry", "label": "🍒", "payout_3": 12.5, "color": "#ef4444", "is_default": True},
         {"id": "lemon", "label": "🍋", "payout_3": 12.5, "color": "#fde047", "is_default": True},
         # リーチハズレシンボル（配当0、リーチ演出のみ）
+        {"id": "god_reach", "label": "GODリーチ", "payout_3": 0, "color": "#fef3c7", "is_default": True, "is_reach": True, "reach_symbol": "god"},
         {"id": "bar_reach", "label": "BARリーチ", "payout_3": 0, "color": "#9ca3af", "is_default": True, "is_reach": True, "reach_symbol": "bar"},
         {"id": "seven_reach", "label": "7リーチ", "payout_3": 0, "color": "#fca5a5", "is_default": True, "is_reach": True, "reach_symbol": "seven"},
     ]
