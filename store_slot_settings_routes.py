@@ -140,7 +140,7 @@ def _default_config() -> Config:
         {"id": "god", "label": "GOD", "payout_3": 300, "color": "#ffd700", "is_default": True},
         {"id": "seven", "label": "7", "payout_3": 100, "color": "#ff0000", "is_default": True},
         {"id": "bell", "label": "🔔", "payout_3": 50, "color": "#fbbf24", "is_default": True},
-        {"id": "bar", "label": "BAR", "payout_3": 25, "color": "#ffffff", "is_default": True},
+        {"id": "bar", "label": "BAR", "payout_3": 25, "color": "#1e293b", "is_default": True},
         {"id": "grape", "label": "🍇", "payout_3": 20, "color": "#7c3aed", "is_default": True},
         {"id": "cherry", "label": "🍒", "payout_3": 12.5, "color": "#ef4444", "is_default": True},
         {"id": "lemon", "label": "🍋", "payout_3": 12.5, "color": "#fde047", "is_default": True},
