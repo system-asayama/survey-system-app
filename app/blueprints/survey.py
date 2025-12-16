@@ -199,6 +199,10 @@ def _generate_review_text(survey_data, store_id):
     sys.stderr.flush()
     
     # プロンプト作成
+    sys.stderr.write("\n" + "=" * 80 + "\n")
+    sys.stderr.write("DEBUG: OpenAIに送信するプロンプト\n")
+    sys.stderr.write("=" * 80 + "\n")
+    
     prompt = f"""以下のアンケート回答から、自然で読みやすいお店の口コミ投稿文を日本語で作成してください。
 
 【アンケート回答】
@@ -221,7 +225,14 @@ def _generate_review_text(survey_data, store_id):
 
 口コミ投稿文:"""
     
+    sys.stderr.write(prompt + "\n")
+    sys.stderr.write("=" * 80 + "\n")
+    sys.stderr.flush()
+    
     try:
+        sys.stderr.write("DEBUG: OpenAI APIを呼び出します (model=gpt-4.1-mini)\n")
+        sys.stderr.flush()
+        
         response = openai_client.chat.completions.create(
             model="gpt-4.1-mini",
             messages=[
@@ -240,7 +251,17 @@ def _generate_review_text(survey_data, store_id):
             temperature=0.7,
             max_tokens=500
         )
-        return response.choices[0].message.content.strip()
+        
+        generated_text = response.choices[0].message.content.strip()
+        
+        sys.stderr.write("\n" + "=" * 80 + "\n")
+        sys.stderr.write("DEBUG: OpenAIからのレスポンス\n")
+        sys.stderr.write("=" * 80 + "\n")
+        sys.stderr.write(f"生成されたレビュー:\n{generated_text}\n")
+        sys.stderr.write("=" * 80 + "\n")
+        sys.stderr.flush()
+        
+        return generated_text
     except Exception as e:
         print(f"Error generating review text: {e}")
         return "口コミ投稿文の生成に失敗しました。"
