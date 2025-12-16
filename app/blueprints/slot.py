@@ -26,7 +26,7 @@ DATA_DIR = os.path.join(APP_DIR, "data")
 @bp.get("/slot")
 def slot_page():
     """スロットページ"""
-    from ..utils import store_db
+    import store_db
     
     # store_slugからstore_idを取得
     store_slug = request.args.get('store_slug')
