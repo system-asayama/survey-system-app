@@ -26,6 +26,23 @@
     <input type="password" name="password_confirm" required minlength="8" placeholder="もう一度入力" style="width:100%;max-width:400px;padding:8px">
   </div>
 
+  <div style="margin-bottom:16px">
+    <label style="display:block;margin-bottom:8px">管理する店舗 <span style="color:red">*</span></label>
+    <div style="border:1px solid #ddd;padding:12px;border-radius:4px;max-height:200px;overflow-y:auto;max-width:400px">
+      {% if stores %}
+        {% for store in stores %}
+        <label style="display:block;margin-bottom:8px;cursor:pointer">
+          <input type="checkbox" name="store_ids" value="{{ store.id }}" style="margin-right:8px">
+          {{ store['名称'] }}
+        </label>
+        {% endfor %}
+      {% else %}
+        <p style="color:#999;margin:0">店舗が登録されていません。まず店舗を作成してください。</p>
+      {% endif %}
+    </div>
+    <small style="color:#666">少なくとも1つの店舗を選択してください。</small>
+  </div>
+
   <div style="margin-top:24px">
     <button type="submit" class="btn">作成</button>
     <a href="{{ back_url }}" class="btn secondary">キャンセル</a>
