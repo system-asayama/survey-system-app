@@ -73,7 +73,7 @@ def update_schema():
             if "duplicate column name" in str(e):
                 print("   ✓ titleカラムは既に存在します")
             else:
-                print(f("   ! カラム追加エラー: {e}")
+                print(f"   ! カラム追加エラー: {e}")
         
         # 3. T_店舗_Google設定テーブルを作成
         print("\n3. T_店舗_Google設定テーブルを作成中...")
