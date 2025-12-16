@@ -674,6 +674,7 @@ try:
     from app.blueprints.admin import bp as admin_bp
     from app.blueprints.employee import bp as employee_bp
     from app.blueprints.survey_admin import bp as survey_admin_bp
+    from app.blueprints.survey import bp as survey_bp
     
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(system_admin_bp, url_prefix='/system_admin')
@@ -681,6 +682,7 @@ try:
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(employee_bp, url_prefix='/employee')
     app.register_blueprint(survey_admin_bp, url_prefix='/survey_admin')
+    app.register_blueprint(survey_bp)  # プレフィックスなし（/store/...を処理）
     
     print("✅ 管理画面blueprints登録完了")
 except Exception as e:
