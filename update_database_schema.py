@@ -48,7 +48,7 @@ def update_schema():
         # 2-1. T_テナントテーブルにupdated_atカラムを追加
         print("\n2-1. T_テナントテーブルにupdated_atカラムを追加中...")
         try:
-            cur.execute('ALTER TABLE T_テナント ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP')
+            cur.execute('ALTER TABLE T_テナント ADD COLUMN updated_at TIMESTAMP DEFAULT NULL')
             conn.commit()
             print("   ✓ updated_atカラムを追加しました")
         except sqlite3.OperationalError as e:
