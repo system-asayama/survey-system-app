@@ -273,47 +273,135 @@ def _generate_review_text(survey_data, store_id=None, app_id=None):
     """
     アンケートデータからAIを使って口コミ投稿文を生成
     """
-    rating = survey_data.get('rating', 3)
-    visit_purpose = survey_data.get('visit_purpose', '')
-    atmosphere = ', '.join(survey_data.get('atmosphere', []))
-    recommend = survey_data.get('recommend', '')
-    comment = survey_data.get('comment', '')
+    import sys
+    import json
+    
+    # アンケート設定を取得して質問文を取得
+    survey_config = None
+    try:
+        conn = store_db.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT config_json FROM T_店舗_アンケート設定 WHERE store_id = ?", (store_id,))
+        result = cursor.fetchone()
+        if result and result[0]:
+            survey_config = json.loads(result[0])
+        conn.close()
+    except Exception as e:
+        print(f"Error getting survey config: {e}")
+    
+    # アンケート回答を質問と結びつけて整形
+    qa_pairs = []
+    
+    if survey_config and 'questions' in survey_config:
+        questions = survey_config['questions']
+        for i, question in enumerate(questions):
+            question_id = f"q{i+1}"
+            if question_id in survey_data:
+                answer = survey_data[question_id]
+                question_text = question.get('text', '')
+                
+                # 回答を整形
+                if isinstance(answer, list):
+                    answer_text = '、'.join(answer)
+                elif question.get('type') == 'rating':
+                    answer_text = f"{answer}点（5点満点）"
+                else:
+                    answer_text = str(answer)
+                
+                qa_pairs.append(f"質問: {question_text}\n回答: {answer_text}")
+    else:
+        # 設定がない場合は従来通り
+        for key, value in survey_data.items():
+            if key.startswith('q'):
+                if isinstance(value, list):
+                    qa_pairs.append(', '.join(value))
+                else:
+                    qa_pairs.append(str(value))
+    
+    qa_text = '\n\n'.join(qa_pairs)
+    
+    # デバッグ：AIに渡されるデータをログ出力
+    sys.stderr.write("=" * 80 + "\n")
+    sys.stderr.write("DEBUG: AIに渡されるアンケートデータ\n")
+    sys.stderr.write("=" * 80 + "\n")
+    sys.stderr.write(f"survey_data: {survey_data}\n")
+    sys.stderr.write(f"survey_config questions count: {len(survey_config.get('questions', [])) if survey_config else 0}\n")
+    sys.stderr.write(f"qa_pairs count: {len(qa_pairs)}\n")
+    sys.stderr.write("\nqa_text:\n")
+    sys.stderr.write(qa_text + "\n")
+    sys.stderr.write("=" * 80 + "\n")
+    sys.stderr.flush()
     
     # プロンプト作成
+    sys.stderr.write("\n" + "=" * 80 + "\n")
+    sys.stderr.write("DEBUG: OpenAIに送信するプロンプト\n")
+    sys.stderr.write("=" * 80 + "\n")
+    
     prompt = f"""以下のアンケート回答から、自然で読みやすいお店の口コミ投稿文を日本語で作成してください。
 
-【アンケート内容】
-- 総合評価: {rating}つ星
-- 訪問目的: {visit_purpose}
-- お店の雰囲気: {atmosphere}
-- おすすめ度: {recommend}
-- 自由コメント: {comment if comment else 'なし'}
+【アンケート回答】
+{qa_text}
+
+【絶対に守るべきルール】
+1. 上記のすべての質問と回答を考慮してください
+2. 「○○がおいしい」「特に○○が印象的」「おすすめの一品」のような曖昧な表現は絶対に使わないでください
+3. 料理やメニューについて言及する場合は、必ず具体的な名前（例：ハラミ、ホルモン、カルビなど）を使ってください
+4. 回答に具体的な料理名が含まれている場合は、それを曖昧な表現に置き換えず、そのまま使ってください
+5. 例：「ハラミ」と回答されている場合→「ハラミが美味しかった」と書く（「おすすめの一品」と書かない）
+6. 自由記入欄に肯定的な文言があれば積極的に活用してください
+7. 自由記入欄に「○○」のような曖昧な表現があれば、その部分を省略するか、他の質問の回答から具体的な名前を探して使ってください
 
 【要件】
 - 200文字程度で簡潔にまとめる
 - 自然な口語体で書く
 - 具体的な体験を含める
-- {rating}つ星の評価に相応しいトーンで書く
 - 「です・ます」調で統一する
 
 口コミ投稿文:"""
     
+    sys.stderr.write(prompt + "\n")
+    sys.stderr.write("=" * 80 + "\n")
+    sys.stderr.flush()
+    
     try:
+        sys.stderr.write("DEBUG: OpenAI APIを呼び出します (model=gpt-4.1-mini)\n")
+        sys.stderr.flush()
+        
         # アプリ設定に応じたOpenAIクライアントを取得
         client = get_openai_client(app_type='survey', app_id=app_id, store_id=store_id)
         response = client.chat.completions.create(
             model="gpt-4.1-mini",
             messages=[
-                {"role": "system", "content": "あなたは自然で読みやすい口コミ投稿文を作成する専門家です。"},
+                {"role": "system", "content": """あなたは自然で読みやすい口コミ投稿文を作成する専門家です。
+
+絶対に守るべきルール:
+1. すべてのアンケート回答を考慮してください
+2. 「○○がおいしい」「特に○○が印象的」「おすすめの一品」のような曖昧な表現は絶対に使わないでください
+3. 料理やメニューについて言及する場合は、必ず具体的な名前（例：ハラミ、ホルモン、カルビ）を使ってください
+4. 回答に具体的な料理名が含まれている場合は、それを曖昧な表現に置き換えず、そのまま使ってください
+5. 例：「ハラミ」と回答→「ハラミが美味しかった」（「おすすめの一品」と書かない）
+6. 自由記入欄に肯定的な文言があれば積極的に活用してください
+7. 自由記入欄に「○○」のような曖昧な表現があれば、他の質問の回答から具体的な名前を探して使ってください"""},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.7,
             max_tokens=500
         )
-        return response.choices[0].message.content.strip()
+        
+        generated_text = response.choices[0].message.content.strip()
+        
+        sys.stderr.write("\n" + "=" * 80 + "\n")
+        sys.stderr.write("DEBUG: OpenAIからのレスポンス\n")
+        sys.stderr.write("=" * 80 + "\n")
+        sys.stderr.write(f"生成されたレビュー:\n{generated_text}\n")
+        sys.stderr.write("=" * 80 + "\n")
+        sys.stderr.flush()
+        
+        return generated_text
     except Exception as e:
-        # エラー時はデフォルトの文章を返す
-        return f"{visit_purpose}で訪問しました。{atmosphere}な雰囲気で、{recommend}と思います。{comment}"
+        sys.stderr.write(f"ERROR: OpenAI APIエラー: {e}\n")
+        sys.stderr.flush()
+        return "口コミ投稿文の生成に失敗しました。"
 
 # ===== ルート =====
 @app.get("/")
