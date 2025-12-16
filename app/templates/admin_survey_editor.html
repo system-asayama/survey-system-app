@@ -258,9 +258,13 @@
             <div class="question-header">
               <span class="question-number">質問 {{ loop.index }}</span>
               <div class="question-controls">
+                {% if loop.index0 != 0 %}
                 <button type="button" class="btn-move" onclick="moveQuestionUp(this)" title="上へ移動">▲</button>
                 <button type="button" class="btn-move" onclick="moveQuestionDown(this)" title="下へ移動">▼</button>
                 <button type="button" class="btn-remove" onclick="removeQuestion(this)">削除</button>
+                {% else %}
+                <span style="font-size: 12px; color: #6b7280;">（固定質問）</span>
+                {% endif %}
               </div>
             </div>
 
@@ -271,31 +275,41 @@
                 name="questions[{{ loop.index0 }}][text]" 
                 value="{{ question.text }}"
                 placeholder="質問を入力してください"
+                {% if loop.index0 == 0 %}readonly style="background-color: #f3f4f6; cursor: not-allowed;"{% endif %}
                 required
               >
             </div>
 
             <div class="form-group">
               <label>質問タイプ</label>
-              <select name="questions[{{ loop.index0 }}][type]" onchange="updateQuestionType(this)">
+              <select name="questions[{{ loop.index0 }}][type]" onchange="updateQuestionType(this)" {% if loop.index0 == 0 %}disabled style="background-color: #f3f4f6; cursor: not-allowed;"{% endif %}>
                 <option value="rating" {% if question.type == 'rating' %}selected{% endif %}>星評価（1-5）</option>
                 <option value="radio" {% if question.type == 'radio' %}selected{% endif %}>単一選択</option>
                 <option value="checkbox" {% if question.type == 'checkbox' %}selected{% endif %}>複数選択</option>
                 <option value="text" {% if question.type == 'text' %}selected{% endif %}>自由記述</option>
               </select>
+              {% if loop.index0 == 0 %}
+              <!-- disabledのselectは送信されないので、hiddenフィールドで送信 -->
+              <input type="hidden" name="questions[{{ loop.index0 }}][type]" value="{{ question.type }}">
+              {% endif %}
             </div>
 
             <div class="form-group">
-              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <label style="display: flex; align-items: center; gap: 8px; {% if loop.index0 == 0 %}cursor: not-allowed;{% else %}cursor: pointer;{% endif %}">
                 <input 
                   type="checkbox" 
                   name="questions[{{ loop.index0 }}][required]" 
                   value="true"
                   {% if question.required %}checked{% endif %}
+                  {% if loop.index0 == 0 %}disabled{% endif %}
                   style="width: auto; margin: 0;"
                 >
                 <span>この質問を必須にする</span>
               </label>
+              {% if loop.index0 == 0 and question.required %}
+              <!-- disabledのcheckboxは送信されないので、hiddenフィールドで送信 -->
+              <input type="hidden" name="questions[{{ loop.index0 }}][required]" value="true">
+              {% endif %}
             </div>
 
             {% if question.type in ['radio', 'checkbox'] %}
@@ -310,12 +324,17 @@
                     name="questions[{{ question_index }}][options][]" 
                     value="{{ option }}"
                     placeholder="選択肢を入力"
+                    {% if question_index == 0 %}readonly style="background-color: #f3f4f6; cursor: not-allowed;"{% endif %}
                   >
+                  {% if question_index != 0 %}
                   <button type="button" onclick="removeOption(this)">削除</button>
+                  {% endif %}
                 </div>
                 {% endfor %}
               </div>
+              {% if question_index != 0 %}
               <button type="button" class="btn-add" onclick="addOption(this)">+ 選択肢を追加</button>
+              {% endif %}
             </div>
             {% endif %}
           </div>
@@ -412,8 +431,15 @@
     
     function moveQuestionUp(button) {
       const card = button.closest('.question-card');
+      const index = parseInt(card.getAttribute('data-question-index'));
+      
+      // 質問1（index=0）とその上への移動を防ぐ
+      if (index <= 1) return;
+      
       const prev = card.previousElementSibling;
       if (prev && prev.classList.contains('question-card')) {
+        const prevIndex = parseInt(prev.getAttribute('data-question-index'));
+        if (prevIndex === 0) return; // 質問1を越えて移動させない
         card.parentNode.insertBefore(card, prev);
         updateQuestionNumbers();
       }
@@ -421,6 +447,11 @@
     
     function moveQuestionDown(button) {
       const card = button.closest('.question-card');
+      const index = parseInt(card.getAttribute('data-question-index'));
+      
+      // 質問1（index=0）の移動を防ぐ
+      if (index === 0) return;
+      
       const next = card.nextElementSibling;
       if (next && next.classList.contains('question-card')) {
         card.parentNode.insertBefore(next, card);
