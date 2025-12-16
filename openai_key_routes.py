@@ -23,6 +23,7 @@ def save_openai_key():
         
         if not result:
             flash('店舗情報が見つかりません', 'error')
+            conn.close()
             return redirect(request.referrer or url_for('admin.dashboard'))
         
         store_id = result[0]
@@ -56,4 +57,5 @@ def save_openai_key():
         print(f"Error saving OpenAI API key: {e}")
         flash('APIキーの保存に失敗しました', 'error')
     
-    return redirect(url_for('store_slot_settings', store_id=store_id))
+    # 正しいリダイレクト先に変更（元のページに戻る）
+    return redirect(request.referrer or url_for('admin.dashboard'))
