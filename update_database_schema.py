@@ -45,6 +45,18 @@ def update_schema():
             else:
                 raise
         
+        # 2-1. T_テナントテーブルにupdated_atカラムを追加
+        print("\n2-1. T_テナントテーブルにupdated_atカラムを追加中...")
+        try:
+            cur.execute('ALTER TABLE T_テナント ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP')
+            conn.commit()
+            print("   ✓ updated_atカラムを追加しました")
+        except sqlite3.OperationalError as e:
+            if "duplicate column name" in str(e):
+                print("   ✓ updated_atカラムは既に存在します")
+            else:
+                raise
+        
         # 3. T_管理者テーブルにemailカラムを追加
         print("\n3. T_管理者テーブルにemailカラムを追加中...")
         try:
