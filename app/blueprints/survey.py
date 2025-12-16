@@ -140,24 +140,62 @@ def _generate_review_text(survey_data, store_id):
         print(f"Error getting OpenAI client: {e}")
         return "口コミ投稿文の生成に失敗しました。"
     
-    # アンケートデータから情報を抽出
-    rating = 5  # デフォルト
-    answers = []
+    # アンケート設定を取得して質問文を取得
+    survey_config = None
+    try:
+        conn = store_db.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT config_json FROM T_店舗_アンケート設定 WHERE store_id = ?", (store_id,))
+        result = cursor.fetchone()
+        if result and result[0]:
+            import json
+            survey_config = json.loads(result[0])
+        conn.close()
+    except Exception as e:
+        print(f"Error getting survey config: {e}")
     
-    for key, value in survey_data.items():
-        if key.startswith('q'):
-            if isinstance(value, list):
-                answers.append(', '.join(value))
-            else:
-                answers.append(str(value))
+    # アンケート回答を質問と結びつけて整形
+    qa_pairs = []
     
-    answers_text = '\n- '.join(answers)
+    if survey_config and 'questions' in survey_config:
+        questions = survey_config['questions']
+        for i, question in enumerate(questions):
+            question_id = f"q{i+1}"
+            if question_id in survey_data:
+                answer = survey_data[question_id]
+                question_text = question.get('text', '')
+                
+                # 回答を整形
+                if isinstance(answer, list):
+                    answer_text = '、'.join(answer)
+                elif question.get('type') == 'rating':
+                    answer_text = f"{answer}点（5点満点）"
+                else:
+                    answer_text = str(answer)
+                
+                qa_pairs.append(f"質問: {question_text}\n回答: {answer_text}")
+    else:
+        # 設定がない場合は従来通り
+        for key, value in survey_data.items():
+            if key.startswith('q'):
+                if isinstance(value, list):
+                    qa_pairs.append(', '.join(value))
+                else:
+                    qa_pairs.append(str(value))
+    
+    qa_text = '\n\n'.join(qa_pairs)
     
     # プロンプト作成
     prompt = f"""以下のアンケート回答から、自然で読みやすいお店の口コミ投稿文を日本語で作成してください。
 
 【アンケート回答】
-- {answers_text}
+{qa_text}
+
+【重要な注意事項】
+- 上記のすべての質問と回答を考慮してください
+- 「○○がおいしい」のような曖昧な表現は絶対に使わないでください
+- 具体的な固有名詞（料理名、メニュー名など）は使っても構いません
+- 回答された内容に基づいて、具体的に書いてください
 
 【要件】
 - 200文字程度で簡潔にまとめる
@@ -171,7 +209,12 @@ def _generate_review_text(survey_data, store_id):
         response = openai_client.chat.completions.create(
             model="gpt-4.1-mini",
             messages=[
-                {"role": "system", "content": "あなたは自然で読みやすい口コミ投稿文を作成する専門家です。"},
+                {"role": "system", "content": """あなたは自然で読みやすい口コミ投稿文を作成する専門家です。
+重要なルール:
+1. すべてのアンケート回答を考慮してください
+2. 「○○がおいしい」「○○が良かった」のような曖昧な表現は絶対に使わないでください
+3. 具体的な固有名詞（料理名、メニュー名、店名など）は使っても構いません
+4. 回答された内容に基づいて具体的に記述してください"""},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.7,
@@ -238,12 +281,11 @@ def submit_survey():
         
         # 星4以上の場合のAI投稿文を生成（OpenAI APIキーが必要）
         generated_review = ''
-        # 一時的に無効化：有効なOpenAI APIキーが必要です
-        # if rating >= 4:
-        #     try:
-        #         generated_review = _generate_review_text(body, g.store_id)
-        #     except Exception as e:
-        #         print(f"Error generating review: {e}")
+        if rating >= 4:
+            try:
+                generated_review = _generate_review_text(body, g.store_id)
+            except Exception as e:
+                print(f"Error generating review: {e}")
         
         # セッションにアンケート完了フラグと評価を設定
         session[f'survey_completed_{g.store_id}'] = True
