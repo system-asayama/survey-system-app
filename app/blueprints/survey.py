@@ -16,12 +16,21 @@ bp = Blueprint('survey', __name__)
 # ===== 店舗識別ミドルウェア =====
 @bp.url_value_preprocessor
 def pull_store_slug(endpoint, values):
-    """URLから店舗slugを取得してgに保存"""
+    """かURLから店舗slugを取得してgに保存"""
     import sys
     sys.stderr.write(f"DEBUG pull_store_slug: endpoint={endpoint}, values={values}\n")
     sys.stderr.flush()
+    
+    # valuesが空の場合はrequest.view_argsから取得を試みる
+    from flask import request
+    store_slug = None
     if values and 'store_slug' in values:
-        g.store_slug = values.pop('store_slug')
+        store_slug = values.pop('store_slug')
+    elif hasattr(request, 'view_args') and request.view_args and 'store_slug' in request.view_args:
+        store_slug = request.view_args.get('store_slug')
+    
+    if store_slug:
+        g.store_slug = store_slug
         sys.stderr.write(f"DEBUG pull_store_slug: store_slug={g.store_slug}\n")
         sys.stderr.flush()
         store = store_db.get_store_by_slug(g.store_slug)
