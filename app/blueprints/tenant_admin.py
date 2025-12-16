@@ -230,6 +230,59 @@ def store_new():
                     INSERT INTO "T_店舗" (tenant_id, 名称, slug)
                     VALUES (%s, %s, %s)
                 '''), (tenant_id, name, slug))
+                
+                # 新しく作成された店舗IDを取得
+                store_id = cur.lastrowid
+                
+                # デフォルトアンケート設定を作成
+                import json
+                default_survey_config = {
+                    "title": "お店アンケート",
+                    "description": "アンケートにご協力いただくと、スロットマシンを1回プレイできます。",
+                    "questions": [
+                        {
+                            "id": 1,
+                            "text": "総合的な満足度を教えてください",
+                            "type": "radio",
+                            "options": ["非常に満足", "満足", "普通", "やや不満", "不満"],
+                            "required": True
+                        },
+                        {
+                            "id": 2,
+                            "text": "ご来店の目的を教えてください",
+                            "type": "radio",
+                            "options": ["食事", "カフェ利用", "買い物", "サービス利用", "その他"],
+                            "required": True
+                        },
+                        {
+                            "id": 3,
+                            "text": "お店の雰囲気で良かった点を教えてください（複数選択可）",
+                            "type": "checkbox",
+                            "options": ["清潔感", "落ち着いた空間", "スタッフの対応", "内装・デザイン", "音楽・照明"],
+                            "required": False
+                        },
+                        {
+                            "id": 4,
+                            "text": "友人におすすめしたいと思いますか？",
+                            "type": "radio",
+                            "options": ["強く思う", "思う", "どちらとも言えない", "あまり思わない", "思わない"],
+                            "required": True
+                        },
+                        {
+                            "id": 5,
+                            "text": "その他、ご意見・ご要望があればお聞かせください",
+                            "type": "text",
+                            "placeholder": "自由にご記入ください",
+                            "required": False
+                        }
+                    ]
+                }
+                
+                cur.execute(_sql(conn, '''
+                    INSERT INTO "T_店舗_アンケート設定" (store_id, title, config_json)
+                    VALUES (%s, %s, %s)
+                '''), (store_id, default_survey_config["title"], json.dumps(default_survey_config, ensure_ascii=False)))
+                
                 conn.commit()
                 conn.close()
                 flash('店舗を作成しました', 'success')
