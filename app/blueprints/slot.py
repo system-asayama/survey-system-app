@@ -63,7 +63,7 @@ def slot_page():
             survey_complete_message = settings.get("survey_complete_message", survey_complete_message)
             prizes = settings.get("prizes", [])
     
-    return render_template('slot.html', survey_complete_message=survey_complete_message, prizes=prizes)
+    return render_template('slot.html', survey_complete_message=survey_complete_message, prizes=prizes, store_slug=store_slug)
 
 
 @bp.get("/config")

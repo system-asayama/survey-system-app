@@ -422,9 +422,16 @@ function previewRecalcProb(){
 
 async function loadConfig(){
   try {
-    // 現在のURLから店舗slugを取得
-    const pathParts = window.location.pathname.split('/');
-    const storeSlug = pathParts[2]; // /store/{slug}/slot の形式を想定
+    // store_slugを取得（グローバル変数 > URLパス > クエリパラメータ）
+    let storeSlug = window.STORE_SLUG;
+    if (!storeSlug) {
+      const pathParts = window.location.pathname.split('/');
+      storeSlug = pathParts[2]; // /store/{slug}/slot の形式を想定
+    }
+    if (!storeSlug) {
+      const urlParams = new URLSearchParams(window.location.search);
+      storeSlug = urlParams.get('store_slug');
+    }
     const cfg = await fetchJSON(`/store/${storeSlug}/config`);
     window.__symbols = cfg.symbols;
     
@@ -484,9 +491,16 @@ async function saveConfig(){
   const headers = {'Content-Type':'application/json'};
   if(adminToken) headers['X-Admin-Token'] = adminToken;
 
-  // 現在のURLから店舗slugを取得
-  const pathParts = window.location.pathname.split('/');
-  const storeSlug = pathParts[2]; // /store/{slug}/slot の形式を想定
+  // store_slugを取得（グローバル変数 > URLパス > クエリパラメータ）
+  let storeSlug = window.STORE_SLUG;
+  if (!storeSlug) {
+    const pathParts = window.location.pathname.split('/');
+    storeSlug = pathParts[2]; // /store/{slug}/slot の形式を想定
+  }
+  if (!storeSlug) {
+    const urlParams = new URLSearchParams(window.location.search);
+    storeSlug = urlParams.get('store_slug');
+  }
   await fetchJSON(`/store/${storeSlug}/config`, { method:'POST', headers, body: JSON.stringify(body) });
   await loadConfig();
   alert('保存しました（確率を再計算して保存）');
@@ -628,9 +642,16 @@ async function play(){
 
   let data;
   try{
-    // 現在のURLから店舗slugを取得
-    const pathParts = window.location.pathname.split('/');
-    const storeSlug = pathParts[2]; // /store/{slug}/slot の形式を想定
+    // store_slugを取得（グローバル変数 > URLパス > クエリパラメータ）
+    let storeSlug = window.STORE_SLUG;
+    if (!storeSlug) {
+      const pathParts = window.location.pathname.split('/');
+      storeSlug = pathParts[2]; // /store/{slug}/slot の形式を想定
+    }
+    if (!storeSlug) {
+      const urlParams = new URLSearchParams(window.location.search);
+      storeSlug = urlParams.get('store_slug');
+    }
     data = await fetchJSON(`/store/${storeSlug}/spin`, { method:'POST', body: JSON.stringify({}) });
   }catch(e){
     $('#status').textContent = 'エラー: ' + (e.message || e);

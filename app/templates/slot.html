@@ -163,6 +163,10 @@
   };
   </script>
 
+  <script>
+    // グローバル変数としてstore_slugを設定
+    window.STORE_SLUG = "{{ store_slug or '' }}";
+  </script>
   <script src="{{ url_for('static', filename='slot.js') }}?v={{ range(1, 1000000) | random }}"></script>
 </body>
 </html>
