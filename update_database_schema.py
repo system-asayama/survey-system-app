@@ -145,9 +145,32 @@ def update_schema():
         except sqlite3.OperationalError as e:
             print(f"   ! テーブル作成エラー: {e}")
         
-        # 8. スキーマ確認
+        # 8. T_アンケート回答テーブルを作成
+        print("\n8. T_アンケート回答テーブルを作成中...")
+        try:
+            cur.execute('''
+                CREATE TABLE IF NOT EXISTS "T_アンケート回答" (
+                    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                    store_id        INTEGER NOT NULL,
+                    rating          INTEGER NOT NULL,
+                    visit_purpose   TEXT,
+                    atmosphere      TEXT,
+                    recommend       TEXT,
+                    comment         TEXT,
+                    generated_review TEXT,
+                    response_json   TEXT,
+                    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (store_id) REFERENCES T_店舗(id) ON DELETE CASCADE
+                )
+            ''')
+            conn.commit()
+            print("   ✓ T_アンケート回答テーブルを作成しました")
+        except sqlite3.OperationalError as e:
+            print(f"   ! テーブル作成エラー: {e}")
+        
+        # 9. スキーマ確認
         print("\n" + "=" * 60)
-        print("8. 更新後のスキーマを確認中...")
+        print("9. 更新後のスキーマを確認中...")
         print("=" * 60)
         
         # 全テーブル一覧
