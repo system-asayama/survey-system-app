@@ -139,11 +139,11 @@ def _default_config() -> Config:
     defaults = [
         {"id": "god", "label": "GOD", "payout_3": 300, "color": "#ffd700", "is_default": True},
         {"id": "seven", "label": "7", "payout_3": 100, "color": "#ff0000", "is_default": True},
-        {"id": "bell", "label": "🔔", "payout_3": 50, "color": "#fbbf24", "is_default": True},
-        {"id": "bar", "label": "BAR", "payout_3": 25, "color": "#1e293b", "is_default": True},
-        {"id": "grape", "label": "🍇", "payout_3": 20, "color": "#7c3aed", "is_default": True},
-        {"id": "cherry", "label": "🍒", "payout_3": 12.5, "color": "#ef4444", "is_default": True},
-        {"id": "lemon", "label": "🍋", "payout_3": 12.5, "color": "#fde047", "is_default": True},
+        {"id": "bar", "label": "BAR", "payout_3": 50, "color": "#1e293b", "is_default": True},
+        {"id": "bell", "label": "🔔", "payout_3": 20, "color": "#fbbf24", "is_default": True},
+        {"id": "grape", "label": "🍇", "payout_3": 12, "color": "#7c3aed", "is_default": True},
+        {"id": "cherry", "label": "🍒", "payout_3": 8, "color": "#ef4444", "is_default": True},
+        {"id": "lemon", "label": "🍋", "payout_3": 5, "color": "#fde047", "is_default": True},
         # リーチハズレシンボル（配当0、リーチ演出のみ）
         {"id": "god_reach", "label": "GODリーチ", "payout_3": 0, "color": "#fef3c7", "is_default": True, "is_reach": True, "reach_symbol": "god"},
         {"id": "bar_reach", "label": "BARリーチ", "payout_3": 0, "color": "#9ca3af", "is_default": True, "is_reach": True, "reach_symbol": "bar"},
