@@ -330,23 +330,30 @@ def store_index():
         return redirect(url_for('survey', store_slug=g.store_slug))
     return redirect(url_for('slot_page', store_slug=g.store_slug))
 
-# 以下の関数はapp/blueprints/survey.pyに移行しました
-# @app.get("/store/<store_slug>/survey")
-# @require_store
-# def survey():
-#     """アンケートページ"""
-#     print(f"DEBUG: survey() called, store_id={g.store_id}, store={g.store}")
-#     survey_config = store_db.get_survey_config(g.store_id)
-#     print(f"DEBUG: survey_config={survey_config}")
-#     return render_template("survey.html", 
-#                          store=g.store,
-#                          survey_config=survey_config)
+@app.get("/store/<store_slug>/survey")
+@require_store
+def survey():
+    """アンケートページ"""
+    print(f"DEBUG: survey() called, store_id={g.store_id}, store={g.store}")
+    survey_config = store_db.get_survey_config(g.store_id)
+    print(f"DEBUG: survey_config={survey_config}")
+    return render_template("survey.html", 
+                         store=g.store,
+                         survey_config=survey_config)
 
-# # @app.post("/store/<store_slug>/submit_survey")
-# @require_store
-# def submit_survey_old():  # 名前を変更して衝突回避
-def submit_survey_old():
+@app.post("/store/<store_slug>/submit_survey")
+@require_store
+def submit_survey():
+    import sys
+    sys.stderr.write("\n" + "=" * 80 + "\n")
+    sys.stderr.write("DEBUG: submit_survey() called\n")
+    sys.stderr.write("=" * 80 + "\n")
+    sys.stderr.flush()
+    
     body = request.get_json(silent=True) or {}
+    
+    sys.stderr.write(f"DEBUG: 受信したアンケートデータ: {body}\n")
+    sys.stderr.flush()
     
     # 最初の質問の回答を評価として使用（５段階評価の場合）
     rating = 3  # デフォルト
@@ -380,9 +387,15 @@ def submit_survey_old():
     
     # 星4以上の場合のみAI投稿文を生成
     if rating >= 4:
+        sys.stderr.write(f"DEBUG: 星{rating}なのでAIレビュー生成を開始\n")
+        sys.stderr.flush()
         generated_review = _generate_review_text(body, g.store_id, survey_app_id)
         body['generated_review'] = generated_review
+        sys.stderr.write(f"DEBUG: AIレビュー生成完了: {generated_review[:100]}...\n")
+        sys.stderr.flush()
     else:
+        sys.stderr.write(f"DEBUG: 星{rating}なのでAIレビュー生成をスキップ\n")
+        sys.stderr.flush()
         generated_review = ''
         body['generated_review'] = ''
     
@@ -412,7 +425,7 @@ def submit_survey_old():
         "generated_review": generated_review,
         "redirect_url": url_for('review_confirm', store_slug=g.store_slug)
     })
-# 以上の関数はapp/blueprints/survey.pyに移行しました
+
 
 @app.get("/store/<store_slug>/review_confirm")
 @require_store
