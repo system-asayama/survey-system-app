@@ -27,8 +27,11 @@ DATA_DIR = os.path.join(APP_DIR, "data")
 def slot_page():
     """スロットページ"""
     # アンケート未回答の場合はアンケートページへリダイレクト
+    store_slug = request.args.get('store_slug')
     if not session.get('survey_completed'):
-        return redirect(url_for('survey'))
+        if store_slug:
+            return redirect(url_for('survey', store_slug=store_slug))
+        return redirect('/')  # store_slugがない場合はトップへ
     
     # 設定ファイルからメッセージと景品データを読み込み
     import json
