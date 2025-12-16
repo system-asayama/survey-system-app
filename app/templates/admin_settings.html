@@ -151,6 +151,7 @@
       
       // 隠しフィールドで景品数を送信
       const form = container.closest('form');
+      if (!form) return; // フォームが見つからない場合は終了
       let countInput = form.querySelector('input[name="prize_count"]');
       if (!countInput) {
         countInput = document.createElement('input');
