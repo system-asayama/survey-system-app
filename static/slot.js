@@ -1,4 +1,5 @@
 /* ===== DOMヘルパ ===== */
+console.log('[SLOT.JS] Loaded, window.STORE_SLUG =', window.STORE_SLUG);
 const $  = (q)=>document.querySelector(q);
 const $$ = (q)=>Array.from(document.querySelectorAll(q));
 
