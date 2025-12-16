@@ -33,8 +33,20 @@ def update_schema():
             else:
                 raise
         
-        # 2. T_管理者テーブルにemailカラムを追加
-        print("\n2. T_管理者テーブルにemailカラムを追加中...")
+        # 2. T_テナントテーブルにopenai_api_keyカラムを追加
+        print("\n2. T_テナントテーブルにopenai_api_keyカラムを追加中...")
+        try:
+            cur.execute('ALTER TABLE T_テナント ADD COLUMN openai_api_key TEXT DEFAULT NULL')
+            conn.commit()
+            print("   ✓ openai_api_keyカラムを追加しました")
+        except sqlite3.OperationalError as e:
+            if "duplicate column name" in str(e):
+                print("   ✓ openai_api_keyカラムは既に存在します")
+            else:
+                raise
+        
+        # 3. T_管理者テーブルにemailカラムを追加
+        print("\n3. T_管理者テーブルにemailカラムを追加中...")
         try:
             cur.execute('ALTER TABLE T_管理者 ADD COLUMN email TEXT')
             conn.commit()
@@ -45,8 +57,8 @@ def update_schema():
             else:
                 raise
         
-        # 3. T_店舗_アンケート設定テーブルを作成
-        print("\n3. T_店舗_アンケート設定テーブルを作成中...")
+        # 4. T_店舗_アンケート設定テーブルを作成
+        print("\n4. T_店舗_アンケート設定テーブルを作成中...")
         try:
             cur.execute('''
                 CREATE TABLE IF NOT EXISTS "T_店舗_アンケート設定" (
@@ -65,8 +77,8 @@ def update_schema():
         except sqlite3.OperationalError as e:
             print(f"   ! テーブル作成エラー: {e}")
         
-        # 4. T_店舗_Google設定テーブルを作成
-        print("\n4. T_店舗_Google設定テーブルを作成中...")
+        # 5. T_店舗_Google設定テーブルを作成
+        print("\n5. T_店舗_Google設定テーブルを作成中...")
         try:
             cur.execute('''
                 CREATE TABLE IF NOT EXISTS "T_店舗_Google設定" (
@@ -84,8 +96,8 @@ def update_schema():
         except sqlite3.OperationalError as e:
             print(f"   ! テーブル作成エラー: {e}")
         
-        # 5. T_店舗_スロット設定テーブルを作成
-        print("\n5. T_店舗_スロット設定テーブルを作成中...")
+        # 6. T_店舗_スロット設定テーブルを作成
+        print("\n6. T_店舗_スロット設定テーブルを作成中...")
         try:
             cur.execute('''
                 CREATE TABLE IF NOT EXISTS "T_店舗_スロット設定" (
@@ -103,8 +115,8 @@ def update_schema():
         except sqlite3.OperationalError as e:
             print(f"   ! テーブル作成エラー: {e}")
         
-        # 6. T_店舗_景品設定テーブルを作成
-        print("\n6. T_店舗_景品設定テーブルを作成中...")
+        # 7. T_店舗_景品設定テーブルを作成
+        print("\n7. T_店舗_景品設定テーブルを作成中...")
         try:
             cur.execute('''
                 CREATE TABLE IF NOT EXISTS "T_店舗_景品設定" (
@@ -121,9 +133,9 @@ def update_schema():
         except sqlite3.OperationalError as e:
             print(f"   ! テーブル作成エラー: {e}")
         
-        # 7. スキーマ確認
+        # 8. スキーマ確認
         print("\n" + "=" * 60)
-        print("7. 更新後のスキーマを確認中...")
+        print("8. 更新後のスキーマを確認中...")
         print("=" * 60)
         
         # 全テーブル一覧
@@ -135,6 +147,7 @@ def update_schema():
         
         # 重要なテーブルの詳細確認
         important_tables = [
+            'T_テナント',
             'T_店舗',
             'T_管理者',
             'T_店舗_アンケート設定',
