@@ -74,13 +74,25 @@ def save_survey_config(store_id: int, config: Dict[str, Any]) -> None:
     """店舗のアンケート設定を保存"""
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("""
-        INSERT INTO T_店舗_アンケート設定 (store_id, config_json, updated_at)
-        VALUES (?, ?, CURRENT_TIMESTAMP)
-        ON CONFLICT(store_id) DO UPDATE SET
-            config_json = excluded.config_json,
-            updated_at = CURRENT_TIMESTAMP
-    """, (store_id, json.dumps(config, ensure_ascii=False)))
+    
+    # 既存レコードをチェック
+    cur.execute("SELECT id FROM T_店舗_アンケート設定 WHERE store_id = ?", (store_id,))
+    existing = cur.fetchone()
+    
+    if existing:
+        # 更新
+        cur.execute("""
+            UPDATE T_店舗_アンケート設定
+            SET config_json = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE store_id = ?
+        """, (json.dumps(config, ensure_ascii=False), store_id))
+    else:
+        # 新規作成
+        cur.execute("""
+            INSERT INTO T_店舗_アンケート設定 (store_id, title, config_json)
+            VALUES (?, ?, ?)
+        """, (store_id, config.get('title', 'お店アンケート'), json.dumps(config, ensure_ascii=False)))
+    
     conn.commit()
     conn.close()
 
