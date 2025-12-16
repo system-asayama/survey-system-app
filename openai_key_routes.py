@@ -14,26 +14,36 @@ def save_openai_key():
         return redirect(url_for('auth.select_login'))
     
     openai_api_key = request.form.get('openai_api_key', '').strip()
+    store_id = request.form.get('store_id')
+    
     print(f"Received API key: {openai_api_key[:10]}..." if openai_api_key else "No API key received")
+    print(f"Store ID from form: {store_id}")
+    
+    if not store_id:
+        print("No store_id in form")
+        flash('店舗IDが指定されていません', 'error')
+        return redirect(request.referrer or url_for('admin.dashboard'))
+    
+    try:
+        store_id = int(store_id)
+    except ValueError:
+        print(f"Invalid store_id: {store_id}")
+        flash('無効な店舗IDです', 'error')
+        return redirect(request.referrer or url_for('admin.dashboard'))
     
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # 現在のログインユーザーの店舗IDをT_管理者_店舗テーブルから取得
-        cursor.execute("""
-            SELECT store_id FROM T_管理者_店舗 WHERE admin_id = ? LIMIT 1
-        """, (session['user_id'],))
-        result = cursor.fetchone()
-        
-        if not result:
-            print("Store not found for user")
-            flash('店舗情報が見つかりません', 'error')
+        # 店舗の存在確認
+        cursor.execute("SELECT id FROM T_店舗 WHERE id = ?", (store_id,))
+        if not cursor.fetchone():
+            print(f"Store {store_id} not found")
+            flash('店舗が見つかりません', 'error')
             conn.close()
             return redirect(request.referrer or url_for('admin.dashboard'))
         
-        store_id = result[0]
-        print(f"Store ID: {store_id}")
+        print(f"Store {store_id} found")
         
         # スロットアプリ設定のOpenAI APIキーを更新
         cursor.execute("""

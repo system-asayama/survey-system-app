@@ -618,6 +618,7 @@
       <h2>🤖 OpenAI API設定（アプリ個別）</h2>
       <p class="help-text" style="margin-bottom: 20px;">このアプリ専用のOpenAI APIキーを設定できます。未設定の場合は店舗設定またはテナント設定のキーが使用されます。</p>
       <form method="post" action="/admin/save_openai_key">
+        <input type="hidden" name="store_id" value="{{ store.id }}">
         <div class="form-group">
           <label for="openai_api_key">OpenAI APIキー</label>
           <input type="password" id="openai_api_key" name="openai_api_key" value="{{ slot_app.openai_api_key or '' }}" placeholder="sk-...">
