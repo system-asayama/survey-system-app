@@ -399,7 +399,7 @@ def submit_survey():
             "ok": True, 
             "message": "貴重なご意見をありがとうございます。社内で改善に活用させていただきます。",
             "rating": rating,
-            "redirect_url": url_for('slot_page', store_slug=store_slug)
+            "redirect_url": url_for('slot.slot_page', store_slug=g.store_slug)
         })
     
     # 星4以上の場合は口コミ確認ページへ
