@@ -94,8 +94,26 @@ def update_schema():
         except sqlite3.OperationalError as e:
             print(f"   ! テーブル作成エラー: {e}")
         
-        # 4. スキーマ確認
-        print("\n4. 更新後のスキーマを確認中...")
+        # 4. T_店舗_景品設定テーブルを作成
+        print("\n4. T_店舗_景品設定テーブルを作成中...")
+        try:
+            cur.execute('''
+                CREATE TABLE IF NOT EXISTS "T_店舗_景品設定" (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    store_id INTEGER NOT NULL,
+                    prizes_json TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (store_id) REFERENCES T_店舗(id) ON DELETE CASCADE
+                )
+            ''')
+            conn.commit()
+            print("   ✓ T_店舗_景品設定テーブルを作成しました")
+        except sqlite3.OperationalError as e:
+            print(f"   ! テーブル作成エラー: {e}")
+        
+        # 5. スキーマ確認
+        print("\n5. 更新後のスキーマを確認中...")
         
         # T_店舗
         cur.execute('PRAGMA table_info(T_店舗)')
@@ -121,6 +139,16 @@ def update_schema():
             print(f"     カラム: {', '.join(google_columns)}")
         else:
             print("   ✗ T_店舗_Google設定テーブルが見つかりません")
+        
+        # T_店舗_景品設定
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='T_店舗_景品設定'")
+        if cur.fetchone():
+            cur.execute('PRAGMA table_info("T_店舗_景品設定")')
+            prizes_columns = [row[1] for row in cur.fetchall()]
+            print(f"   ✓ T_店舗_景品設定テーブルが存在します")
+            print(f"     カラム: {', '.join(prizes_columns)}")
+        else:
+            print("   ✗ T_店舗_景品設定テーブルが見つかりません")
         
         print("\n✓ データベーススキーマの更新が完了しました")
         
