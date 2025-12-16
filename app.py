@@ -330,20 +330,22 @@ def store_index():
         return redirect(url_for('survey', store_slug=g.store_slug))
     return redirect(url_for('slot_page', store_slug=g.store_slug))
 
-@app.get("/store/<store_slug>/survey")
-@require_store
-def survey():
-    """アンケートページ"""
-    print(f"DEBUG: survey() called, store_id={g.store_id}, store={g.store}")
-    survey_config = store_db.get_survey_config(g.store_id)
-    print(f"DEBUG: survey_config={survey_config}")
-    return render_template("survey.html", 
-                         store=g.store,
-                         survey_config=survey_config)
+# 以下の関数はapp/blueprints/survey.pyに移行しました
+# @app.get("/store/<store_slug>/survey")
+# @require_store
+# def survey():
+#     """アンケートページ"""
+#     print(f"DEBUG: survey() called, store_id={g.store_id}, store={g.store}")
+#     survey_config = store_db.get_survey_config(g.store_id)
+#     print(f"DEBUG: survey_config={survey_config}")
+#     return render_template("survey.html", 
+#                          store=g.store,
+#                          survey_config=survey_config)
 
-@app.post("/store/<store_slug>/submit_survey")
-@require_store
-def submit_survey():
+# # @app.post("/store/<store_slug>/submit_survey")
+# @require_store
+# def submit_survey_old():  # 名前を変更して衝突回避
+def submit_survey_old():
     body = request.get_json(silent=True) or {}
     
     # 最初の質問の回答を評価として使用（５段階評価の場合）
@@ -410,6 +412,7 @@ def submit_survey():
         "generated_review": generated_review,
         "redirect_url": url_for('review_confirm', store_slug=g.store_slug)
     })
+# 以上の関数はapp/blueprints/survey.pyに移行しました
 
 @app.get("/store/<store_slug>/review_confirm")
 @require_store
