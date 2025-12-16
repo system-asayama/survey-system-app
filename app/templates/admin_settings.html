@@ -125,6 +125,7 @@
     
     function renderPrizes() {
       const container = document.getElementById('prize-list');
+      if (!container) return; // 要素が存在しない場合は何もしない
       container.innerHTML = `
         <div class="prize-header">
           <div>最低点数</div>
@@ -244,8 +245,10 @@
     }
     
     document.addEventListener('DOMContentLoaded', function() {
-
-      renderPrizes();
+      // prize-list要素が存在する場合のみrenderPrizesを実行
+      if (document.getElementById('prize-list')) {
+        renderPrizes();
+      }
     });
     
     // スロットシンボル管理
