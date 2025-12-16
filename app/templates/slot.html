@@ -134,11 +134,14 @@
 
   <script>
   const dlg = document.getElementById("dlg");
-  document.getElementById("btn-open").onclick   = () => dlg.showModal();
-  document.getElementById("btn-cancel").onclick = () => dlg.close();
+  const btnOpen = document.getElementById("btn-open");
+  const btnCancel = document.getElementById("btn-cancel");
+  if (btnOpen) btnOpen.onclick = () => dlg.showModal();
+  if (btnCancel) btnCancel.onclick = () => dlg.close();
 
   // 🔹 「n以上 n'以下」の確率を計算
-  document.getElementById("btn-calc-prob").onclick = async () => {
+  const btnCalcProb = document.getElementById("btn-calc-prob");
+  if (btnCalcProb) btnCalcProb.onclick = async () => {
     const tmin = parseFloat(document.getElementById("threshold-min").value || "0");
     const tmaxInput = document.getElementById("threshold-max").value.trim();
     const tmax = tmaxInput === "" ? null : parseFloat(tmaxInput);
