@@ -222,6 +222,10 @@ def admin_new():
         flash('管理者を管理する権限がありません', 'error')
         conn.close()
         return redirect(url_for('admin.dashboard'))
+    
+    # 店舗リストを取得
+    cur.execute(_sql(conn, 'SELECT id, 名称 FROM "T_店舗" WHERE tenant_id = %s AND 有効 = 1 ORDER BY id'), (tenant_id,))
+    stores = [dict(row) for row in cur.fetchall()]
     conn.close()
     
     if request.method == 'POST':
@@ -230,11 +234,14 @@ def admin_new():
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '').strip()
         password_confirm = request.form.get('password_confirm', '').strip()
+        store_ids = request.form.getlist('store_ids')  # 選択された店舗IDリスト
         
         if not login_id or not name or not password:
             flash('全ての項目を入力してください', 'error')
         elif password != password_confirm:
             flash('パスワードが一致しません', 'error')
+        elif not store_ids:
+            flash('少なくとも1つの店舗を選択してください', 'error')
         else:
             conn = get_db_connection()
             cur = conn.cursor()
@@ -250,12 +257,21 @@ def admin_new():
                     INSERT INTO "T_管理者" (login_id, name, email, password_hash, role, tenant_id, active)
                     VALUES (%s, %s, %s, %s, %s, %s, %s)
                 '''), (login_id, name, email, ph, ROLES['ADMIN'], tenant_id, 1))
+                admin_id = cur.lastrowid
+                
+                # T_管理者_店舗に登録
+                for store_id in store_ids:
+                    cur.execute(_sql(conn, '''
+                        INSERT INTO "T_管理者_店舗" (admin_id, store_id)
+                        VALUES (%s, %s)
+                    '''), (admin_id, int(store_id)))
+                
                 conn.commit()
                 conn.close()
                 flash('管理者を作成しました', 'success')
                 return redirect(url_for('admin.admins'))
     
-    return render_template('admin_admin_new.html', back_url=url_for('admin.admins'))
+    return render_template('admin_admin_new.html', stores=stores, back_url=url_for('admin.admins'))
 
 
 @bp.route('/admins/<int:admin_id>/delete', methods=['POST'])
