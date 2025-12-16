@@ -26,9 +26,27 @@ DATA_DIR = os.path.join(APP_DIR, "data")
 @bp.get("/slot")
 def slot_page():
     """スロットページ"""
-    # アンケート未回答の場合はアンケートページへリダイレクト
+    from ..utils import store_db
+    
+    # store_slugからstore_idを取得
     store_slug = request.args.get('store_slug')
-    if not session.get('survey_completed'):
+    store_id = None
+    if store_slug:
+        try:
+            conn = store_db.get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT id FROM T_店舗 WHERE slug = ?", (store_slug,))
+            result = cursor.fetchone()
+            if result:
+                store_id = result[0]
+            conn.close()
+        except Exception as e:
+            print(f"Error getting store_id: {e}")
+    
+    # アンケート未回答の場合はアンケートページへリダイレクト
+    # セッションキーは survey_completed_{store_id} 形式
+    survey_completed = session.get(f'survey_completed_{store_id}') if store_id else session.get('survey_completed')
+    if not survey_completed:
         if store_slug:
             return redirect(url_for('survey', store_slug=store_slug))
         return redirect('/')  # store_slugがない場合はトップへ
