@@ -185,6 +185,19 @@ def _generate_review_text(survey_data, store_id):
     
     qa_text = '\n\n'.join(qa_pairs)
     
+    # デバッグ：AIに渡されるデータをログ出力
+    import sys
+    sys.stderr.write("=" * 80 + "\n")
+    sys.stderr.write("DEBUG: AIに渡されるアンケートデータ\n")
+    sys.stderr.write("=" * 80 + "\n")
+    sys.stderr.write(f"survey_data: {survey_data}\n")
+    sys.stderr.write(f"survey_config questions count: {len(survey_config.get('questions', [])) if survey_config else 0}\n")
+    sys.stderr.write(f"qa_pairs count: {len(qa_pairs)}\n")
+    sys.stderr.write("\nqa_text:\n")
+    sys.stderr.write(qa_text + "\n")
+    sys.stderr.write("=" * 80 + "\n")
+    sys.stderr.flush()
+    
     # プロンプト作成
     prompt = f"""以下のアンケート回答から、自然で読みやすいお店の口コミ投稿文を日本語で作成してください。
 
