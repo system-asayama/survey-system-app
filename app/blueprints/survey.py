@@ -301,10 +301,20 @@ def submit_survey():
         
         # 星4以上の場合のAI投稿文を生成（OpenAI APIキーが必要）
         generated_review = ''
+        sys.stderr.write(f"DEBUG: rating = {rating}, AI生成実行判定 = {rating >= 4}\n")
+        sys.stderr.flush()
         if rating >= 4:
+            sys.stderr.write("DEBUG: AIレビュー生成を開始します\n")
+            sys.stderr.flush()
             try:
                 generated_review = _generate_review_text(body, g.store_id)
+                sys.stderr.write(f"DEBUG: AIレビュー生成成功: {generated_review[:100]}...\n")
+                sys.stderr.flush()
             except Exception as e:
+                sys.stderr.write(f"ERROR: AIレビュー生成失敗: {e}\n")
+                import traceback
+                sys.stderr.write(traceback.format_exc())
+                sys.stderr.flush()
                 print(f"Error generating review: {e}")
         
         # セッションにアンケート完了フラグと評価を設定
