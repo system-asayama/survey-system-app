@@ -27,9 +27,12 @@ DATA_DIR = os.path.join(APP_DIR, "data")
 def slot_page():
     """スロットページ"""
     import store_db
+    import sys
     
     # store_slugからstore_idを取得
     store_slug = request.args.get('store_slug')
+    sys.stderr.write(f"DEBUG slot_page: store_slug={store_slug}\n")
+    sys.stderr.flush()
     store_id = None
     if store_slug:
         try:
@@ -63,6 +66,8 @@ def slot_page():
             survey_complete_message = settings.get("survey_complete_message", survey_complete_message)
             prizes = settings.get("prizes", [])
     
+    sys.stderr.write(f"DEBUG slot_page: rendering with store_slug={store_slug}\n")
+    sys.stderr.flush()
     return render_template('slot.html', survey_complete_message=survey_complete_message, prizes=prizes, store_slug=store_slug)
 
 
