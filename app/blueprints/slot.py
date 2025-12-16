@@ -28,7 +28,7 @@ def slot_page():
     """スロットページ"""
     # アンケート未回答の場合はアンケートページへリダイレクト
     if not session.get('survey_completed'):
-        return redirect(url_for('survey.survey_page'))
+        return redirect(url_for('survey'))
     
     # 設定ファイルからメッセージと景品データを読み込み
     import json
