@@ -398,11 +398,14 @@ def admin_survey_editor():
             if not question_text:
                 continue
             
+            # 必須フラグをフォームから取得（チェックボックスがオンの場合のみtrue）
+            is_required = request.form.get(f"questions[{idx}][required]") == "true"
+            
             question = {
                 "id": idx + 1,
                 "text": question_text,
                 "type": question_type,
-                "required": True
+                "required": is_required
             }
             
             # 選択肢がある場合

@@ -285,6 +285,19 @@
               </select>
             </div>
 
+            <div class="form-group">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input 
+                  type="checkbox" 
+                  name="questions[{{ loop.index0 }}][required]" 
+                  value="true"
+                  {% if question.required %}checked{% endif %}
+                  style="width: auto; margin: 0;"
+                >
+                <span>この質問を必須にする</span>
+              </label>
+            </div>
+
             {% if question.type in ['radio', 'checkbox'] %}
             <div class="form-group options-group">
               <label>選択肢</label>
@@ -356,6 +369,18 @@
             <option value="checkbox">複数選択</option>
             <option value="text">自由記述</option>
           </select>
+        </div>
+
+        <div class="form-group">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+            <input 
+              type="checkbox" 
+              name="questions[${questionIndex}][required]" 
+              value="true"
+              style="width: auto; margin: 0;"
+            >
+            <span>この質問を必須にする</span>
+          </label>
         </div>
       `;
       
