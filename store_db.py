@@ -8,7 +8,8 @@ import json
 from typing import Optional, Dict, Any, List
 from db_config import get_db_connection, get_cursor, execute_query
 
-# ===== 店舗情報取得 =====def get_store_by_slug(slug: str) -> Optional[Dict[str, Any]]:
+# ===== 店舗情報取得 =====
+def get_store_by_slug(slug: str) -> Optional[Dict[str, Any]]:
     """
 slu gから店舗情報を取得"""
     conn = get_db_connection()
