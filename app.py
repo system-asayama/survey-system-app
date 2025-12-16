@@ -741,6 +741,13 @@ def inject_csrf():
         return session['csrf_token']
     return dict(get_csrf=get_csrf)
 
+# データベース自動初期化
+try:
+    from init_db import init_database
+    init_database()
+except Exception as e:
+    print(f"⚠️ データベース初期化エラー: {e}")
+
 if __name__ == "__main__":
     import sys
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
