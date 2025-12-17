@@ -248,8 +248,16 @@ def admin_settings():
     store = None
     if store_id:
         cur = db.cursor()
-        cur.execute(_sql(db, 'SELECT * FROM "T_店舗" WHERE id = %s'), (store_id,))
-        store = cur.fetchone()
+        cur.execute(_sql(db, 'SELECT id, tenant_id, 名称, slug, openai_api_key FROM "T_店舗" WHERE id = %s'), (store_id,))
+        row = cur.fetchone()
+        if row:
+            store = {
+                'id': row[0],
+                'tenant_id': row[1],
+                '名称': row[2],
+                'slug': row[3],
+                'openai_api_key': row[4]
+            }
         sys.stderr.write(f"DEBUG admin_settings: store = {store}\n")
         sys.stderr.flush()
     else:
