@@ -427,6 +427,7 @@ def admin_new():
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '').strip()
         password_confirm = request.form.get('password_confirm', '').strip()
+        is_owner = 1 if request.form.get('is_owner') else 0
         store_ids = request.form.getlist('store_ids')  # 複数選択
         
         if not login_id or not name or not password:
@@ -443,9 +444,9 @@ def admin_new():
             else:
                 ph = generate_password_hash(password)
                 cur.execute(_sql(conn, '''
-                    INSERT INTO "T_管理者" (login_id, name, email, password_hash, role, tenant_id, active)
-                    VALUES (%s, %s, %s, %s, %s, %s, 1)
-                '''), (login_id, name, email, ph, ROLES["ADMIN"], tenant_id))
+                    INSERT INTO "T_管理者" (login_id, name, email, password_hash, role, tenant_id, active, is_owner)
+                    VALUES (%s, %s, %s, %s, %s, %s, 1, %s)
+                '''), (login_id, name, email, ph, ROLES["ADMIN"], tenant_id, is_owner))
                 
                 # 新しく作成した管理者のIDを取得
                 cur.execute(_sql(conn, 'SELECT id FROM "T_管理者" WHERE login_id = %s'), (login_id,))
@@ -537,16 +538,16 @@ def admin_edit(admin_id):
                     ph = generate_password_hash(password)
                     cur.execute(_sql(conn, '''
                         UPDATE "T_管理者"
-                        SET login_id = %s, name = %s, email = %s, password_hash = %s, active = %s
+                        SET login_id = %s, name = %s, email = %s, password_hash = %s, active = %s, is_owner = %s
                         WHERE id = %s AND tenant_id = %s AND role = %s
-                    '''), (login_id, name, email, ph, active, admin_id, tenant_id, ROLES["ADMIN"]))
+                    '''), (login_id, name, email, ph, active, is_owner, admin_id, tenant_id, ROLES["ADMIN"]))
                 else:
                     # パスワード変更なし
                     cur.execute(_sql(conn, '''
                         UPDATE "T_管理者"
-                        SET login_id = %s, name = %s, email = %s, active = %s
+                        SET login_id = %s, name = %s, email = %s, active = %s, is_owner = %s
                         WHERE id = %s AND tenant_id = %s AND role = %s
-                    '''), (login_id, name, email, active, admin_id, tenant_id, ROLES["ADMIN"]))
+                    '''), (login_id, name, email, active, is_owner, admin_id, tenant_id, ROLES["ADMIN"]))
                 
                 # 所属店舗を更新（既存を削除して新しく追加）
                 cur.execute(_sql(conn, 'DELETE FROM "T_管理者_店舗" WHERE admin_id = %s'), (admin_id,))
@@ -563,7 +564,7 @@ def admin_edit(admin_id):
     
     # GETリクエスト：管理者情報を取得
     cur.execute(_sql(conn, '''
-        SELECT id, login_id, name, email, active, can_manage_admins
+        SELECT id, login_id, name, email, active, can_manage_admins, is_owner
         FROM "T_管理者"
         WHERE id = %s AND tenant_id = %s AND role = %s
     '''), (admin_id, tenant_id, ROLES["ADMIN"]))
@@ -580,7 +581,8 @@ def admin_edit(admin_id):
         'name': row[2],
         'email': row[3],
         'active': row[4],
-        'can_manage_admins': row[5]
+        'can_manage_admins': row[5],
+        'is_owner': row[6]
     }
     
     # 現在の所属店舗を取得
@@ -692,6 +694,7 @@ def employee_new():
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '').strip()
         password_confirm = request.form.get('password_confirm', '').strip()
+        is_owner = 1 if request.form.get('is_owner') else 0
         store_ids = request.form.getlist('store_ids')  # 複数選択
         
         if not login_id or not name or not email or not password:

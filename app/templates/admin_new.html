@@ -32,6 +32,13 @@
   </div>
 
   <div style="margin-bottom:16px">
+    <label style="display:block;margin-bottom:4px">
+      <input type="checkbox" name="is_owner" value="1" style="margin-right:8px">
+      オーナー権限（同じ店舗の他の管理者を編集・削除可能）
+    </label>
+  </div>
+
+  <div style="margin-bottom:16px">
     <label style="display:block;margin-bottom:8px">管理する店舗 <span style="color:red">*</span></label>
     <div style="border:1px solid #ddd;padding:12px;border-radius:4px;max-height:200px;overflow-y:auto;max-width:400px">
       {% if stores %}

@@ -348,6 +348,7 @@ def admin_edit(admin_id):
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '').strip()
         password_confirm = request.form.get('password_confirm', '').strip()
+        is_owner = 1 if request.form.get('is_owner') else 0
         
         store_ids = request.form.getlist('store_ids')
         
@@ -368,16 +369,16 @@ def admin_edit(admin_id):
                     ph = generate_password_hash(password)
                     cur.execute(_sql(conn, '''
                         UPDATE "T_管理者"
-                        SET login_id = %s, name = %s, email = %s, password_hash = %s, updated_at = CURRENT_TIMESTAMP
+                        SET login_id = %s, name = %s, email = %s, password_hash = %s, is_owner = %s, updated_at = CURRENT_TIMESTAMP
                         WHERE id = %s AND tenant_id = %s AND role = %s
-                    '''), (login_id, name, email, ph, admin_id, tenant_id, ROLES["ADMIN"]))
+                    '''), (login_id, name, email, ph, is_owner, admin_id, tenant_id, ROLES["ADMIN"]))
                 else:
                     # パスワード変更なし
                     cur.execute(_sql(conn, '''
                         UPDATE "T_管理者"
-                        SET login_id = %s, name = %s, email = %s, updated_at = CURRENT_TIMESTAMP
+                        SET login_id = %s, name = %s, email = %s, is_owner = %s, updated_at = CURRENT_TIMESTAMP
                         WHERE id = %s AND tenant_id = %s AND role = %s
-                    '''), (login_id, name, email, admin_id, tenant_id, ROLES["ADMIN"]))
+                    '''), (login_id, name, email, is_owner, admin_id, tenant_id, ROLES["ADMIN"]))
                 
                 # 所属店舗を更新
                 cur.execute(_sql(conn, 'DELETE FROM "T_管理者_店舗" WHERE admin_id = %s'), (admin_id,))
@@ -391,7 +392,7 @@ def admin_edit(admin_id):
     
     # GETリクエスト：管理者情報を取得
     cur.execute(_sql(conn, '''
-        SELECT id, login_id, name, email
+        SELECT id, login_id, name, email, is_owner
         FROM "T_管理者"
         WHERE id = %s AND tenant_id = %s AND role = %s
     '''), (admin_id, tenant_id, ROLES["ADMIN"]))
@@ -406,7 +407,8 @@ def admin_edit(admin_id):
         'id': row[0],
         'login_id': row[1],
         'name': row[2],
-        'email': row[3]
+        'email': row[3],
+        'is_owner': row[4]
     }
     
     # 現在の所属店舗を取得
