@@ -8,37 +8,43 @@
   <a class="btn sub" href="{{ url_for('tenant_admin.dashboard') }}">戻る</a>
 </div>
 
-<table class="table">
+{% if employees %}
+<table style="width:100%;border-collapse:collapse;font-size:0.85em">
   <thead>
-    <tr>
-      <th>ID</th>
-      <th>ログインID</th>
-      <th>氏名</th>
-      <th>メールアドレス</th>
-      <th>作成日時</th>
-      <th>操作</th>
+    <tr style="background:#f5f5f5;border-bottom:2px solid #ddd">
+      <th style="padding:8px;text-align:left;white-space:nowrap">ID</th>
+      <th style="padding:8px;text-align:left;white-space:nowrap">ログインID</th>
+      <th style="padding:8px;text-align:left;white-space:nowrap">氏名</th>
+      <th style="padding:8px;text-align:left;white-space:nowrap">有効</th>
+      <th style="padding:8px;text-align:left;white-space:nowrap">作成日時</th>
+      <th style="padding:8px;text-align:left;white-space:nowrap">操作</th>
     </tr>
   </thead>
   <tbody>
     {% for e in employees %}
-    <tr>
-      <td>{{ e.id }}</td>
-      <td>{{ e.login_id }}</td>
-      <td>{{ e.name }}</td>
-      <td>{{ e.email }}</td>
-      <td>{{ e.created_at }}</td>
-      <td>
-        <a class="btn small" href="{{ url_for('tenant_admin.employee_edit', employee_id=e.id) }}">編集</a>
+    <tr style="border-bottom:1px solid #eee">
+      <td style="padding:8px;white-space:nowrap">{{ e.id }}</td>
+      <td style="padding:8px;white-space:nowrap"><code>{{ e.login_id }}</code></td>
+      <td style="padding:8px;white-space:nowrap"><strong>{{ e.name }}</strong></td>
+      <td style="padding:8px;white-space:nowrap">
+        {% if e.active == 1 %}
+          <span style="color:green">✓ 有効</span>
+        {% else %}
+          <span style="color:#999">無効</span>
+        {% endif %}
+      </td>
+      <td style="padding:8px;white-space:nowrap;color:#666">{{ e.created_at }}</td>
+      <td style="padding:8px;white-space:nowrap">
+        <a class="btn small" href="{{ url_for('tenant_admin.employee_edit', employee_id=e.id) }}" style="font-size:0.9em;padding:4px 8px">編集</a>
         <form method="post" action="{{ url_for('tenant_admin.employee_delete', employee_id=e.id) }}" style="display:inline" onsubmit="return confirm('本当に削除しますか？')">
-          <button class="btn small" type="submit">削除</button>
+          <button class="btn small" type="submit" style="background:#d32f2f;font-size:0.9em;padding:4px 8px">削除</button>
         </form>
       </td>
     </tr>
     {% endfor %}
   </tbody>
 </table>
-
-{% if not employees %}
+{% else %}
 <p style="color:#666">従業員が登録されていません。</p>
 {% endif %}
 
