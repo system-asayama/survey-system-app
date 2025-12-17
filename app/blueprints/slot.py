@@ -364,7 +364,43 @@ def calc_prob():
 @bp.get("/store/<slug>/config")
 def get_config_with_slug(slug):
     """店舗別スロット設定を取得"""
-    cfg = load_config()
+    import store_db
+    import sys
+    
+    # store_slugからstore_idを取得
+    store_id = None
+    try:
+        conn = store_db.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT "id" FROM "T_店舗" WHERE "slug" = %s', (slug,))
+        result = cursor.fetchone()
+        if result:
+            store_id = result[0]
+        conn.close()
+    except Exception as e:
+        sys.stderr.write(f"Error getting store_id: {e}\n")
+        sys.stderr.flush()
+    
+    # 店舗固有のスロット設定をデータベースから読み込む
+    if store_id:
+        config_dict = store_db.get_slot_config(store_id)
+        sys.stderr.write(f"DEBUG: Loaded slot config from DB for store_id={store_id}\n")
+        sys.stderr.flush()
+        
+        # Configオブジェクトに変換
+        from ..models import Config, Symbol
+        symbols = [Symbol(**s) for s in config_dict.get('symbols', [])]
+        cfg = Config(
+            symbols=symbols,
+            reels=config_dict.get('reels', 3),
+            base_bet=config_dict.get('base_bet', 1),
+            expected_total_5=config_dict.get('expected_total_5', 100.0),
+            miss_probability=config_dict.get('miss_probability', 0.0)
+        )
+    else:
+        # 店舗IDが取得できない場合はデフォルト設定を使用
+        cfg = load_config()
+    
     return jsonify({
         "symbols": [asdict(s) for s in cfg.symbols],
         "reels": cfg.reels,
@@ -381,7 +417,39 @@ def spin_with_slug(slug):
     import json
     import copy
     
-    cfg = load_config()
+    # store_slugからstore_idを取得
+    store_id = None
+    try:
+        conn = store_db.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT "id" FROM "T_店舗" WHERE "slug" = %s', (slug,))
+        result = cursor.fetchone()
+        if result:
+            store_id = result[0]
+        conn.close()
+    except Exception as e:
+        sys.stderr.write(f"Error getting store_id: {e}\n")
+        sys.stderr.flush()
+    
+    # 店舗固有のスロット設定をデータベースから読み込む
+    if store_id:
+        config_dict = store_db.get_slot_config(store_id)
+        sys.stderr.write(f"DEBUG: Loaded slot config from DB for store_id={store_id}: {config_dict}\n")
+        sys.stderr.flush()
+        
+        # Configオブジェクトに変換
+        from ..models import Config, Symbol
+        symbols = [Symbol(**s) for s in config_dict.get('symbols', [])]
+        cfg = Config(
+            symbols=symbols,
+            reels=config_dict.get('reels', 3),
+            base_bet=config_dict.get('base_bet', 1),
+            expected_total_5=config_dict.get('expected_total_5', 100.0),
+            miss_probability=config_dict.get('miss_probability', 0.0)
+        )
+    else:
+        # 店舗IDが取得できない場合はデフォルト設定を使用
+        cfg = load_config()
     
     # 確率の正規化
     psum = sum(float(s.prob) for s in cfg.symbols) or 100.0
