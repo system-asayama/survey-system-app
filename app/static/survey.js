@@ -155,6 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const result = await response.json();
 
       if (result.ok) {
+        console.log('DEBUG: Server response:', result);
         // メッセージを表示
         alert(result.message);
         
@@ -165,6 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // リダイレクトURLがある場合は遷移
         if (result.redirect_url) {
+          console.log('DEBUG: Redirecting to:', result.redirect_url);
           window.location.href = result.redirect_url;
         } else {
           // フォームをリセット
