@@ -15,6 +15,7 @@
       <th>ログインID</th>
       <th>氏名</th>
       <th>状態</th>
+      <th>オーナー</th>
       <th>管理権限</th>
       <th>作成日時</th>
       <th>操作</th>
@@ -27,6 +28,13 @@
       <td>{{ a.login_id }}</td>
       <td>{{ a.name }}</td>
       <td>{{ '有効' if a.active == 1 else '無効' }}</td>
+      <td>
+        {% if a.is_owner == 1 %}
+          <span style="background: #ffd700; color: #333; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem; font-weight: 600;">オーナー</span>
+        {% else %}
+          <span style="color: #999;">-</span>
+        {% endif %}
+      </td>
       <td>
         {% if a.can_manage_admins == 1 %}
           <span style="color: #28a745; font-weight: bold;">✓ 管理権限あり</span>
