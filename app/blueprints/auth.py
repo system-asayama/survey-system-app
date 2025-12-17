@@ -128,16 +128,17 @@ def tenant_admin_login():
         conn = get_db()
         try:
             cur = conn.cursor()
-            sql = _sql(conn, 'SELECT id, name, password_hash FROM "T_管理者" WHERE login_id=%s AND role=%s')
+            sql = _sql(conn, 'SELECT id, name, password_hash, tenant_id, is_owner FROM "T_管理者" WHERE login_id=%s AND role=%s')
             cur.execute(sql, (login_id, ROLES["TENANT_ADMIN"]))
             row = cur.fetchone()
             if row and check_password_hash(row[2], password):
-                user_id, name = row[0], row[1]
+                user_id, name, tenant_id, is_owner = row[0], row[1], row[3], row[4]
                 # セッションに保存
                 session['user_id'] = user_id
                 session['user_name'] = name
                 session['role'] = ROLES["TENANT_ADMIN"]
-                session['tenant_id'] = None  # テナント未選択状態
+                session['tenant_id'] = tenant_id
+                session['is_owner'] = (is_owner == 1)
                 return redirect(url_for('tenant_admin.mypage'))
             else:
                 error = "ログインIDまたはパスワードが違います"
