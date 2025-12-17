@@ -238,8 +238,8 @@ def admin_settings():
     slot_config = load_config()
     
     # 店舗情報を取得
-    from ..utils.db import get_db, _sql
-    db = get_db()
+    from ..utils.db import get_db_connection, _sql
+    db = get_db_connection()
     store_id = session.get('store_id')
     import sys
     sys.stderr.write(f"DEBUG admin_settings: store_id from session = {store_id}\n")
@@ -371,8 +371,8 @@ def admin_save_openai_key():
 
     openai_api_key = request.form.get("openai_api_key", "").strip()
     
-    from ..utils.db import get_db, _sql
-    db = get_db()
+    from ..utils.db import get_db_connection, _sql
+    db = get_db_connection()
     cur = db.cursor()
     
     try:
