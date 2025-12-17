@@ -389,7 +389,9 @@ def get_config_with_slug(slug):
         
         # Configオブジェクトに変換
         from ..models import Config, Symbol
-        symbols = [Symbol(**s) for s in config_dict.get('symbols', [])]
+        # Symbolクラスに定義されているフィールドのみを抽出
+        symbol_fields = {'id', 'label', 'payout_3', 'color', 'prob', 'is_reach', 'reach_symbol'}
+        symbols = [Symbol(**{k: v for k, v in s.items() if k in symbol_fields}) for s in config_dict.get('symbols', [])]
         cfg = Config(
             symbols=symbols,
             reels=config_dict.get('reels', 3),
@@ -439,7 +441,9 @@ def spin_with_slug(slug):
         
         # Configオブジェクトに変換
         from ..models import Config, Symbol
-        symbols = [Symbol(**s) for s in config_dict.get('symbols', [])]
+        # Symbolクラスに定義されているフィールドのみを抽出
+        symbol_fields = {'id', 'label', 'payout_3', 'color', 'prob', 'is_reach', 'reach_symbol'}
+        symbols = [Symbol(**{k: v for k, v in s.items() if k in symbol_fields}) for s in config_dict.get('symbols', [])]
         cfg = Config(
             symbols=symbols,
             reels=config_dict.get('reels', 3),
