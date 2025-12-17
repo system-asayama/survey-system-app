@@ -28,6 +28,7 @@
       <td>{{ e.email }}</td>
       <td>{{ e.created_at }}</td>
       <td>
+        <a class="btn small" href="{{ url_for('admin.employee_edit', employee_id=e.id) }}">編集</a>
         <form method="post" action="{{ url_for('admin.employee_delete', employee_id=e.id) }}" style="display:inline" onsubmit="return confirm('本当に削除しますか？')">
           <button class="btn small" type="submit">削除</button>
         </form>
