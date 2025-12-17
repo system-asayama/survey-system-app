@@ -57,7 +57,7 @@
           <span style="color:#999">（自分）</span>
         {% elif is_system_admin %}
           {# システム管理者は全てのテナント管理者を編集可能 #}
-          <a class="btn small" href="{{ url_for('tenant_admin.tenant_admin_edit', tadmin_id=ta.id) }}" style="background:#1976d2;font-size:0.9em;padding:4px 8px">編集</a>
+          <a class="btn small" href="{{ url_for('tenant_admin.tenant_admin_edit', tadmin_id=ta.id) }}" style="font-size:0.9em;padding:4px 8px">編集</a>
           
           {% if ta.is_owner != 1 %}
           <form method="post" action="{{ url_for('tenant_admin.toggle_tenant_admin_manage_permission', tadmin_id=ta.id) }}" style="display:inline">
@@ -79,7 +79,7 @@
           {% endif %}
         {% elif ta.is_owner != 1 %}
           {# テナント管理者はオーナー以外を編集可能 #}
-          <a class="btn small" href="{{ url_for('tenant_admin.tenant_admin_edit', tadmin_id=ta.id) }}" style="background:#1976d2;font-size:0.9em;padding:4px 8px">編集</a>
+          <a class="btn small" href="{{ url_for('tenant_admin.tenant_admin_edit', tadmin_id=ta.id) }}" style="font-size:0.9em;padding:4px 8px">編集</a>
           
           <form method="post" action="{{ url_for('tenant_admin.toggle_tenant_admin_manage_permission', tadmin_id=ta.id) }}" style="display:inline">
             {% if get_csrf %}<input type="hidden" name="csrf_token" value="{{ get_csrf() }}">{% endif %}
