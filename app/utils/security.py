@@ -117,27 +117,13 @@ def is_tenant_owner() -> bool:
 
 def can_manage_tenant_admins() -> bool:
     """
-    現在ログイン中のテナント管理者が管理者管理権限を持っているかを確認
-    オーナーは常にTrue、それ以外はcan_manage_adminsフラグで判定
-    システム管理者は常にTrue
+    現在ログイン中のユーザーが管理者管理権限を持っているかを確認
+    システム管理者とテナント管理者は無条件でTrue
     """
-    user_id = session.get('user_id')
     role = session.get('role')
     
-    # システム管理者は常に権限あり
-    if role == 'system_admin':
+    # システム管理者とテナント管理者は無条件で権限あり
+    if role == 'system_admin' or role == 'tenant_admin':
         return True
     
-    if not user_id or role != 'tenant_admin':
-        return False
-    
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute(_sql(conn, 'SELECT is_owner, can_manage_admins FROM "T_管理者" WHERE id = %s'), (user_id,))
-    row = cur.fetchone()
-    conn.close()
-    
-    if row:
-        # オーナーは常にTrue、それ以外はcan_manage_adminsで判定
-        return row[0] == 1 or row[1] == 1
     return False
