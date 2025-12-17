@@ -902,7 +902,8 @@ def tenant_admins():
     conn.close()
     
     current_user_id = session.get('user_id')
-    return render_template('tenant_tenant_admins.html', tenant_admins=tenant_admins_list, current_user_id=current_user_id)
+    is_system_admin = session.get('role') == ROLES["SYSTEM_ADMIN"]
+    return render_template('tenant_tenant_admins.html', tenant_admins=tenant_admins_list, current_user_id=current_user_id, is_system_admin=is_system_admin)
 
 
 @bp.route('/tenant_admins/new', methods=['GET', 'POST'])
