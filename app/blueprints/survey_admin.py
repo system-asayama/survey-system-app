@@ -360,6 +360,39 @@ def admin_optimize_probabilities():
 
 
 
+@bp.route("/save_openai_key", methods=["POST"])
+@require_roles(ROLES["ADMIN"])
+def admin_save_openai_key():
+    """店舗別OpenAI APIキーを保存"""
+    store_id = session.get('store_id')
+    if not store_id:
+        flash("店舗情報がセッションにありません", "error")
+        return redirect(url_for("survey_admin.admin_settings"))
+
+    openai_api_key = request.form.get("openai_api_key", "").strip()
+    
+    from ..utils.db import get_db, _sql
+    db = get_db()
+    cur = db.cursor()
+    
+    try:
+        # T_店舗テーブルのopenai_api_keyを更新
+        cur.execute(_sql(db, '''
+            UPDATE "T_店舗"
+            SET openai_api_key = %s, updated_at = CURRENT_TIMESTAMP
+            WHERE id = %s
+        '''), (openai_api_key if openai_api_key else None, store_id))
+        db.commit()
+        flash("OpenAI APIキーを保存しました", "success")
+    except Exception as e:
+        db.rollback()
+        flash(f"APIキーの保存に失敗しました: {e}", "error")
+    finally:
+        db.close()
+        
+    return redirect(url_for("survey_admin.admin_settings"))
+
+
 @bp.route("/survey_editor", methods=["GET", "POST"])
 @require_roles(ROLES["ADMIN"], ROLES["TENANT_ADMIN"], ROLES["SYSTEM_ADMIN"])
 def admin_survey_editor():
