@@ -153,11 +153,11 @@ def get_prizes_config(store_id: int) -> List[Dict[str, Any]]:
     
     # デフォルト景品
     return [
-        {"label": "🎁 特賞", "min": 500, "max": None},
-        {"label": "🏆 1等", "min": 250, "max": 499},
-        {"label": "🥈 2等", "min": 150, "max": 249},
-        {"label": "🥉 3等", "min": 100, "max": 149},
-        {"label": "🎊 参加賞", "min": 0, "max": 99}
+        {"min_score": 500, "rank": "🎁 特賞", "name": "特別景品"},
+        {"min_score": 250, "max_score": 499, "rank": "🏆 1等", "name": "1等景品"},
+        {"min_score": 150, "max_score": 249, "rank": "🥈 2等", "name": "2等景品"},
+        {"min_score": 100, "max_score": 149, "rank": "🥉 3等", "name": "3等景品"},
+        {"min_score": 0, "max_score": 99, "rank": "🎊 参加賞", "name": "参加賞"}
     ]
 
 def save_prizes_config(store_id: int, prizes: List[Dict[str, Any]]) -> None:

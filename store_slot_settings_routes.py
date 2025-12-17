@@ -196,11 +196,11 @@ def register_store_slot_settings_routes(app):
                 prizes = []
         else:
             prizes = [
-                {"min": 500, "label": "🎁 特賞"},
-                {"min": 250, "max": 499, "label": "🏆 1等"},
-                {"min": 150, "max": 249, "label": "🥈 2等"},
-                {"min": 100, "max": 149, "label": "🥉 3等"},
-                {"min": 0, "max": 99, "label": "🎊 参加賞"}
+                {"min_score": 500, "rank": "🎁 特賞", "name": "特別景品"},
+                {"min_score": 250, "max_score": 499, "rank": "🏆 1等", "name": "1等景品"},
+                {"min_score": 150, "max_score": 249, "rank": "🥈 2等", "name": "2等景品"},
+                {"min_score": 100, "max_score": 149, "rank": "🥉 3等", "name": "3等景品"},
+                {"min_score": 0, "max_score": 99, "rank": "🎊 参加賞", "name": "参加賞"}
             ]
         
         # スロット設定を取得
@@ -293,7 +293,7 @@ def register_store_slot_settings_routes(app):
             prizes = data.get('prizes', [])
             
             # 点数で降順ソート
-            prizes.sort(key=lambda x: x.get("min", 0), reverse=True)
+            prizes.sort(key=lambda x: x.get("min_score", 0), reverse=True)
             
             # セッションから店舗IDを取得
             store_id = session.get('store_id')
