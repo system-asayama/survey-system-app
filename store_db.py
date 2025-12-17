@@ -11,12 +11,12 @@ from db_config import get_db_connection, get_cursor, execute_query
 # ===== 店舗情報取得 =====
 def get_store_by_slug(slug: str) -> Optional[Dict[str, Any]]:
     """
-slu gから店舗情報を取得"""
+slugから店舗情報を取得"""
     conn = get_db_connection()
     cur = get_cursor(conn)
     execute_query(cur, """
         SELECT id, tenant_id, 名称 as name, slug, 有効 as active
-        FROM T_店舗
+        FROM "T_店舗"
         WHERE slug = ? AND 有効 = 1
     """, (slug,))
     row = cur.fetchone()
@@ -31,7 +31,7 @@ def get_store_by_id(store_id: int) -> Optional[Dict[str, Any]]:
     cur = get_cursor(conn)
     execute_query(cur, """
         SELECT id, tenant_id, 名称 as name, slug, 有効 as active
-        FROM T_店舗
+        FROM "T_店舗"
         WHERE id = ? AND 有効 = 1
     """, (store_id,))
     row = cur.fetchone()
@@ -48,7 +48,7 @@ def get_survey_config(store_id: int) -> Dict[str, Any]:
     cur = get_cursor(conn)
     execute_query(cur, """
         SELECT config_json
-        FROM T_店舗_アンケート設定
+        FROM "T_店舗_アンケート設定"
         WHERE store_id = ?
     """, (store_id,))
     row = cur.fetchone()
@@ -69,20 +69,20 @@ def save_survey_config(store_id: int, config: Dict[str, Any]) -> None:
     cur = get_cursor(conn)
     
     # 既存レコードをチェック
-    execute_query(cur, "SELECT id FROM T_店舗_アンケート設定 WHERE store_id = ?", (store_id,))
+    execute_query(cur, 'SELECT id FROM "T_店舗_アンケート設定" WHERE store_id = ?', (store_id,))
     existing = cur.fetchone()
     
     if existing:
         # 更新
         execute_query(cur, """
-            UPDATE T_店舗_アンケート設定
+            UPDATE "T_店舗_アンケート設定"
             SET config_json = ?, updated_at = CURRENT_TIMESTAMP
             WHERE store_id = ?
         """, (json.dumps(config, ensure_ascii=False), store_id))
     else:
         # 新規作成
         execute_query(cur, """
-            INSERT INTO T_店舗_アンケート設定 (store_id, title, config_json)
+            INSERT INTO "T_店舗_アンケート設定" (store_id, title, config_json)
             VALUES (?, ?, ?)
         """, (store_id, config.get('title', 'お店アンケート'), json.dumps(config, ensure_ascii=False)))
     
@@ -96,7 +96,7 @@ def get_slot_config(store_id: int) -> Dict[str, Any]:
     cur = get_cursor(conn)
     execute_query(cur, """
         SELECT config_json
-        FROM T_店舗_スロット設定
+        FROM "T_店舗_スロット設定"
         WHERE store_id = ?
     """, (store_id,))
     row = cur.fetchone()
@@ -126,7 +126,7 @@ def save_slot_config(store_id: int, config: Dict[str, Any]) -> None:
     conn = get_db_connection()
     cur = get_cursor(conn)
     execute_query(cur, """
-        INSERT INTO T_店舗_スロット設定 (store_id, config_json, updated_at)
+        INSERT INTO "T_店舗_スロット設定" (store_id, config_json, updated_at)
         VALUES (?, ?, CURRENT_TIMESTAMP)
         ON CONFLICT(store_id) DO UPDATE SET
             config_json = excluded.config_json,
@@ -142,7 +142,7 @@ def get_prizes_config(store_id: int) -> List[Dict[str, Any]]:
     cur = get_cursor(conn)
     execute_query(cur, """
         SELECT prizes_json
-        FROM T_店舗_景品設定
+        FROM "T_店舗_景品設定"
         WHERE store_id = ?
     """, (store_id,))
     row = cur.fetchone()
@@ -165,7 +165,7 @@ def save_prizes_config(store_id: int, prizes: List[Dict[str, Any]]) -> None:
     conn = get_db_connection()
     cur = get_cursor(conn)
     execute_query(cur, """
-        INSERT INTO T_店舗_景品設定 (store_id, prizes_json, updated_at)
+        INSERT INTO "T_店舗_景品設定" (store_id, prizes_json, updated_at)
         VALUES (?, ?, CURRENT_TIMESTAMP)
         ON CONFLICT(store_id) DO UPDATE SET
             prizes_json = excluded.prizes_json,
@@ -181,7 +181,7 @@ def get_google_review_url(store_id: int) -> str:
     cur = get_cursor(conn)
     execute_query(cur, """
         SELECT review_url
-        FROM T_店舗_Google設定
+        FROM "T_店舗_Google設定"
         WHERE store_id = ?
     """, (store_id,))
     row = cur.fetchone()
@@ -196,7 +196,7 @@ def save_google_review_url(store_id: int, review_url: str) -> None:
     conn = get_db_connection()
     cur = get_cursor(conn)
     execute_query(cur, """
-        INSERT INTO T_店舗_Google設定 (store_id, review_url, updated_at)
+        INSERT INTO "T_店舗_Google設定" (store_id, review_url, updated_at)
         VALUES (?, ?, CURRENT_TIMESTAMP)
         ON CONFLICT(store_id) DO UPDATE SET
             review_url = excluded.review_url,
@@ -213,7 +213,7 @@ def save_survey_response(store_id: int, response_data: Dict[str, Any]) -> int:
     
     # 動的な質問に対応：response_jsonのみを保存
     execute_query(cur, """
-        INSERT INTO T_アンケート回答 (
+        INSERT INTO "T_アンケート回答" (
             store_id, rating, visit_purpose, atmosphere, 
             recommend, comment, generated_review, response_json
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -243,7 +243,7 @@ def get_survey_stats(store_id: int) -> Dict[str, Any]:
     # 総回答数
     execute_query(cur, """
         SELECT COUNT(*) as total
-        FROM T_アンケート回答
+        FROM "T_アンケート回答"
         WHERE store_id = ?
     """, (store_id,))
     total = cur.fetchone()['total']
@@ -251,7 +251,7 @@ def get_survey_stats(store_id: int) -> Dict[str, Any]:
     # 評価分布
     execute_query(cur, """
         SELECT rating, COUNT(*) as count
-        FROM T_アンケート回答
+        FROM "T_アンケート回答"
         WHERE store_id = ?
         GROUP BY rating
         ORDER BY rating DESC
@@ -261,7 +261,7 @@ def get_survey_stats(store_id: int) -> Dict[str, Any]:
     # 平均評価
     execute_query(cur, """
         SELECT AVG(rating) as avg_rating
-        FROM T_アンケート回答
+        FROM "T_アンケート回答"
         WHERE store_id = ?
     """, (store_id,))
     avg_rating = cur.fetchone()['avg_rating'] or 0.0
