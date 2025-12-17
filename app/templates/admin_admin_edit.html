@@ -55,6 +55,14 @@
       <small style="color:#666">少なくとも1つの店舗を選択してください。</small>
     </div>
 
+    <div style="margin-bottom:16px">
+      <label style="display:block;margin-bottom:4px">有効/無効</label>
+      <select name="active" style="padding:8px;min-width:120px">
+        <option value="1" {% if admin.active == 1 %}selected{% endif %}>有効</option>
+        <option value="0" {% if admin.active == 0 %}selected{% endif %}>無効</option>
+      </select>
+    </div>
+
     <div style="display:flex;gap:8px;margin-top:20px">
       <button class="btn" type="submit">更新</button>
       <a class="btn sub" href="{{ back_url }}">キャンセル</a>
