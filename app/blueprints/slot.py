@@ -38,7 +38,7 @@ def slot_page():
         try:
             conn = store_db.get_db_connection()
             cursor = conn.cursor()
-            cursor.execute("SELECT id FROM T_店舗 WHERE slug = ?", (store_slug,))
+            cursor.execute("SELECT id FROM T_店舗 WHERE slug = %s", (store_slug,))
             result = cursor.fetchone()
             if result:
                 store_id = result[0]

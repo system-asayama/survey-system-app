@@ -72,9 +72,9 @@ def get_openai_client(app_type=None, app_id=None, store_id=None, tenant_id=None)
         # 1. アプリ設定のキーを確認
         if app_type and app_id:
             if app_type == 'survey':
-                cursor.execute("SELECT openai_api_key, store_id FROM T_店舗_アンケート設定 WHERE id = ?", (app_id,))
+                cursor.execute("SELECT openai_api_key, store_id FROM T_店舗_アンケート設定 WHERE id = %s", (app_id,))
             elif app_type == 'slot':
-                cursor.execute("SELECT openai_api_key, store_id FROM T_店舗_スロット設定 WHERE id = ?", (app_id,))
+                cursor.execute("SELECT openai_api_key, store_id FROM T_店舗_スロット設定 WHERE id = %s", (app_id,))
             
             result = cursor.fetchone()
             if result:
@@ -88,7 +88,7 @@ def get_openai_client(app_type=None, app_id=None, store_id=None, tenant_id=None)
         
         # 2. 店舗設定のキーを確認
         if store_id:
-            cursor.execute("SELECT openai_api_key, tenant_id FROM T_店舗 WHERE id = ?", (store_id,))
+            cursor.execute("SELECT openai_api_key, tenant_id FROM T_店舗 WHERE id = %s", (store_id,))
             result = cursor.fetchone()
             if result:
                 if result[0]:  # 店舗にAPIキーが設定されている
@@ -101,7 +101,7 @@ def get_openai_client(app_type=None, app_id=None, store_id=None, tenant_id=None)
         
         # 3. テナント設定のキーを確認
         if tenant_id:
-            cursor.execute("SELECT openai_api_key FROM T_テナント WHERE id = ?", (tenant_id,))
+            cursor.execute("SELECT openai_api_key FROM T_テナント WHERE id = %s", (tenant_id,))
             result = cursor.fetchone()
             if result and result[0]:
                 api_key = result[0]

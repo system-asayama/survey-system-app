@@ -373,7 +373,7 @@ function renderPayoutTableFromSymbols(){
 
   // 配当が大きい順に並べ替えて描画（配当0のシンボルと不使用シンボルを除外）
   const sorted = [...window.__symbols]
-    .filter(s => (s.payout_3 || 0) > 0 && !s.is_disabled)  // 配当0のシンボルと不使用シンボルを除外
+    .filter(s => (s.payout_3 || 0) > 0 && s.is_disabled !== true)  // 配当0のシンボルと不使用シンボルを除外
     .sort((a,b)=>(b.payout_3||0)-(a.payout_3||0));
 
   sorted.forEach((r)=>{
