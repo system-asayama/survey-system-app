@@ -65,10 +65,6 @@ def get_openai_client(app_type=None, app_id=None, store_id=None, tenant_id=None)
     from openai import OpenAI
     api_key = None
     
-    import sys
-    sys.stderr.write("DEBUG: Starting get_openai_client\n")
-    sys.stderr.flush()
-    
     try:
         conn = store_db.get_db_connection()
         cursor = conn.cursor()
@@ -84,12 +80,8 @@ def get_openai_client(app_type=None, app_id=None, store_id=None, tenant_id=None)
             if result:
                 if result[0]:  # アプリにAPIキーが設定されている
                     api_key = result[0]
-                    sys.stderr.write("DEBUG: Using API key from App Settings\n")
-                    sys.stderr.flush()
                     conn.close()
-                    sys.stderr.write("DEBUG: Final API key is set. Returning OpenAI client.\n")
-    sys.stderr.flush()
-    return OpenAI(api_key=api_key, base_url='https://api.openai.com/v1')
+                    return OpenAI(api_key=api_key, base_url='https://api.openai.com/v1')
                 # アプリにキーがない場合、store_idを取得
                 if not store_id and result[1]:
                     store_id = result[1]
@@ -101,12 +93,8 @@ def get_openai_client(app_type=None, app_id=None, store_id=None, tenant_id=None)
             if result:
                 if result[0]:  # 店舗にAPIキーが設定されている
                     api_key = result[0]
-                    sys.stderr.write("DEBUG: Using API key from Store Settings\n")
-                    sys.stderr.flush()
                     conn.close()
-                    sys.stderr.write("DEBUG: Final API key is set. Returning OpenAI client.\n")
-    sys.stderr.flush()
-    return OpenAI(api_key=api_key, base_url='https://api.openai.com/v1')
+                    return OpenAI(api_key=api_key, base_url='https://api.openai.com/v1')
                 # 店舗にキーがない場合、tenant_idを取得
                 if not tenant_id and result[1]:
                     tenant_id = result[1]
@@ -117,12 +105,8 @@ def get_openai_client(app_type=None, app_id=None, store_id=None, tenant_id=None)
             result = cursor.fetchone()
             if result and result[0]:
                 api_key = result[0]
-                sys.stderr.write("DEBUG: Using API key from Tenant Settings\n")
-                sys.stderr.flush()
                 conn.close()
-                sys.stderr.write("DEBUG: Final API key is set. Returning OpenAI client.\n")
-    sys.stderr.flush()
-    return OpenAI(api_key=api_key, base_url='https://api.openai.com/v1')
+                return OpenAI(api_key=api_key, base_url='https://api.openai.com/v1')
         
         conn.close()
     except Exception as e:
@@ -131,15 +115,11 @@ def get_openai_client(app_type=None, app_id=None, store_id=None, tenant_id=None)
     # 4. 環境変数を確認
     if not api_key:
         api_key = os.environ.get('OPENAI_API_KEY')
-        if api_key:
-            sys.stderr.write("DEBUG: Using API key from Environment Variable\n")
-            sys.stderr.flush()
+
     
     if not api_key:
         raise ValueError("OpenAI APIキーが設定されていません。アプリ、店舗、またはテナントの管理画面でAPIキーを設定してください。")
     
-    sys.stderr.write("DEBUG: Final API key is set. Returning OpenAI client.\n")
-    sys.stderr.flush()
     return OpenAI(api_key=api_key, base_url='https://api.openai.com/v1')
 
 def _generate_review_text(survey_data, store_id):
