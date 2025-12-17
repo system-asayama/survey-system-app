@@ -190,10 +190,12 @@ def register_store_slot_settings_routes(app):
         # 景品設定を取得
         cur.execute(_sql(conn, 'SELECT prizes_json FROM "T_店舗_景品設定" WHERE store_id = %s'), (store_id,))
         prizes_row = cur.fetchone()
+        print(f"[DEBUG] store_slot_settings: store_id={store_id}, prizes_row={prizes_row}")
         
         if prizes_row and prizes_row[0]:
             try:
                 prizes = json.loads(prizes_row[0])
+                print(f"[DEBUG] store_slot_settings: 読み込んだ景品={prizes}")
             except:
                 prizes = []
         else:
@@ -299,6 +301,7 @@ def register_store_slot_settings_routes(app):
             
             # セッションから店舗IDを取得
             store_id = session.get('store_id')
+            print(f"[DEBUG] admin_save_prizes: store_id={store_id}, prizes={prizes}")
             if not store_id:
                 return jsonify({"ok": False, "error": "店舗が選択されていません"}), 400
             
@@ -326,6 +329,7 @@ def register_store_slot_settings_routes(app):
             
             conn.commit()
             conn.close()
+            print(f"[DEBUG] admin_save_prizes: 保存成功 store_id={store_id}")
             
             return jsonify({"ok": True})
         except Exception as e:
