@@ -199,10 +199,10 @@ def admins():
         is_owner = row[0] == 1
     
     cur.execute(_sql(conn, '''
-        SELECT id, login_id, name, is_owner, created_at 
+        SELECT id, login_id, name, is_owner, can_manage_admins, active, created_at 
         FROM "T_管理者" 
         WHERE tenant_id = %s AND role = %s
-        ORDER BY id
+        ORDER BY is_owner DESC, can_manage_admins DESC, id
     '''), (tenant_id, ROLES["ADMIN"]))
     
     admins_list = []
@@ -211,8 +211,10 @@ def admins():
             'id': row[0],
             'login_id': row[1],
             'name': row[2],
-            'is_owner': row[3] == 1,
-            'created_at': row[4]
+            'is_owner': row[3],
+            'can_manage_admins': row[4],
+            'active': row[5],
+            'created_at': row[6]
         })
     conn.close()
     

@@ -3,57 +3,94 @@
 {% block content %}
 <h1>管理者一覧</h1>
 
-<div style="margin-bottom:12px">
+<div style="margin-bottom:20px">
   <a class="btn" href="{{ url_for('admin.admin_new') }}">新規作成</a>
   <a class="btn sub" href="{{ url_for('admin.dashboard') }}">戻る</a>
 </div>
 
-<div class="card">
-  {% if admins %}
-    <table class="table">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>ログインID</th>
-          <th>氏名</th>
-          <th>権限</th>
-          <th>作成日時</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for admin in admins %}
-        <tr>
-          <td>{{ admin.id }}</td>
-          <td>{{ admin.login_id }}</td>
-          <td>{{ admin.name }}</td>
-          <td>
-            {% if admin.is_owner %}
-              <span style="color:#d97706;font-weight:bold">オーナー</span>
-            {% else %}
-              管理者
-            {% endif %}
-          </td>
-          <td>{{ admin.created_at }}</td>
-          <td>
-            <a class="btn" href="{{ url_for('admin.admin_edit', admin_id=admin.id) }}" style="margin-right:4px">編集</a>
-            {% if admin.id != current_user_id %}
-              {% if is_owner and not admin.is_owner %}
-                <form method="post" action="{{ url_for('admin.admin_transfer_owner', admin_id=admin.id) }}" style="display:inline;margin-right:4px" onsubmit="return confirm('この管理者にオーナー権限を移譲しますか？移譲後はあなたはオーナーではなくなります。');">
-                  <button class="btn" type="submit" style="background:#d97706">オーナー移譲</button>
-                </form>
-              {% endif %}
-              <form method="post" action="{{ url_for('admin.admin_delete', admin_id=admin.id) }}" style="display:inline" onsubmit="return confirm('本当に削除しますか？');">
-                <button class="btn danger" type="submit">削除</button>
+{% if admins %}
+<table style="width:100%;border-collapse:collapse">
+  <thead>
+    <tr style="background:#f5f5f5;border-bottom:2px solid #ddd">
+      <th style="padding:12px;text-align:left">ID</th>
+      <th style="padding:12px;text-align:left">ログインID</th>
+      <th style="padding:12px;text-align:left">氏名</th>
+      <th style="padding:12px;text-align:left">オーナー</th>
+      <th style="padding:12px;text-align:left">管理権限</th>
+      <th style="padding:12px;text-align:left">有効</th>
+      <th style="padding:12px;text-align:left">作成日時</th>
+      <th style="padding:12px;text-align:left">操作</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for admin in admins %}
+    <tr style="border-bottom:1px solid #eee{% if admin.is_owner == 1 %};background:#fffbf0{% endif %}">
+      <td style="padding:12px">{{ admin.id }}</td>
+      <td style="padding:12px"><code>{{ admin.login_id }}</code></td>
+      <td style="padding:12px"><strong>{{ admin.name }}</strong></td>
+      <td style="padding:12px">
+        {% if admin.is_owner == 1 %}
+          <span style="color:#ff6f00;font-weight:bold">★ オーナー</span>
+        {% else %}
+          <span style="color:#999">-</span>
+        {% endif %}
+      </td>
+      <td style="padding:12px">
+        {% if admin.is_owner == 1 %}
+          <span style="color:#999;font-size:0.9em">（常に有）</span>
+        {% elif admin.can_manage_admins == 1 %}
+          <span style="color:green;font-weight:bold">✓ 有</span>
+        {% else %}
+          <span style="color:#999">無</span>
+        {% endif %}
+      </td>
+      <td style="padding:12px">
+        {% if admin.active == 1 %}
+          <span style="color:green">✓ 有効</span>
+        {% else %}
+          <span style="color:#999">無効</span>
+        {% endif %}
+      </td>
+      <td style="padding:12px;color:#666;font-size:0.9em">{{ admin.created_at }}</td>
+      <td style="padding:12px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          {% if admin.id == current_user_id %}
+            <span style="color:#999;font-size:0.85em">（自分）</span>
+          {% else %}
+            <a class="btn small" href="{{ url_for('admin.admin_edit', admin_id=admin.id) }}">編集</a>
+            {% if is_owner and admin.is_owner != 1 %}
+              <form method="post" action="{{ url_for('admin.admin_transfer_owner', admin_id=admin.id) }}" style="display:inline" onsubmit="return confirm('この管理者にオーナー権限を移譲しますか？移譲後はあなたはオーナーではなくなります。');">
+                <button class="btn small" type="submit" style="background:#ff6f00">オーナー移譲</button>
               </form>
             {% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% else %}
-    <p style="color:#666">管理者が登録されていません。</p>
-  {% endif %}
+            {% if admin.is_owner != 1 %}
+              <form method="post" action="{{ url_for('admin.admin_delete', admin_id=admin.id) }}" style="display:inline" onsubmit="return confirm('本当に削除しますか？');">
+                <button class="btn small" type="submit" style="background:#d32f2f">削除</button>
+              </form>
+            {% endif %}
+          {% endif %}
+        </div>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="card" style="text-align:center;padding:40px">
+  <p style="color:#999">管理者が登録されていません。</p>
+  <a class="btn" href="{{ url_for('admin.admin_new') }}">最初の管理者を作成</a>
 </div>
+{% endif %}
+
+{% if get_flashed_messages() %}
+<div style="margin-top:20px">
+  {% for category, message in get_flashed_messages(with_categories=true) %}
+    <div class="alert alert-{{ category }}" style="padding:12px;margin-bottom:8px;border-radius:4px;
+         {% if category == 'success' %}background:#d4edda;color:#155724;border:1px solid #c3e6cb{% endif %}
+         {% if category == 'error' %}background:#f8d7da;color:#721c24;border:1px solid #f5c6cb{% endif %}">
+      {{ message }}
+    </div>
+  {% endfor %}
+</div>
+{% endif %}
 {% endblock %}
