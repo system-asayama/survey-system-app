@@ -376,7 +376,11 @@ def admin_edit(admin_id):
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '').strip()
         password_confirm = request.form.get('password_confirm', '').strip()
-        is_owner = 1 if request.form.get('is_owner') else 0
+        # is_ownerは編集画面では変更しない（一覧画面からオーナー移譲で変更）
+        # 現在の値を取得
+        cur.execute(_sql(conn, 'SELECT is_owner FROM "T_管理者" WHERE id = %s'), (admin_id,))
+        is_owner_row = cur.fetchone()
+        is_owner = is_owner_row[0] if is_owner_row else 0
         
         store_ids = request.form.getlist('store_ids')
         

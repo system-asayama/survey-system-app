@@ -31,12 +31,12 @@
       <input type="password" name="password_confirm" minlength="8" placeholder="もう一度入力" style="width:100%;padding:8px">
     </div>
 
-    <div style="margin-bottom:16px">
-      <label style="display:block;margin-bottom:4px">
-        <input type="checkbox" name="is_owner" value="1" {% if admin.is_owner == 1 %}checked{% endif %} style="margin-right:8px">
-        オーナー権限（同じ店舗の他の管理者を編集・削除可能）
-      </label>
+    {% if admin.is_owner == 1 %}
+    <div style="margin-bottom:16px;padding:12px;background:#fffbf0;border:1px solid #ffc107;border-radius:4px">
+      <span style="color:#ff6f00;font-weight:bold">★ オーナー権限あり</span>
+      <p style="margin:8px 0 0;color:#666;font-size:0.9em">オーナー権限の移譲は一覧画面から行ってください。</p>
     </div>
+    {% endif %}
 
     <div style="margin-bottom:16px">
       <label style="display:block;margin-bottom:8px">管理する店舗 <span style="color:red">*</span></label>
