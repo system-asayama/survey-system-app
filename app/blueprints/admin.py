@@ -183,15 +183,20 @@ def admins():
     conn = get_db_connection()
     cur = conn.cursor()
     
-    # オーナー権限チェック
-    cur.execute(_sql(conn, 'SELECT is_owner, can_manage_admins FROM "T_管理者" WHERE id = %s'), (user_id,))
-    row = cur.fetchone()
-    if not row or (row[0] != 1 and row[1] != 1):
-        flash('管理者を管理する権限がありません', 'error')
-        conn.close()
-        return redirect(url_for('admin.dashboard'))
-    
-    is_owner = row[0] == 1
+    # 権限チェック（システム管理者とテナント管理者は無条件で許可）
+    role = session.get('role')
+    if role == 'system_admin' or role == 'tenant_admin':
+        is_owner = True
+    else:
+        # 店舗管理者の場合はオーナー権限チェック
+        cur.execute(_sql(conn, 'SELECT is_owner, can_manage_admins FROM "T_管理者" WHERE id = %s'), (user_id,))
+        row = cur.fetchone()
+        if not row or (row[0] != 1 and row[1] != 1):
+            flash('管理者を管理する権限がありません', 'error')
+            conn.close()
+            return redirect(url_for('admin.dashboard'))
+        
+        is_owner = row[0] == 1
     
     cur.execute(_sql(conn, '''
         SELECT id, login_id, name, is_owner, created_at 
@@ -221,15 +226,24 @@ def admin_new():
     user_id = session.get('user_id')
     tenant_id = session.get('tenant_id')
     
-    # オーナー権限チェック
+    # 権限チェック（システム管理者とテナント管理者は無条件で許可）
+    role = session.get('role')
+    if role == 'system_admin' or role == 'tenant_admin':
+        pass  # 無条件で許可
+    else:
+        # 店舗管理者の場合はオーナー権限チェック
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(_sql(conn, 'SELECT is_owner, can_manage_admins FROM "T_管理者" WHERE id = %s'), (user_id,))
+        row = cur.fetchone()
+        if not row or (row[0] != 1 and row[1] != 1):
+            flash('管理者を管理する権限がありません', 'error')
+            conn.close()
+            return redirect(url_for('admin.dashboard'))
+        conn.close()
+    
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute(_sql(conn, 'SELECT is_owner, can_manage_admins FROM "T_管理者" WHERE id = %s'), (user_id,))
-    row = cur.fetchone()
-    if not row or (row[0] != 1 and row[1] != 1):
-        flash('管理者を管理する権限がありません', 'error')
-        conn.close()
-        return redirect(url_for('admin.dashboard'))
     
     # 店舗リストを取得
     cur.execute(_sql(conn, 'SELECT id, 名称 FROM "T_店舗" WHERE tenant_id = %s AND 有効 = 1 ORDER BY id'), (tenant_id,))
@@ -291,13 +305,18 @@ def admin_delete(admin_id):
     conn = get_db_connection()
     cur = conn.cursor()
     
-    # オーナー権限チェック
-    cur.execute(_sql(conn, 'SELECT is_owner, can_manage_admins FROM "T_管理者" WHERE id = %s'), (user_id,))
-    row = cur.fetchone()
-    if not row or (row[0] != 1 and row[1] != 1):
-        flash('管理者を管理する権限がありません', 'error')
-        conn.close()
-        return redirect(url_for('admin.dashboard'))
+    # 権限チェック（システム管理者とテナント管理者は無条件で許可）
+    role = session.get('role')
+    if role == 'system_admin' or role == 'tenant_admin':
+        pass  # 無条件で許可
+    else:
+        # 店舗管理者の場合はオーナー権限チェック
+        cur.execute(_sql(conn, 'SELECT is_owner, can_manage_admins FROM "T_管理者" WHERE id = %s'), (user_id,))
+        row = cur.fetchone()
+        if not row or (row[0] != 1 and row[1] != 1):
+            flash('管理者を管理する権限がありません', 'error')
+            conn.close()
+            return redirect(url_for('admin.dashboard'))
     
     # 自分自身の削除を防止
     if admin_id == user_id:
@@ -330,13 +349,18 @@ def admin_edit(admin_id):
     conn = get_db_connection()
     cur = conn.cursor()
     
-    # オーナー権限チェック
-    cur.execute(_sql(conn, 'SELECT is_owner, can_manage_admins FROM "T_管理者" WHERE id = %s'), (user_id,))
-    row = cur.fetchone()
-    if not row or (row[0] != 1 and row[1] != 1):
-        flash('管理者を編集する権限がありません', 'error')
-        conn.close()
-        return redirect(url_for('admin.dashboard'))
+    # 権限チェック（システム管理者とテナント管理者は無条件で許可）
+    role = session.get('role')
+    if role == 'system_admin' or role == 'tenant_admin':
+        pass  # 無条件で許可
+    else:
+        # 店舗管理者の場合はオーナー権限チェック
+        cur.execute(_sql(conn, 'SELECT is_owner, can_manage_admins FROM "T_管理者" WHERE id = %s'), (user_id,))
+        row = cur.fetchone()
+        if not row or (row[0] != 1 and row[1] != 1):
+            flash('管理者を編集する権限がありません', 'error')
+            conn.close()
+            return redirect(url_for('admin.dashboard'))
     
     # 店舗一覧を取得
     cur.execute(_sql(conn, 'SELECT id, 名称 FROM "T_店舗" WHERE tenant_id = %s AND 有効 = 1 ORDER BY 名称'), (tenant_id,))
@@ -428,13 +452,18 @@ def admin_transfer_owner(admin_id):
     conn = get_db_connection()
     cur = conn.cursor()
     
-    # 現在のユーザーがオーナーか確認
-    cur.execute(_sql(conn, 'SELECT is_owner FROM "T_管理者" WHERE id = %s'), (user_id,))
-    row = cur.fetchone()
-    if not row or row[0] != 1:
-        flash('オーナー権限を移譲する権限がありません', 'error')
-        conn.close()
-        return redirect(url_for('admin.admins'))
+    # 権限チェック（システム管理者とテナント管理者は無条件で許可）
+    role = session.get('role')
+    if role == 'system_admin' or role == 'tenant_admin':
+        pass  # 無条件で許可
+    else:
+        # 店舗管理者の場合はオーナー権限チェック
+        cur.execute(_sql(conn, 'SELECT is_owner FROM "T_管理者" WHERE id = %s'), (user_id,))
+        row = cur.fetchone()
+        if not row or row[0] != 1:
+            flash('オーナー権限を移譲する権限がありません', 'error')
+            conn.close()
+            return redirect(url_for('admin.admins'))
     
     # 自分自身への移譲を防止
     if admin_id == user_id:
