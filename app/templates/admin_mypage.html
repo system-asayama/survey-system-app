@@ -122,6 +122,10 @@
     <a class="btn sub" href="{{ url_for('admin.dashboard') }}">現在の店舗でダッシュボードに戻る</a>
   </div>
   {% endif %}
+  
+  <div style="margin-top:20px">
+    <a class="btn" href="{{ url_for('auth.logout') }}" style="background-color:#dc3545">ログアウト</a>
+  </div>
 </div>
 
 {% if get_flashed_messages() %}
