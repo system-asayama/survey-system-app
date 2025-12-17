@@ -714,26 +714,36 @@ def employee_new():
 @bp.route('/employees/<int:employee_id>/edit', methods=['GET', 'POST'])
 @require_roles(ROLES["ADMIN"], ROLES["TENANT_ADMIN"], ROLES["SYSTEM_ADMIN"])
 def employee_edit(employee_id):
-    """従業員編集（自分が所属する店舗のみ選択可能）"""
+    """従業員編集"""
     admin_id = session.get('user_id')
     tenant_id = session.get('tenant_id')
     store_id = session.get('store_id')
-    
-    if not store_id:
-        flash('店舗が選択されていません', 'error')
-        return redirect(url_for('admin.dashboard'))
+    role = session.get('role')
     
     conn = get_db_connection()
     cur = conn.cursor()
     
-    # 管理者が所属する店舗一覧を取得
-    cur.execute(_sql(conn, '''
-        SELECT s.id, s.名称
-        FROM "T_店舗" s
-        INNER JOIN "T_管理者_店舗" admin_store ON s.id = admin_store.store_id
-        WHERE admin_store.admin_id = %s AND s.有効 = 1
-        ORDER BY s.名称
-    '''), (admin_id,))
+    # システム管理者・テナント管理者の場合はテナント内の全店舗を表示
+    if role in ['system_admin', 'tenant_admin']:
+        cur.execute(_sql(conn, '''
+            SELECT id, 名称
+            FROM "T_店舗"
+            WHERE tenant_id = %s AND 有効 = 1
+            ORDER BY 名称
+        '''), (tenant_id,))
+    else:
+        # 店舗管理者の場合は自分が所属する店舗のみ
+        if not store_id:
+            flash('店舗が選択されていません', 'error')
+            conn.close()
+            return redirect(url_for('admin.dashboard'))
+        cur.execute(_sql(conn, '''
+            SELECT s.id, s.名称
+            FROM "T_店舗" s
+            INNER JOIN "T_管理者_店舗" admin_store ON s.id = admin_store.store_id
+            WHERE admin_store.admin_id = %s AND s.有効 = 1
+            ORDER BY s.名称
+        '''), (admin_id,))
     stores = [{'id': row[0], '名称': row[1]} for row in cur.fetchall()]
     
     if request.method == 'POST':
@@ -743,7 +753,7 @@ def employee_edit(employee_id):
         password = request.form.get('password', '').strip()
         password_confirm = request.form.get('password_confirm', '').strip()
         store_ids = request.form.getlist('store_ids')
-        # active = int(request.form.get('active', 1))  # T_従業員テーブルにactiveカラムがないためコメントアウト
+        active = int(request.form.get('active', 1))
         
         if not login_id or not name or not email:
             flash('ログインID、氏名、メールアドレスは必須です', 'error')
@@ -752,15 +762,18 @@ def employee_edit(employee_id):
         elif not store_ids:
             flash('少なくとも1つの店舗を選択してください', 'error')
         else:
-            # 選択された店舗が全て管理者の所属店舗か確認
-            cur.execute(_sql(conn, '''
-                SELECT store_id FROM "T_管理者_店舗" WHERE admin_id = %s
-            '''), (admin_id,))
-            admin_store_ids = [str(row[0]) for row in cur.fetchall()]
+            # システム管理者・テナント管理者以外は店舗権限チェック
+            has_permission = True
+            if role not in ['system_admin', 'tenant_admin']:
+                cur.execute(_sql(conn, '''
+                    SELECT store_id FROM "T_管理者_店舗" WHERE admin_id = %s
+                '''), (admin_id,))
+                admin_store_ids = [str(row[0]) for row in cur.fetchall()]
+                if not all(sid in admin_store_ids for sid in store_ids):
+                    flash('選択された店舗に権限がありません', 'error')
+                    has_permission = False
             
-            if not all(sid in admin_store_ids for sid in store_ids):
-                flash('選択された店舗に権限がありません', 'error')
-            else:
+            if has_permission:
                 # 重複チェック（自分以外）
                 cur.execute(_sql(conn, 'SELECT id FROM "T_従業員" WHERE (login_id = %s OR email = %s) AND id != %s'),
                            (login_id, email, employee_id))
@@ -772,15 +785,15 @@ def employee_edit(employee_id):
                         ph = generate_password_hash(password)
                         cur.execute(_sql(conn, '''
                             UPDATE "T_従業員"
-                            SET login_id = %s, name = %s, email = %s, password_hash = %s, updated_at = CURRENT_TIMESTAMP
+                            SET login_id = %s, name = %s, email = %s, password_hash = %s, active = %s, updated_at = CURRENT_TIMESTAMP
                             WHERE id = %s AND tenant_id = %s
-                        '''), (login_id, name, email, ph, employee_id, tenant_id))
+                        '''), (login_id, name, email, ph, active, employee_id, tenant_id))
                     else:
                         cur.execute(_sql(conn, '''
                             UPDATE "T_従業員"
-                            SET login_id = %s, name = %s, email = %s, updated_at = CURRENT_TIMESTAMP
+                            SET login_id = %s, name = %s, email = %s, active = %s, updated_at = CURRENT_TIMESTAMP
                             WHERE id = %s AND tenant_id = %s
-                        '''), (login_id, name, email, employee_id, tenant_id))
+                        '''), (login_id, name, email, active, employee_id, tenant_id))
                     
                     # 店舗の紐付けを更新
                     cur.execute(_sql(conn, 'DELETE FROM "T_従業員_店舗" WHERE employee_id = %s'), (employee_id,))
@@ -797,7 +810,7 @@ def employee_edit(employee_id):
     
     # 従業員情報を取得
     cur.execute(_sql(conn, '''
-        SELECT login_id, name, email FROM "T_従業員" WHERE id = %s AND tenant_id = %s
+        SELECT login_id, name, email, COALESCE(active, 1) FROM "T_従業員" WHERE id = %s AND tenant_id = %s
     '''), (employee_id, tenant_id))
     row = cur.fetchone()
     
@@ -811,7 +824,7 @@ def employee_edit(employee_id):
         'login_id': row[0],
         'name': row[1],
         'email': row[2],
-        'active': 1  # T_従業員テーブルにactiveカラムがないため、常に有効とする
+        'active': row[3] if row[3] is not None else 1
     }
     
     # 現在の店舗割り当てを取得

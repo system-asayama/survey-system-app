@@ -3,58 +3,63 @@
 {% block content %}
 <h1>従業員編集</h1>
 
-<form method="post">
-  <div class="card" style="max-width:500px">
-    <div class="row">
-      <label for="login_id">ログインID</label>
-      <input id="login_id" name="login_id" type="text" value="{{ employee.login_id }}" required autofocus>
+<div class="card" style="max-width:600px">
+  <form method="post">
+    <div style="margin-bottom:16px">
+      <label style="display:block;margin-bottom:4px">ログインID <span style="color:red">*</span></label>
+      <input type="text" name="login_id" value="{{ employee.login_id }}" required autofocus style="width:100%;padding:8px">
     </div>
-    
-    <div class="row">
-      <label for="name">氏名</label>
-      <input id="name" name="name" type="text" value="{{ employee.name }}" required>
+
+    <div style="margin-bottom:16px">
+      <label style="display:block;margin-bottom:4px">氏名 <span style="color:red">*</span></label>
+      <input type="text" name="name" value="{{ employee.name }}" required style="width:100%;padding:8px">
     </div>
-    
-    <div class="row">
-      <label for="email">メールアドレス</label>
-      <input id="email" name="email" type="email" value="{{ employee.email }}" required>
+
+    <div style="margin-bottom:16px">
+      <label style="display:block;margin-bottom:4px">メールアドレス <span style="color:red">*</span></label>
+      <input type="email" name="email" value="{{ employee.email or '' }}" required placeholder="例）employee@example.com" style="width:100%;padding:8px">
     </div>
-    
-    <div class="row">
-      <label for="password">パスワード（変更する場合のみ入力）</label>
-      <input id="password" name="password" type="password" placeholder="変更しない場合は空欄">
+
+    <div style="margin-bottom:16px">
+      <label style="display:block;margin-bottom:4px">パスワード</label>
+      <input type="password" name="password" minlength="8" placeholder="変更する場合のみ入力（8文字以上）" style="width:100%;padding:8px">
+      <small style="color:#666">※ 空欄の場合はパスワードを変更しません</small>
     </div>
-    
-    <div class="row">
-      <label for="password_confirm">パスワード（確認）</label>
-      <input id="password_confirm" name="password_confirm" type="password" placeholder="もう一度入力">
+
+    <div style="margin-bottom:16px">
+      <label style="display:block;margin-bottom:4px">パスワード（確認）</label>
+      <input type="password" name="password_confirm" minlength="8" placeholder="もう一度入力" style="width:100%;padding:8px">
     </div>
-    
-    <div class="row">
-      <label style="font-weight:bold">勤務する店舗（複数選択可）</label>
-      {% if stores %}
-        <div style="border:1px solid #ccc;padding:12px;max-height:200px;overflow-y:auto">
+
+    <div style="margin-bottom:16px">
+      <label style="display:block;margin-bottom:8px">勤務する店舗 <span style="color:red">*</span></label>
+      <div style="border:1px solid #ddd;padding:12px;border-radius:4px;max-height:200px;overflow-y:auto">
+        {% if stores %}
           {% for store in stores %}
-          <div style="margin-bottom:8px">
-            <label style="display:flex;align-items:center;cursor:pointer">
-              <input type="checkbox" name="store_ids" value="{{ store.id }}" 
-                     {% if store.id in assigned_store_ids %}checked{% endif %}
-                     style="margin-right:8px">
-              <span>{{ store.名称 }}</span>
-            </label>
-          </div>
+          <label style="display:block;margin-bottom:8px;cursor:pointer">
+            <input type="checkbox" name="store_ids" value="{{ store.id }}" {% if store.id in assigned_store_ids %}checked{% endif %} style="margin-right:8px">
+            {{ store['名称'] }}
+          </label>
           {% endfor %}
-        </div>
-      {% else %}
-        <p style="color:#999">あなたが管理する店舗がありません。</p>
-      {% endif %}
+        {% else %}
+          <p style="color:#999;margin:0">店舗が登録されていません。</p>
+        {% endif %}
+      </div>
+      <small style="color:#666">少なくとも1つの店舗を選択してください。</small>
     </div>
-    
-    <div class="actions" style="margin-top:20px; display:flex; gap:10px">
-      <button class="btn" type="submit" {% if not stores %}disabled{% endif %}>更新</button>
+
+    <div style="margin-bottom:16px">
+      <label style="display:block;margin-bottom:4px">有効/無効</label>
+      <select name="active" style="padding:8px;min-width:120px">
+        <option value="1" {% if employee.active == 1 %}selected{% endif %}>有効</option>
+        <option value="0" {% if employee.active == 0 %}selected{% endif %}>無効</option>
+      </select>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:20px">
+      <button class="btn" type="submit">更新</button>
       <a class="btn sub" href="{{ back_url }}">キャンセル</a>
     </div>
-  </div>
-</form>
-
+  </form>
+</div>
 {% endblock %}

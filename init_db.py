@@ -207,6 +207,7 @@ def init_database():
                     password_hash TEXT,
                     tenant_id     INTEGER,
                     role          TEXT DEFAULT 'employee',
+                    active        INTEGER DEFAULT 1,
                     created_at    {timestamp_type},
                     updated_at    {timestamp_type}
                 )
@@ -221,6 +222,7 @@ def init_database():
                     password_hash TEXT,
                     tenant_id     INTEGER,
                     role          TEXT DEFAULT 'employee',
+                    active        INTEGER DEFAULT 1,
                     created_at    {timestamp_type},
                     updated_at    {timestamp_type}
                 )
@@ -443,6 +445,10 @@ def init_database():
             add_column_if_not_exists(cur, conn, 'T_管理者', 'can_manage_admins', 'INTEGER DEFAULT 0', db_type)
             add_column_if_not_exists(cur, conn, 'T_管理者', 'active', 'INTEGER DEFAULT 1', db_type)
             add_column_if_not_exists(cur, conn, 'T_管理者', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP', db_type)
+        
+        # T_従業員テーブルのカラム追加
+        if table_exists(cur, 'T_従業員', db_type):
+            add_column_if_not_exists(cur, conn, 'T_従業員', 'active', 'INTEGER DEFAULT 1', db_type)
         
         # T_店舗_アンケート設定テーブルのカラム追加
         if table_exists(cur, 'T_店舗_アンケート設定', db_type):
