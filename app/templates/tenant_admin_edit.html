@@ -39,18 +39,20 @@
   
   <div class="form-group">
     <label for="stores">管理する店舗 <span style="color:red">*</span></label>
-    <div style="border:1px solid #ddd;padding:12px;border-radius:4px;max-height:200px;overflow-y:auto">
-      {% if stores %}
-        {% for store in stores %}
-        <label style="display:block;margin-bottom:8px;cursor:pointer">
-          <input type="checkbox" name="store_ids" value="{{ store.id }}" {% if store.id in admin_store_ids %}checked{% endif %} style="margin-right:8px">
-          {{ store['名称'] }}
-        </label>
-        {% endfor %}
-      {% else %}
-        <p style="color:#999;margin:0">店舗が登録されていません。</p>
-      {% endif %}
-    </div>
+    {% if stores %}
+    <table style="border-collapse:collapse;width:100%">
+      {% for store in stores %}
+      <tr>
+        <td style="border:1px solid #000;padding:8px;width:40px;text-align:center">
+          <input type="checkbox" name="store_ids" value="{{ store.id }}" {% if store.id in admin_store_ids %}checked{% endif %}>
+        </td>
+        <td style="border:1px solid #000;padding:8px">{{ store['名称'] }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+      <p style="color:#999;margin:0">店舗が登録されていません。</p>
+    {% endif %}
     <small style="color:#666">少なくとも1つの店舗を選択してください。</small>
   </div>
   
