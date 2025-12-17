@@ -33,10 +33,10 @@
 
     <div style="margin-bottom:16px">
       <label style="display:block;margin-bottom:8px">勤務する店舗 <span style="color:red">*</span></label>
-      <div style="border:1px solid #ddd;padding:12px;border-radius:4px;max-height:200px;overflow-y:auto">
+      <div style="border:1px solid #ddd;padding:12px;border-radius:4px">
         {% if stores %}
           {% for store in stores %}
-          <label style="display:flex;align-items:center;margin-bottom:8px;cursor:pointer;white-space:nowrap">
+          <label style="display:flex;align-items:center;margin-bottom:8px;cursor:pointer">
             <input type="checkbox" name="store_ids" value="{{ store.id }}" {% if store.id in assigned_store_ids %}checked{% endif %} style="margin-right:8px;flex-shrink:0">
             {{ store['名称'] }}
           </label>
