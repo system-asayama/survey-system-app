@@ -402,7 +402,12 @@ def admins():
         })
     conn.close()
     
-    return render_template('tenant_admins.html', admins=admins_list)
+    role = session.get('role')
+    is_system_admin = role == ROLES["SYSTEM_ADMIN"]
+    is_tenant_admin = role == ROLES["TENANT_ADMIN"]
+    current_user_id = session.get('user_id')
+    
+    return render_template('tenant_admins.html', admins=admins_list, current_user_id=current_user_id, is_system_admin=is_system_admin, is_tenant_admin=is_tenant_admin)
 
 
 @bp.route('/admins/new', methods=['GET', 'POST'])
@@ -524,6 +529,11 @@ def admin_edit(admin_id):
         active = int(request.form.get('active', 1))
         store_ids = request.form.getlist('store_ids')  # 複数選択
         
+        # オーナー権限は編集画面では変更できない（一覧画面の「オーナー移譲」で変更）
+        cur.execute(_sql(conn, 'SELECT is_owner FROM "T_管理者" WHERE id = %s'), (admin_id,))
+        row_owner = cur.fetchone()
+        is_owner = row_owner[0] if row_owner else 0
+        
         if not login_id or not name:
             flash('ログインIDと氏名は必須です', 'error')
         elif password and password != password_confirm:
@@ -643,6 +653,59 @@ def toggle_admin_manage_permission(admin_id):
     else:
         flash(f'{admin_name} から管理者管理権限を剝奪しました', 'success')
     
+    return redirect(url_for('tenant_admin.admins'))
+
+
+@bp.route('/admins/<int:admin_id>/transfer_ownership', methods=['POST'])
+@require_roles(ROLES["TENANT_ADMIN"], ROLES["SYSTEM_ADMIN"])
+def transfer_admin_ownership(admin_id):
+    """店舗管理者のオーナー権限を他の店舗管理者に移譲"""
+    role = session.get('role')
+    is_system_admin = role == ROLES["SYSTEM_ADMIN"]
+    is_tenant_admin = role == ROLES["TENANT_ADMIN"]
+    
+    # システム管理者またはテナント管理者のみ実行可能
+    if not is_system_admin and not is_tenant_admin:
+        flash('オーナー権限を移譲する権限がありません', 'error')
+        return redirect(url_for('tenant_admin.admins'))
+    
+    tenant_id = session.get('tenant_id')
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # 移譲先の店舗管理者を確認
+    cur.execute(_sql(conn, '''
+        SELECT id, name 
+        FROM "T_管理者" 
+        WHERE id = %s AND tenant_id = %s AND role = %s AND active = 1
+    '''), (admin_id, tenant_id, ROLES["ADMIN"]))
+    row = cur.fetchone()
+    
+    if not row:
+        flash('移譲先の管理者が見つかりません', 'error')
+        conn.close()
+        return redirect(url_for('tenant_admin.admins'))
+    
+    new_owner_name = row[1]
+    
+    # 現在のオーナーのis_ownerを0に設定
+    cur.execute(_sql(conn, '''
+        UPDATE "T_管理者"
+        SET is_owner = 0
+        WHERE tenant_id = %s AND role = %s AND is_owner = 1
+    '''), (tenant_id, ROLES["ADMIN"]))
+    
+    # 新しいオーナーのis_ownerを1に設定し、can_manage_adminsも1に設定
+    cur.execute(_sql(conn, '''
+        UPDATE "T_管理者"
+        SET is_owner = 1, can_manage_admins = 1
+        WHERE id = %s
+    '''), (admin_id,))
+    
+    conn.commit()
+    conn.close()
+    
+    flash(f'{new_owner_name} にオーナー権限を移譲しました', 'success')
     return redirect(url_for('tenant_admin.admins'))
 
 
