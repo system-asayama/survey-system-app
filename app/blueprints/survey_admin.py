@@ -12,7 +12,9 @@ from ..utils.decorators import require_roles
 from ..utils import ROLES
 from ..utils.admin_auth import (
     require_admin_login,
-    get_current_admin
+    get_current_admin,
+    authenticate_admin,
+    login_admin_session
 )
 from ..utils.config import load_config, save_config
 from ..models import Symbol
