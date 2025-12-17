@@ -324,13 +324,15 @@ def admin_delete(admin_id):
         conn.close()
         return redirect(url_for('admin.admins'))
     
-    # テナントIDの確認
-    cur.execute(_sql(conn, 'SELECT name FROM "T_管理者" WHERE id = %s AND tenant_id = %s AND role = %s'),
+    # テナントIDとオーナーフラグの確認
+    cur.execute(_sql(conn, 'SELECT name, is_owner FROM "T_管理者" WHERE id = %s AND tenant_id = %s AND role = %s'),
                (admin_id, tenant_id, ROLES["ADMIN"]))
     row = cur.fetchone()
     
     if not row:
         flash('管理者が見つかりません', 'error')
+    elif row[1] == 1:
+        flash('オーナーは削除できません。先にオーナー権限を移譲してください。', 'error')
     else:
         cur.execute(_sql(conn, 'DELETE FROM "T_管理者" WHERE id = %s'), (admin_id,))
         conn.commit()

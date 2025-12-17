@@ -417,15 +417,26 @@ def tenant_admin_delete(tid, admin_id):
     conn = get_db_connection()
     cur = conn.cursor()
     
+    # オーナーフラグを確認
     cur.execute(_sql(conn, '''
-        DELETE FROM "T_管理者"
+        SELECT name, is_owner FROM "T_管理者"
         WHERE id = %s AND tenant_id = %s AND role = %s
     '''), (admin_id, tid, ROLES["TENANT_ADMIN"]))
+    row = cur.fetchone()
     
-    conn.commit()
+    if not row:
+        flash('テナント管理者が見つかりません', 'error')
+    elif row[1] == 1:
+        flash('オーナーは削除できません。先にオーナー権限を移譲してください。', 'error')
+    else:
+        cur.execute(_sql(conn, '''
+            DELETE FROM "T_管理者"
+            WHERE id = %s AND tenant_id = %s AND role = %s
+        '''), (admin_id, tid, ROLES["TENANT_ADMIN"]))
+        conn.commit()
+        flash(f'テナント管理者「{row[0]}」を削除しました', 'success')
+    
     conn.close()
-    
-    flash('テナント管理者を削除しました', 'success')
     return redirect(url_for('system_admin.tenant_admins', tid=tid))
 
 
@@ -568,8 +579,14 @@ def system_admin_delete(admin_id):
     target_can_manage = row[1]
     target_is_owner = row[2]
     
+    # オーナーは削除できない
+    if target_is_owner == 1:
+        flash('オーナーは削除できません。先にオーナー権限を移譲してください。', 'error')
+        conn.close()
+        return redirect(url_for('system_admin.system_admins'))
+    
     # オーナー以外の場合、同じ権限を持つユーザーは削除不可
-    if not is_owner() and (target_can_manage == 1 or target_is_owner == 1):
+    if not is_owner() and target_can_manage == 1:
         flash('システム管理者管理権限を持つ他のユーザーは削除できません', 'error')
         conn.close()
         return redirect(url_for('system_admin.system_admins'))
