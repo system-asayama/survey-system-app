@@ -22,9 +22,9 @@ def login_user(user_id: int, name: str, role: str, tenant_id: Optional[int], is_
     conn = get_db()
     try:
         cur = conn.cursor()
-        cur.execute(_sql(conn, 'SELECT is_owner FROM "T_管理者" WHERE id = %s'), (user_id,))
+        cur.execute(_sql(conn, 'SELECT COALESCE(is_owner, 0) FROM "T_管理者" WHERE id = %s'), (user_id,))
         row = cur.fetchone()
-        session["is_owner"] = row[0] == 1 if row else False
+        session["is_owner"] = (row[0] == 1) if row and row[0] is not None else False
     finally:
         try:
             conn.close()
