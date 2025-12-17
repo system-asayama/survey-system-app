@@ -629,10 +629,13 @@ def employee_edit(employee_id):
         name = request.form.get('name', '').strip()
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '').strip()
+        password_confirm = request.form.get('password_confirm', '').strip()
         store_ids = request.form.getlist('store_ids')
         
         if not login_id or not name or not email:
             flash('ログインID、氏名、メールアドレスは必須です', 'error')
+        elif password and password != password_confirm:
+            flash('パスワードが一致しません', 'error')
         elif not store_ids:
             flash('少なくとも1つの店舗を選択してください', 'error')
         else:
