@@ -559,7 +559,7 @@ async function animateFiveSpins(spins){
     playSoundReelStop(); // リール停止音
     
     // リーチ判定（リーチハズレまたは高価値シンボルの当たり）
-    const highValueSymbols = ['bar', 'seven', 'GOD'];
+    const highValueSymbols = ['bar', 'seven', 'god'];
     const isReach = one.is_reach === true || (one.matched === true && highValueSymbols.includes(one.reels[0].id));
     
     console.log(`[REACH DEBUG] Round ${i+1}: is_reach=${one.is_reach}, matched=${one.matched}, reels[0]=${one.reels[0].id}, reels[1]=${one.reels[1].id}, isReach=${isReach}`);
