@@ -17,6 +17,19 @@ def login_user(user_id: int, name: str, role: str, tenant_id: Optional[int], is_
     session["role"] = role
     session["tenant_id"] = tenant_id  # system_admin は None 可
     session["is_employee"] = bool(is_employee)
+    
+    # is_ownerをセッションに保存
+    conn = get_db()
+    try:
+        cur = conn.cursor()
+        cur.execute(_sql(conn, 'SELECT is_owner FROM "T_管理者" WHERE id = %s'), (user_id,))
+        row = cur.fetchone()
+        session["is_owner"] = row[0] == 1 if row else False
+    finally:
+        try:
+            conn.close()
+        except:
+            pass
 
 
 def admin_exists() -> bool:
