@@ -159,6 +159,8 @@ def register_store_slot_settings_routes(app):
     @require_roles(ROLES["ADMIN"], ROLES["TENANT_ADMIN"], ROLES["SYSTEM_ADMIN"])
     def store_slot_settings(store_id):
         """店舗ごとのスロット設定画面"""
+        # セッションに店舗IDを保存（保存処理で使用）
+        session['store_id'] = store_id
         tenant_id = session.get('tenant_id')
         conn = get_db_connection()
         cur = conn.cursor()
