@@ -36,8 +36,8 @@
       <div style="border:1px solid #ddd;padding:12px;border-radius:4px;max-height:200px;overflow-y:auto">
         {% if stores %}
           {% for store in stores %}
-          <label style="display:block;margin-bottom:8px;cursor:pointer">
-            <input type="checkbox" name="store_ids" value="{{ store.id }}" {% if store.id in assigned_store_ids %}checked{% endif %} style="margin-right:8px">
+          <label style="display:flex;align-items:center;margin-bottom:8px;cursor:pointer;white-space:nowrap">
+            <input type="checkbox" name="store_ids" value="{{ store.id }}" {% if store.id in assigned_store_ids %}checked{% endif %} style="margin-right:8px;flex-shrink:0">
             {{ store['名称'] }}
           </label>
           {% endfor %}
