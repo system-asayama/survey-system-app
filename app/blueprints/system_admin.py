@@ -356,10 +356,20 @@ def tenant_admin_edit(tid, admin_id):
         name = request.form.get('name', '').strip()
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '').strip()
+        password_confirm = request.form.get('password_confirm', '').strip()
         active = 1 if request.form.get('active') == '1' else 0
+        
+        # オーナー権限を確認
+        cur.execute(_sql(conn, 'SELECT is_owner FROM "T_管理者" WHERE id = %s'), (admin_id,))
+        row_owner = cur.fetchone()
+        is_owner = row_owner[0] if row_owner else 0
         
         if not login_id or not name:
             flash('ログインIDと氏名は必須です', 'error')
+        elif password and password != password_confirm:
+            flash('パスワードが一致しません', 'error')
+        elif is_owner == 1 and active == 0:
+            flash('オーナーを無効にすることはできません。先にオーナー権限を移譲してください。', 'error')
         else:
             # ログインIDの重複チェック
             cur.execute(_sql(conn, 'SELECT id FROM "T_管理者" WHERE login_id = %s AND id != %s'), (login_id, admin_id))
@@ -387,7 +397,7 @@ def tenant_admin_edit(tid, admin_id):
     
     # GETリクエスト時は現在の情報を表示
     cur.execute(_sql(conn, '''
-        SELECT id, login_id, name, email, active
+        SELECT id, login_id, name, email, active, is_owner
         FROM "T_管理者"
         WHERE id = %s AND tenant_id = %s AND role = %s
     '''), (admin_id, tid, ROLES["TENANT_ADMIN"]))
@@ -404,7 +414,8 @@ def tenant_admin_edit(tid, admin_id):
         'login_id': admin_row[1],
         'name': admin_row[2],
         'email': admin_row[3],
-        'active': admin_row[4]
+        'active': admin_row[4],
+        'is_owner': admin_row[5]
     }
     
     return render_template('sys_tenant_admin_edit.html', tenant=tenant, admin=admin)

@@ -57,10 +57,18 @@
 
     <div style="margin-bottom:16px">
       <label style="display:block;margin-bottom:4px">有効/無効</label>
+      {% if admin.is_owner == 1 %}
+      <select name="active" style="padding:8px;min-width:120px" disabled>
+        <option value="1" selected>有効</option>
+      </select>
+      <input type="hidden" name="active" value="1">
+      <small style="color:#666">※ オーナーは無効にできません</small>
+      {% else %}
       <select name="active" style="padding:8px;min-width:120px">
         <option value="1" {% if admin.active == 1 %}selected{% endif %}>有効</option>
         <option value="0" {% if admin.active == 0 %}selected{% endif %}>無効</option>
       </select>
+      {% endif %}
     </div>
 
     <div style="display:flex;gap:8px;margin-top:20px">

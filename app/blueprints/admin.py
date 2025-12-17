@@ -391,6 +391,8 @@ def admin_edit(admin_id):
             flash('パスワードが一致しません', 'error')
         elif not store_ids:
             flash('少なくとも1つの店舗を選択してください', 'error')
+        elif is_owner == 1 and active == 0:
+            flash('オーナーを無効にすることはできません。先にオーナー権限を移譲してください。', 'error')
         else:
             # 重複チェック（自分以外）
             cur.execute(_sql(conn, 'SELECT id FROM "T_管理者" WHERE login_id = %s AND id != %s'), (login_id, admin_id))

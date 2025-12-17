@@ -58,10 +58,18 @@
   
   <div class="form-group">
     <label for="active">有効/無効</label>
+    {% if tadmin.is_owner == 1 %}
+    <select id="active" name="active" disabled>
+      <option value="1" selected>有効</option>
+    </select>
+    <input type="hidden" name="active" value="1">
+    <small style="color:#666">※ オーナーは無効にできません</small>
+    {% else %}
     <select id="active" name="active">
       <option value="1" {% if tadmin.active == 1 %}selected{% endif %}>有効</option>
       <option value="0" {% if tadmin.active == 0 %}selected{% endif %}>無効</option>
     </select>
+    {% endif %}
   </div>
   
   <div class="actions">

@@ -540,6 +540,8 @@ def admin_edit(admin_id):
             flash('パスワードが一致しません', 'error')
         elif not store_ids:
             flash('少なくとも1つの店舗を選択してください', 'error')
+        elif is_owner == 1 and active == 0:
+            flash('オーナーを無効にすることはできません。先にオーナー権限を移譲してください。', 'error')
         else:
             # 重複チェック（自分以外）
             cur.execute(_sql(conn, 'SELECT id FROM "T_管理者" WHERE login_id = %s AND id != %s'), (login_id, admin_id))
@@ -1049,10 +1051,16 @@ def tenant_admin_edit(tadmin_id):
         row_owner = cur.fetchone()
         is_owner = row_owner[0] if row_owner else 0
         
+        password_confirm = request.form.get('password_confirm', '').strip()
+        
         if not login_id or not name:
             flash('ログインIDと氏名は必須です', 'error')
+        elif password and password != password_confirm:
+            flash('パスワードが一致しません', 'error')
         elif is_system_admin and not tenant_ids:
             flash('少なくとも1つのテナントを選択してください', 'error')
+        elif is_owner == 1 and active == 0:
+            flash('オーナーを無効にすることはできません。先にオーナー権限を移譲してください。', 'error')
         else:
             # 重複チェック（自分以外）
             cur.execute(_sql(conn, 'SELECT id FROM "T_管理者" WHERE login_id = %s AND id != %s'), (login_id, tadmin_id))
