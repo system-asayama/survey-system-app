@@ -1417,13 +1417,14 @@ def check_owner():
     
     # データベースの状態を確認
     cur.execute(_sql(conn, '''
-        SELECT id, login_id, name, role, is_owner, can_manage_admins
+        SELECT id, login_id, name, role, is_owner, can_manage_admins, tenant_id
         FROM "T_管理者"
         WHERE id = %s
     '''), (user_id,))
     row = cur.fetchone()
     
     if row:
+        db_tenant_id = row[6]
         db_info = f"""
         <h2>データベースの状態</h2>
         <ul>
@@ -1433,10 +1434,16 @@ def check_owner():
             <li>ロール: {row[3]}</li>
             <li>is_owner: {row[4]}</li>
             <li>can_manage_admins: {row[5]}</li>
+            <li>tenant_id: {db_tenant_id}</li>
         </ul>
         """
     else:
         db_info = "<p>ユーザーが見つかりません</p>"
+        db_tenant_id = None
+    
+    # テナント一覧を取得
+    cur.execute(_sql(conn, 'SELECT id, 名称 FROM "T_テナント"'))
+    tenants = cur.fetchall()
     
     # テナント内のテナント管理者数を確認
     cur.execute(_sql(conn, '''
@@ -1446,6 +1453,19 @@ def check_owner():
     tenant_admin_count = cur.fetchone()[0]
     
     conn.close()
+    
+    # テナント選択フォーム
+    tenant_options = ''.join([f'<option value="{t[0]}">{t[1]}</option>' for t in tenants])
+    tenant_form = f'''
+    <h2>テナント設定</h2>
+    <form method="post" action="/tenant_admin/set_tenant">
+        <select name="tenant_id">
+            <option value="">選択してください</option>
+            {tenant_options}
+        </select>
+        <button type="submit">テナントを設定</button>
+    </form>
+    '''
     
     session_info = f"""
     <h2>セッションの状態</h2>
@@ -1466,8 +1486,43 @@ def check_owner():
     <h1>オーナー状態確認</h1>
     {db_info}
     {session_info}
+    {tenant_form}
     <br>
     <a href="/tenant_admin/fix_owner">オーナー設定を実行</a> |
     <a href="/tenant_admin/tenant_admins">テナント管理者一覧に戻る</a> |
     <a href="/logout">ログアウト</a>
     """
+
+
+@bp.route('/set_tenant', methods=['POST'])
+@require_roles(ROLES["TENANT_ADMIN"], ROLES["SYSTEM_ADMIN"])
+def set_tenant():
+    """テナント管理者のtenant_idを設定"""
+    user_id = session.get('user_id')
+    new_tenant_id = request.form.get('tenant_id')
+    
+    if not new_tenant_id:
+        return "テナントIDが指定されていません", 400
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # データベースのtenant_idを更新
+    cur.execute(_sql(conn, '''
+        UPDATE "T_管理者"
+        SET tenant_id = %s
+        WHERE id = %s
+    '''), (int(new_tenant_id), user_id))
+    conn.commit()
+    
+    # セッションも更新
+    session['tenant_id'] = int(new_tenant_id)
+    
+    # is_ownerを再取得
+    cur.execute(_sql(conn, 'SELECT is_owner FROM "T_管理者" WHERE id = %s'), (user_id,))
+    row = cur.fetchone()
+    session['is_owner'] = row[0] == 1 if row else False
+    
+    conn.close()
+    
+    return f"テナントID {new_tenant_id} を設定しました。<br><a href='/tenant_admin/check_owner'>確認ページに戻る</a> | <a href='/logout'>ログアウトして再ログイン</a>"
