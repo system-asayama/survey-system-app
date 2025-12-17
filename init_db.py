@@ -7,6 +7,51 @@ SQLiteとPostgreSQLの両方に対応
 import os
 from db_config import get_db_connection, get_cursor, get_db_type
 
+def add_column_if_not_exists(cur, conn, table_name, column_name, column_def, db_type):
+    """既存テーブルにカラムが存在しない場合のみ追加"""
+    try:
+        if db_type == 'postgresql':
+            # PostgreSQLの場合
+            cur.execute(f"""
+                SELECT column_name FROM information_schema.columns 
+                WHERE table_name = '{table_name}' AND column_name = '{column_name}'
+            """)
+            if not cur.fetchone():
+                cur.execute(f'ALTER TABLE "{table_name}" ADD COLUMN {column_name} {column_def}')
+                conn.commit()
+                print(f"  ✓ {table_name}.{column_name} カラムを追加しました")
+            else:
+                print(f"  - {table_name}.{column_name} カラムは既に存在します")
+        else:
+            # SQLiteの場合
+            cur.execute(f'PRAGMA table_info("{table_name}")')
+            columns = [row[1] for row in cur.fetchall()]
+            if column_name not in columns:
+                cur.execute(f'ALTER TABLE "{table_name}" ADD COLUMN {column_name} {column_def}')
+                conn.commit()
+                print(f"  ✓ {table_name}.{column_name} カラムを追加しました")
+            else:
+                print(f"  - {table_name}.{column_name} カラムは既に存在します")
+    except Exception as e:
+        print(f"  ! {table_name}.{column_name} カラム追加エラー: {e}")
+
+def table_exists(cur, table_name, db_type):
+    """テーブルが存在するか確認"""
+    try:
+        if db_type == 'postgresql':
+            cur.execute(f"""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_name = '{table_name}'
+                )
+            """)
+            return cur.fetchone()[0]
+        else:
+            cur.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}'")
+            return cur.fetchone() is not None
+    except:
+        return False
+
 def init_database():
     """データベースの初期化（テーブルとカラムの作成）"""
     
@@ -55,7 +100,7 @@ def init_database():
                 )
             ''')
         conn.commit()
-        print("✓ T_テナントテーブルを作成しました")
+        print("✓ T_テナントテーブルを確認しました")
         
         # 2. T_店舗テーブル
         if db_type == 'postgresql':
@@ -87,7 +132,7 @@ def init_database():
                 )
             ''')
         conn.commit()
-        print("✓ T_店舗テーブルを作成しました")
+        print("✓ T_店舗テーブルを確認しました")
         
         # 3. T_管理者テーブル
         if db_type == 'postgresql':
@@ -125,7 +170,7 @@ def init_database():
                 )
             ''')
         conn.commit()
-        print("✓ T_管理者テーブルを作成しました")
+        print("✓ T_管理者テーブルを確認しました")
         
         # 4. T_管理者_店舗テーブル
         if db_type == 'postgresql':
@@ -149,7 +194,7 @@ def init_database():
                 )
             ''')
         conn.commit()
-        print("✓ T_管理者_店舗テーブルを作成しました")
+        print("✓ T_管理者_店舗テーブルを確認しました")
         
         # 5. T_従業員テーブル
         if db_type == 'postgresql':
@@ -181,7 +226,7 @@ def init_database():
                 )
             ''')
         conn.commit()
-        print("✓ T_従業員テーブルを作成しました")
+        print("✓ T_従業員テーブルを確認しました")
         
         # 6. T_従業員_店舗テーブル
         if db_type == 'postgresql':
@@ -205,7 +250,7 @@ def init_database():
                 )
             ''')
         conn.commit()
-        print("✓ T_従業員_店舗テーブルを作成しました")
+        print("✓ T_従業員_店舗テーブルを確認しました")
         
         # 7. T_テナント管理者_テナントテーブル
         if db_type == 'postgresql':
@@ -229,7 +274,7 @@ def init_database():
                 )
             ''')
         conn.commit()
-        print("✓ T_テナント管理者_テナントテーブルを作成しました")
+        print("✓ T_テナント管理者_テナントテーブルを確認しました")
         
         # ===== アプリケーション固有テーブル =====
         
@@ -260,7 +305,7 @@ def init_database():
                 )
             ''')
         conn.commit()
-        print("✓ T_店舗_アンケート設定テーブルを作成しました")
+        print("✓ T_店舗_アンケート設定テーブルを確認しました")
         
         # 9. T_店舗_Google設定テーブル
         if db_type == 'postgresql':
@@ -287,7 +332,7 @@ def init_database():
                 )
             ''')
         conn.commit()
-        print("✓ T_店舗_Google設定テーブルを作成しました")
+        print("✓ T_店舗_Google設定テーブルを確認しました")
         
         # 10. T_店舗_スロット設定テーブル
         if db_type == 'postgresql':
@@ -314,7 +359,7 @@ def init_database():
                 )
             ''')
         conn.commit()
-        print("✓ T_店舗_スロット設定テーブルを作成しました")
+        print("✓ T_店舗_スロット設定テーブルを確認しました")
         
         # 11. T_店舗_景品設定テーブル
         if db_type == 'postgresql':
@@ -339,7 +384,7 @@ def init_database():
                 )
             ''')
         conn.commit()
-        print("✓ T_店舗_景品設定テーブルを作成しました")
+        print("✓ T_店舗_景品設定テーブルを確認しました")
         
         # 12. T_アンケート回答テーブル
         if db_type == 'postgresql':
@@ -374,9 +419,50 @@ def init_database():
                 )
             ''')
         conn.commit()
-        print("✓ T_アンケート回答テーブルを作成しました")
+        print("✓ T_アンケート回答テーブルを確認しました")
         
-        print("=" * 60)
+        # ===== 既存テーブルへのカラム追加（アップデート対応） =====
+        print("\n" + "-" * 60)
+        print("既存テーブルのカラム確認・追加を開始します")
+        print("-" * 60)
+        
+        # T_テナントテーブルのカラム追加
+        if table_exists(cur, 'T_テナント', db_type):
+            add_column_if_not_exists(cur, conn, 'T_テナント', 'openai_api_key', 'TEXT DEFAULT NULL', db_type)
+            add_column_if_not_exists(cur, conn, 'T_テナント', 'updated_at', 'TIMESTAMP DEFAULT NULL', db_type)
+        
+        # T_店舗テーブルのカラム追加
+        if table_exists(cur, 'T_店舗', db_type):
+            add_column_if_not_exists(cur, conn, 'T_店舗', 'openai_api_key', 'TEXT DEFAULT NULL', db_type)
+            add_column_if_not_exists(cur, conn, 'T_店舗', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP', db_type)
+        
+        # T_管理者テーブルのカラム追加
+        if table_exists(cur, 'T_管理者', db_type):
+            add_column_if_not_exists(cur, conn, 'T_管理者', 'email', 'TEXT', db_type)
+            add_column_if_not_exists(cur, conn, 'T_管理者', 'is_owner', 'INTEGER DEFAULT 0', db_type)
+            add_column_if_not_exists(cur, conn, 'T_管理者', 'can_manage_admins', 'INTEGER DEFAULT 0', db_type)
+            add_column_if_not_exists(cur, conn, 'T_管理者', 'active', 'INTEGER DEFAULT 1', db_type)
+            add_column_if_not_exists(cur, conn, 'T_管理者', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP', db_type)
+        
+        # T_店舗_アンケート設定テーブルのカラム追加
+        if table_exists(cur, 'T_店舗_アンケート設定', db_type):
+            add_column_if_not_exists(cur, conn, 'T_店舗_アンケート設定', 'openai_api_key', 'TEXT DEFAULT NULL', db_type)
+            add_column_if_not_exists(cur, conn, 'T_店舗_アンケート設定', 'title', "TEXT DEFAULT 'お店アンケート'", db_type)
+        
+        # T_店舗_スロット設定テーブルのカラム追加
+        if table_exists(cur, 'T_店舗_スロット設定', db_type):
+            add_column_if_not_exists(cur, conn, 'T_店舗_スロット設定', 'openai_api_key', 'TEXT DEFAULT NULL', db_type)
+        
+        # T_アンケート回答テーブルのカラム追加
+        if table_exists(cur, 'T_アンケート回答', db_type):
+            add_column_if_not_exists(cur, conn, 'T_アンケート回答', 'generated_review', 'TEXT', db_type)
+            add_column_if_not_exists(cur, conn, 'T_アンケート回答', 'response_json', 'TEXT', db_type)
+            add_column_if_not_exists(cur, conn, 'T_アンケート回答', 'visit_purpose', 'TEXT', db_type)
+            add_column_if_not_exists(cur, conn, 'T_アンケート回答', 'atmosphere', 'TEXT', db_type)
+            add_column_if_not_exists(cur, conn, 'T_アンケート回答', 'recommend', 'TEXT', db_type)
+            add_column_if_not_exists(cur, conn, 'T_アンケート回答', 'comment', 'TEXT', db_type)
+        
+        print("\n" + "=" * 60)
         print(f"✓ データベース初期化が完了しました ({db_type})")
         print("=" * 60)
         
