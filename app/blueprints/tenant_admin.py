@@ -1402,3 +1402,72 @@ def fix_owner():
     ensure_tenant_owner(tenant_id)
     
     return f"テナント {tenant_id} のオーナー設定を実行しました。<br><a href='/tenant_admin/tenant_admins'>テナント管理者一覧に戻る</a>"
+
+
+@bp.route('/check_owner')
+@require_roles(ROLES["TENANT_ADMIN"], ROLES["SYSTEM_ADMIN"])
+def check_owner():
+    """現在のユーザーのオーナー状態を確認"""
+    user_id = session.get('user_id')
+    tenant_id = session.get('tenant_id')
+    session_is_owner = session.get('is_owner')
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # データベースの状態を確認
+    cur.execute(_sql(conn, '''
+        SELECT id, login_id, name, role, is_owner, can_manage_admins
+        FROM "T_管理者"
+        WHERE id = %s
+    '''), (user_id,))
+    row = cur.fetchone()
+    
+    if row:
+        db_info = f"""
+        <h2>データベースの状態</h2>
+        <ul>
+            <li>ID: {row[0]}</li>
+            <li>ログインID: {row[1]}</li>
+            <li>名前: {row[2]}</li>
+            <li>ロール: {row[3]}</li>
+            <li>is_owner: {row[4]}</li>
+            <li>can_manage_admins: {row[5]}</li>
+        </ul>
+        """
+    else:
+        db_info = "<p>ユーザーが見つかりません</p>"
+    
+    # テナント内のテナント管理者数を確認
+    cur.execute(_sql(conn, '''
+        SELECT COUNT(*) FROM "T_管理者"
+        WHERE tenant_id = %s AND role = 'tenant_admin'
+    '''), (tenant_id,))
+    tenant_admin_count = cur.fetchone()[0]
+    
+    conn.close()
+    
+    session_info = f"""
+    <h2>セッションの状態</h2>
+    <ul>
+        <li>user_id: {user_id}</li>
+        <li>tenant_id: {tenant_id}</li>
+        <li>is_owner: {session_is_owner}</li>
+        <li>role: {session.get('role')}</li>
+    </ul>
+    
+    <h2>テナント情報</h2>
+    <ul>
+        <li>テナント内のテナント管理者数: {tenant_admin_count}</li>
+    </ul>
+    """
+    
+    return f"""
+    <h1>オーナー状態確認</h1>
+    {db_info}
+    {session_info}
+    <br>
+    <a href="/tenant_admin/fix_owner">オーナー設定を実行</a> |
+    <a href="/tenant_admin/tenant_admins">テナント管理者一覧に戻る</a> |
+    <a href="/logout">ログアウト</a>
+    """
