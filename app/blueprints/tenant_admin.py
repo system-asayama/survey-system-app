@@ -969,7 +969,7 @@ def tenant_admin_edit(tadmin_id):
     # システム管理者の場合、全テナント一覧を取得
     tenants = []
     if is_system_admin:
-        cur.execute(_sql(conn, 'SELECT id, name FROM "T_テナント" WHERE active = 1 ORDER BY name'))
+        cur.execute(_sql(conn, 'SELECT id, "名称" FROM "T_テナント" WHERE "有効" = 1 ORDER BY "名称"'))
         tenants = [{'id': row[0], 'name': row[1]} for row in cur.fetchall()]
     
     if request.method == 'POST':
