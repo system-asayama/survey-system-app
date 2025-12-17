@@ -722,7 +722,7 @@ def employees():
     cur = conn.cursor()
     
     cur.execute(_sql(conn, '''
-        SELECT id, login_id, name, email, created_at, active 
+        SELECT id, login_id, name, email, created_at 
         FROM "T_従業員" 
         WHERE tenant_id = %s 
         ORDER BY id
@@ -736,7 +736,7 @@ def employees():
             'name': row[2],
             'email': row[3],
             'created_at': row[4],
-            'active': row[5]
+            'active': 1  # T_従業員テーブルにactiveカラムがないため、常に有効とする
         })
     conn.close()
     

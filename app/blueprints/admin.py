@@ -514,7 +514,7 @@ def employees():
     
     # 選択中の店舗に所属する従業員を取得
     cur.execute(_sql(conn, '''
-        SELECT DISTINCT e.id, e.login_id, e.name, e.email, e.created_at, e.active
+        SELECT DISTINCT e.id, e.login_id, e.name, e.email, e.created_at
         FROM "T_従業員" e
         INNER JOIN "T_従業員_店舗" es ON e.id = es.employee_id
         WHERE es.store_id = %s
@@ -541,7 +541,7 @@ def employees():
             'name': row[2],
             'email': row[3],
             'created_at': row[4],
-            'active': row[5],
+            'active': 1,  # T_従業員テーブルにactiveカラムがないため、常に有効とする
             'stores': stores
         })
     
