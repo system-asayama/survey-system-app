@@ -32,18 +32,17 @@
     <div class="row">
       <label style="font-weight:bold">勤務する店舗（複数選択可）</label>
       {% if stores %}
-        <div style="border:1px solid #ccc;padding:12px">
+        <table style="border-collapse:collapse;width:100%">
           {% for store in stores %}
-          <div style="margin-bottom:8px">
-            <label style="display:flex;align-items:center;cursor:pointer">
+          <tr>
+            <td style="border:1px solid #ccc;padding:8px;text-align:center;width:40px">
               <input type="checkbox" name="store_ids" value="{{ store.id }}" 
-                     {% if store.id in employee_store_ids %}checked{% endif %}
-                     style="margin-right:8px;flex-shrink:0">
-              <span>{{ store.名称 }}</span>
-            </label>
-          </div>
+                     {% if store.id in employee_store_ids %}checked{% endif %}>
+            </td>
+            <td style="border:1px solid #ccc;padding:8px">{{ store.名称 }}</td>
+          </tr>
           {% endfor %}
-        </div>
+        </table>
       {% else %}
         <p style="color:#999">店舗が登録されていません。</p>
       {% endif %}
