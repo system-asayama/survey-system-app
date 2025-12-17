@@ -504,6 +504,72 @@ def admin_transfer_owner(admin_id):
     return redirect(url_for('admin.admins'))
 
 
+@bp.route('/admins/<int:admin_id>/toggle_manage_permission', methods=['POST'])
+@require_roles(ROLES["ADMIN"], ROLES["TENANT_ADMIN"], ROLES["SYSTEM_ADMIN"])
+def toggle_admin_manage_permission(admin_id):
+    """管理者管理権限の付与・剥奪"""
+    tenant_id = session.get('tenant_id')
+    user_id = session.get('user_id')
+    role = session.get('role')
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # 権限チェック（システム管理者とテナント管理者は無条件で許可）
+    if role != 'system_admin' and role != 'tenant_admin':
+        # 店舗管理者の場合はオーナー権限チェック
+        cur.execute(_sql(conn, 'SELECT is_owner FROM "T_管理者" WHERE id = %s'), (user_id,))
+        row = cur.fetchone()
+        if not row or row[0] != 1:
+            flash('管理者管理権限を変更する権限がありません', 'error')
+            conn.close()
+            return redirect(url_for('admin.admins'))
+    
+    # 自分自身の権限は変更できない
+    if admin_id == user_id:
+        flash('自分自身の権限は変更できません', 'error')
+        conn.close()
+        return redirect(url_for('admin.admins'))
+    
+    # 現在の状態を取得
+    cur.execute(_sql(conn, '''
+        SELECT can_manage_admins, name, is_owner
+        FROM "T_管理者" 
+        WHERE id = %s AND tenant_id = %s AND role = %s
+    '''), (admin_id, tenant_id, ROLES["ADMIN"]))
+    row = cur.fetchone()
+    
+    if not row:
+        flash('管理者が見つかりません', 'error')
+        conn.close()
+        return redirect(url_for('admin.admins'))
+    
+    # オーナーの権限は変更できない
+    if row[2] == 1:
+        flash('オーナーの権限は変更できません', 'error')
+        conn.close()
+        return redirect(url_for('admin.admins'))
+    
+    current_permission = row[0]
+    admin_name = row[1]
+    new_permission = 0 if current_permission == 1 else 1
+    
+    # 権限を切り替え
+    cur.execute(_sql(conn, '''
+        UPDATE "T_管理者"
+        SET can_manage_admins = %s
+        WHERE id = %s
+    '''), (new_permission, admin_id))
+    conn.commit()
+    conn.close()
+    
+    if new_permission == 1:
+        flash(f'{admin_name} に管理者管理権限を付与しました', 'success')
+    else:
+        flash(f'{admin_name} から管理者管理権限を剥奪しました', 'success')
+    
+    return redirect(url_for('admin.admins'))
+
+
 # ========================================
 # 従業員管理
 # ========================================

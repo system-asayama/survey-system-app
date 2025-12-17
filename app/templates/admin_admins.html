@@ -55,23 +55,52 @@
       <td style="padding:8px;white-space:nowrap">
         {% if admin.id == current_user_id %}
           <span style="color:#999">（自分）</span>
-        {% else %}
+        {% elif is_system_admin or is_tenant_admin %}
+          {# システム管理者・テナント管理者は全ての店舗管理者を編集可能 #}
           <a class="btn small" href="{{ url_for('admin.admin_edit', admin_id=admin.id) }}" style="font-size:0.9em;padding:4px 8px">編集</a>
-          {% if is_system_admin or is_tenant_admin %}
-            {# システム管理者・テナント管理者は全ての管理者にオーナー移譲可能 #}
-            <form method="post" action="{{ url_for('admin.admin_transfer_owner', admin_id=admin.id) }}" style="display:inline" onsubmit="return confirm('{{ admin.name }} にオーナー権限を移譲しますか？');">
-              <button class="btn small" type="submit" style="background:#ff6f00;font-size:0.9em;padding:4px 8px">オーナー移譲</button>
-            </form>
-          {% elif is_owner and admin.is_owner != 1 %}
-            <form method="post" action="{{ url_for('admin.admin_transfer_owner', admin_id=admin.id) }}" style="display:inline" onsubmit="return confirm('この管理者にオーナー権限を移譲しますか？移譲後はあなたはオーナーではなくなります。');">
-              <button class="btn small" type="submit" style="background:#ff6f00;font-size:0.9em;padding:4px 8px">オーナー移譲</button>
-            </form>
-          {% endif %}
+          
           {% if admin.is_owner != 1 %}
-            <form method="post" action="{{ url_for('admin.admin_delete', admin_id=admin.id) }}" style="display:inline" onsubmit="return confirm('本当に削除しますか？');">
-              <button class="btn small" type="submit" style="background:#d32f2f;font-size:0.9em;padding:4px 8px">削除</button>
-            </form>
+          <form method="post" action="{{ url_for('admin.toggle_admin_manage_permission', admin_id=admin.id) }}" style="display:inline">
+            {% if get_csrf %}<input type="hidden" name="csrf_token" value="{{ get_csrf() }}">{% endif %}
+            <button class="btn small" type="submit" style="background:{% if admin.can_manage_admins == 1 %}#999{% else %}#4caf50{% endif %};font-size:0.9em;padding:4px 8px">
+              {% if admin.can_manage_admins == 1 %}権限剥奪{% else %}権限付与{% endif %}
+            </button>
+          </form>
+          
+          <form method="post" action="{{ url_for('admin.admin_transfer_owner', admin_id=admin.id) }}" style="display:inline" onsubmit="return confirm('{{ admin.name }} にオーナー権限を移譲しますか？');">
+            {% if get_csrf %}<input type="hidden" name="csrf_token" value="{{ get_csrf() }}">{% endif %}
+            <button class="btn small" type="submit" style="background:#ff6f00;font-size:0.9em;padding:4px 8px">オーナー移譲</button>
+          </form>
+          
+          <form method="post" action="{{ url_for('admin.admin_delete', admin_id=admin.id) }}" style="display:inline" onsubmit="return confirm('本当に削除しますか？');">
+            {% if get_csrf %}<input type="hidden" name="csrf_token" value="{{ get_csrf() }}">{% endif %}
+            <button class="btn small" type="submit" style="background:#d32f2f;font-size:0.9em;padding:4px 8px">削除</button>
+          </form>
           {% endif %}
+        {% elif admin.is_owner != 1 %}
+          {# 店舗管理者はオーナー以外を編集可能 #}
+          <a class="btn small" href="{{ url_for('admin.admin_edit', admin_id=admin.id) }}" style="font-size:0.9em;padding:4px 8px">編集</a>
+          
+          {% if is_owner %}
+          <form method="post" action="{{ url_for('admin.toggle_admin_manage_permission', admin_id=admin.id) }}" style="display:inline">
+            {% if get_csrf %}<input type="hidden" name="csrf_token" value="{{ get_csrf() }}">{% endif %}
+            <button class="btn small" type="submit" style="background:{% if admin.can_manage_admins == 1 %}#999{% else %}#4caf50{% endif %};font-size:0.9em;padding:4px 8px">
+              {% if admin.can_manage_admins == 1 %}権限剥奪{% else %}権限付与{% endif %}
+            </button>
+          </form>
+          
+          <form method="post" action="{{ url_for('admin.admin_transfer_owner', admin_id=admin.id) }}" style="display:inline" onsubmit="return confirm('この管理者にオーナー権限を移譲しますか？移譲後はあなたはオーナーではなくなります。');">
+            {% if get_csrf %}<input type="hidden" name="csrf_token" value="{{ get_csrf() }}">{% endif %}
+            <button class="btn small" type="submit" style="background:#ff6f00;font-size:0.9em;padding:4px 8px">オーナー移譲</button>
+          </form>
+          
+          <form method="post" action="{{ url_for('admin.admin_delete', admin_id=admin.id) }}" style="display:inline" onsubmit="return confirm('本当に削除しますか？');">
+            {% if get_csrf %}<input type="hidden" name="csrf_token" value="{{ get_csrf() }}">{% endif %}
+            <button class="btn small" type="submit" style="background:#d32f2f;font-size:0.9em;padding:4px 8px">削除</button>
+          </form>
+          {% endif %}
+        {% else %}
+          <span style="color:#999">オーナーは編集のみ可能</span>
         {% endif %}
       </td>
     </tr>
