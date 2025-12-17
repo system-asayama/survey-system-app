@@ -901,7 +901,8 @@ def tenant_admins():
         })
     conn.close()
     
-    return render_template('tenant_tenant_admins.html', tenant_admins=tenant_admins_list)
+    current_user_id = session.get('user_id')
+    return render_template('tenant_tenant_admins.html', tenant_admins=tenant_admins_list, current_user_id=current_user_id)
 
 
 @bp.route('/tenant_admins/new', methods=['GET', 'POST'])

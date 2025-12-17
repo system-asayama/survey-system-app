@@ -23,7 +23,7 @@
   </thead>
   <tbody>
     {% for ta in tenant_admins %}
-    <tr>
+    <tr{% if ta.is_owner == 1 %} style="background-color: #fffde7;"{% endif %}>
       <td>{{ ta.id }}</td>
       <td>{{ ta.login_id }}</td>
       <td>{{ ta.name }}</td>
@@ -46,9 +46,11 @@
       </td>
       <td>{{ ta.created_at }}</td>
       <td>
-        <a class="btn small" href="{{ url_for('tenant_admin.tenant_admin_edit', tadmin_id=ta.id) }}">編集</a>
-        
-        {% if ta.is_owner != 1 %}
+        {% if ta.id == current_user_id %}
+          <span style="color: #666;">（自分）</span>
+        {% elif ta.is_owner != 1 %}
+          <a class="btn small" href="{{ url_for('tenant_admin.tenant_admin_edit', tadmin_id=ta.id) }}">編集</a>
+          
           <form method="post" action="{{ url_for('tenant_admin.toggle_tenant_admin_manage_permission', tadmin_id=ta.id) }}" style="display:inline">
             {% if get_csrf %}<input type="hidden" name="csrf_token" value="{{ get_csrf() }}">{% endif %}
             {% if ta.can_manage_admins == 1 %}
