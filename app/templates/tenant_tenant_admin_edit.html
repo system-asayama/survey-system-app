@@ -30,14 +30,14 @@
     <input type="password" id="password_confirm" name="password_confirm" placeholder="もう一度入力">
   </div>
   
-  {% if session.get('role') == 'system_admin' %}
+  {% if tadmin.is_owner == 1 %}
   <div class="form-group">
-    <label>
-      <input type="checkbox" name="is_owner" value="1" {% if tadmin.is_owner %}checked{% endif %} style="margin-right:8px">
-      オーナー権限（テナント内の最高管理者）
-    </label>
+    <p style="color:#ff6f00;font-weight:bold">★ オーナー権限あり</p>
+    <small style="color:#666">オーナー権限の移譲は一覧画面から行ってください。</small>
   </div>
+  {% endif %}
   
+  {% if session.get('role') == 'system_admin' %}
   <div class="form-group">
     <label for="tenants">管理するテナント <span style="color:red">*</span></label>
     <div style="border:1px solid #ddd;padding:12px;border-radius:4px;max-height:200px;overflow-y:auto">

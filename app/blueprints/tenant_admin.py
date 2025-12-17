@@ -980,14 +980,10 @@ def tenant_admin_edit(tadmin_id):
         active = int(request.form.get('active', 1))
         tenant_ids = request.form.getlist('tenant_ids') if is_system_admin else [str(tenant_id)]
         
-        # システム管理者のみオーナー権限を変更可能
-        if is_system_admin:
-            is_owner = 1 if request.form.get('is_owner') else 0
-        else:
-            # テナント管理者はオーナー権限を変更できない
-            cur.execute(_sql(conn, 'SELECT is_owner FROM "T_管理者" WHERE id = %s'), (tadmin_id,))
-            row_owner = cur.fetchone()
-            is_owner = row_owner[0] if row_owner else 0
+        # オーナー権限は編集画面では変更できない（一覧画面の「オーナー移譲」で変更）
+        cur.execute(_sql(conn, 'SELECT is_owner FROM "T_管理者" WHERE id = %s'), (tadmin_id,))
+        row_owner = cur.fetchone()
+        is_owner = row_owner[0] if row_owner else 0
         
         if not login_id or not name:
             flash('ログインIDと氏名は必須です', 'error')
