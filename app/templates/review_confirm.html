@@ -15,6 +15,11 @@
       margin: 1.5rem 0;
       position: relative;
     }
+    .review-header {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 0.75rem;
+    }
     .review-text {
       font-size: 1.1rem;
       line-height: 1.8;
@@ -23,9 +28,6 @@
       word-wrap: break-word;
     }
     .copy-btn {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
       padding: 0.5rem 1rem;
       background: #6366f1;
       color: white;
@@ -34,6 +36,7 @@
       cursor: pointer;
       font-size: 0.9rem;
       transition: background 0.2s;
+      flex-shrink: 0;
     }
     .copy-btn:hover {
       background: #4f46e5;
@@ -84,10 +87,11 @@
       .action-buttons button {
         width: 100%;
       }
+      .review-header {
+        justify-content: center;
+      }
       .copy-btn {
-        position: static;
         width: 100%;
-        margin-top: 1rem;
       }
     }
   </style>
@@ -117,7 +121,9 @@
       <!-- AIが生成した口コミ文 -->
       <h3 style="margin-top:1.5rem;margin-bottom:0.75rem">AIが作成した口コミ投稿文</h3>
       <div class="review-box">
-        <button class="copy-btn" id="copy-btn" onclick="copyReview()">コピー</button>
+        <div class="review-header">
+          <button class="copy-btn" id="copy-btn" onclick="copyReview()">コピー</button>
+        </div>
         <div class="review-text" id="review-text">{{ generated_review }}</div>
       </div>
 
