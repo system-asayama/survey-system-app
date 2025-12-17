@@ -329,3 +329,30 @@ def calc_prob():
         "tmax": tmax,
         "spins": spins
     })
+
+
+# 店舗別ルート（デモプレイ用）
+@bp.get("/store/<slug>/config")
+def get_config_with_slug(slug):
+    """店舗別スロット設定を取得"""
+    cfg = load_config()
+    return jsonify({
+        "symbols": [asdict(s) for s in cfg.symbols],
+        "reels": cfg.reels,
+        "base_bet": cfg.base_bet,
+        "expected_total_5": cfg.expected_total_5
+    })
+
+
+@bp.post("/store/<slug>/spin")
+def spin_with_slug(slug):
+    """店舗別スロット実行"""
+    # 既存の spin() 関数と同じロジックを使用
+    return spin()
+
+
+@bp.post("/store/<slug>/calc_prob")
+def calc_prob_with_slug(slug):
+    """店舗別確率計算"""
+    # 既存の calc_prob() 関数と同じロジックを使用
+    return calc_prob()
