@@ -14,9 +14,9 @@
       <th>ID</th>
       <th>ログインID</th>
       <th>氏名</th>
-      <th>状態</th>
       <th>オーナー</th>
       <th>管理権限</th>
+      <th>有効</th>
       <th>作成日時</th>
       <th>操作</th>
     </tr>
@@ -27,7 +27,6 @@
       <td>{{ ta.id }}</td>
       <td>{{ ta.login_id }}</td>
       <td>{{ ta.name }}</td>
-      <td>{{ '有効' if ta.active == 1 else '無効' }}</td>
       <td>
         {% if ta.is_owner == 1 %}
           <span style="color: #dc3545; font-weight: bold;">★ オーナー</span>
@@ -39,9 +38,16 @@
         {% if ta.is_owner == 1 %}
           <span style="color: #999;">(常に有)</span>
         {% elif ta.can_manage_admins == 1 %}
-          <span style="color: #28a745; font-weight: bold;">✓ 管理権限あり</span>
+          <span style="color: #28a745; font-weight: bold;">✓ 有</span>
         {% else %}
-          <span style="color: #666;">管理権限なし</span>
+          <span style="color: #666;">無</span>
+        {% endif %}
+      </td>
+      <td>
+        {% if ta.active == 1 %}
+          <span style="color: #28a745;">✓ 有効</span>
+        {% else %}
+          <span style="color: #dc3545;">無効</span>
         {% endif %}
       </td>
       <td>{{ ta.created_at }}</td>
