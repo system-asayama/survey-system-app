@@ -157,17 +157,22 @@ document.addEventListener('DOMContentLoaded', () => {
       if (result.ok) {
         console.log('DEBUG: Server response:', result);
         // メッセージを表示
-        alert(result.message);
+        let alertMessage = result.message;
         
-        // 口コミ投稿文がある場合は追加で表示
-        if (result.generated_review) {
-          alert('以下の口コミ投稿文を生成しました：\n\n' + result.generated_review);
+        // 口コミ投稿文がある場合はメッセージに追加 (サーバーは review_text を返す)
+        if (result.review_text) {
+          alertMessage += '\n\n生成された口コミ投稿文\n' + result.review_text;
         }
         
-        // リダイレクトURLがある場合は遷移
+        alert(alertMessage);
+        
+        // リダイレクトURLがある場合は遷移 (alert()が閉じられた後に確実に実行)
         if (result.redirect_url) {
           console.log('DEBUG: Redirecting to:', result.redirect_url);
-          window.location.href = result.redirect_url;
+          // alert()が閉じられた後に確実にリダイレクトを実行
+          setTimeout(function() {
+            window.location.href = result.redirect_url;
+          }, 100);
         } else {
           // フォームをリセット
           form.reset();
