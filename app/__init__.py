@@ -118,6 +118,18 @@ def create_app() -> Flask:
     except Exception as e:
         print(f"⚠️ survey_admin blueprint 登録エラー: {e}")
 
+    # 店舗スロット設定ルート
+    try:
+        import sys
+        root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        if root_dir not in sys.path:
+            sys.path.insert(0, root_dir)
+        from store_slot_settings_routes import register_store_slot_settings_routes
+        register_store_slot_settings_routes(app)
+        print("✅ 店舗スロット設定ルート登録完了")
+    except Exception as e:
+        print(f"⚠️ 店舗スロット設定ルート登録エラー: {e}")
+
     # エラーハンドラ
     @app.errorhandler(404)
     def not_found(error):
