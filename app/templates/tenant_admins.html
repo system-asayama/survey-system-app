@@ -68,14 +68,12 @@
               <button class="btn small" type="submit" style="background:#4caf50;font-size:0.9em;padding:4px 8px">権限付与</button>
             {% endif %}
           </form>
-          {% endif %}
           
           <form method="post" action="{{ url_for('tenant_admin.transfer_admin_ownership', admin_id=a.id) }}" style="display:inline" onsubmit="return confirm('{{ a.name }} にオーナー権限を移譲しますか？')">
             {% if get_csrf %}<input type="hidden" name="csrf_token" value="{{ get_csrf() }}">{% endif %}
             <button class="btn small" type="submit" style="background:#ff9800;font-size:0.9em;padding:4px 8px">オーナー移譲</button>
           </form>
           
-          {% if a.is_owner != 1 %}
           <form method="post" action="{{ url_for('tenant_admin.admin_delete', admin_id=a.id) }}" style="display:inline" onsubmit="return confirm('本当に削除しますか？')">
             {% if get_csrf %}<input type="hidden" name="csrf_token" value="{{ get_csrf() }}">{% endif %}
             <button class="btn small" type="submit" style="background:#d32f2f;font-size:0.9em;padding:4px 8px">削除</button>
