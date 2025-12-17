@@ -158,11 +158,11 @@ def admin_login():
         conn = get_db()
         try:
             cur = conn.cursor()
-            sql = _sql(conn, 'SELECT id, name, password_hash, tenant_id FROM "T_管理者" WHERE login_id=%s AND role=%s')
+            sql = _sql(conn, 'SELECT id, name, password_hash, tenant_id, is_owner FROM "T_管理者" WHERE login_id=%s AND role=%s')
             cur.execute(sql, (login_id, ROLES["ADMIN"]))
             row = cur.fetchone()
             if row and check_password_hash(row[2], password):
-                user_id, name, tenant_id = row[0], row[1], row[3]
+                user_id, name, tenant_id, is_owner = row[0], row[1], row[3], row[4]
                 if not tenant_id:
                     error = "この管理者にはテナントが紐づいていません。"
                 else:
@@ -172,6 +172,7 @@ def admin_login():
                     session['tenant_id'] = tenant_id
                     session['role'] = ROLES["ADMIN"]
                     session['store_id'] = None  # 店舗未選択
+                    session['is_owner'] = (is_owner == 1)
                     return redirect(url_for('admin.mypage'))
             else:
                 error = "ログインIDまたはパスワードが違います"
