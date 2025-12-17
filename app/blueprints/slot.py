@@ -71,6 +71,56 @@ def slot_page():
     return render_template('slot.html', survey_complete_message=survey_complete_message, prizes=prizes, store_slug=store_slug)
 
 
+@bp.get("/store/<slug>/slot")
+def slot_page_with_slug(slug):
+    """店舗別スロットページ (デモプレイ用)"""
+    import store_db
+    import sys
+    
+    # demoパラメータを確認
+    is_demo = request.args.get('demo', '').lower() == 'true'
+    
+    sys.stderr.write(f"DEBUG slot_page_with_slug: slug={slug}, is_demo={is_demo}\n")
+    sys.stderr.flush()
+    
+    # store_slugからstore_idを取得
+    store_id = None
+    try:
+        conn = store_db.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT "id" FROM "T_店舗" WHERE "slug" = %s', (slug,))
+        result = cursor.fetchone()
+        if result:
+            store_id = result[0]
+        conn.close()
+    except Exception as e:
+        sys.stderr.write(f"Error getting store_id: {e}\n")
+        sys.stderr.flush()
+    
+    # デモモードの場合はアンケートチェックをスキップ
+    if not is_demo:
+        # アンケート未回答の場合はアンケートページへリダイレクト
+        survey_completed = session.get(f'survey_completed_{store_id}') if store_id else session.get('survey_completed')
+        if not survey_completed:
+            return redirect(url_for('survey', store_slug=slug))
+    
+    # 設定ファイルからメッセージと景品データを読み込み
+    import json
+    settings_path = os.path.join(DATA_DIR, "settings.json")
+    survey_complete_message = "アンケートにご協力いただきありがとうございます！スロットをお楽しみください。"
+    prizes = []
+    
+    if os.path.exists(settings_path):
+        with open(settings_path, "r", encoding="utf-8") as f:
+            settings = json.load(f)
+            survey_complete_message = settings.get("survey_complete_message", survey_complete_message)
+            prizes = settings.get("prizes", [])
+    
+    sys.stderr.write(f"DEBUG slot_page_with_slug: rendering with slug={slug}\n")
+    sys.stderr.flush()
+    return render_template('slot.html', survey_complete_message=survey_complete_message, prizes=prizes, store_slug=slug, is_demo=is_demo)
+
+
 @bp.get("/config")
 def get_config():
     """スロット設定を取得"""
