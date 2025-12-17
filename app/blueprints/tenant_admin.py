@@ -1383,3 +1383,22 @@ def select_store_from_mypage():
     flash(f'{store_name} を選択しました', 'success')
     
     return redirect(url_for('admin.dashboard'))
+
+
+# ========================================
+# 一時的なオーナー設定エンドポイント（デバッグ用）
+# ========================================
+
+@bp.route('/fix_owner')
+@require_roles(ROLES["TENANT_ADMIN"], ROLES["SYSTEM_ADMIN"])
+def fix_owner():
+    """テナント管理者が一人の場合、自動的にオーナーに設定"""
+    tenant_id = session.get('tenant_id')
+    
+    if not tenant_id:
+        return "テナントIDが見つかりません", 400
+    
+    # ensure_tenant_ownerを実行
+    ensure_tenant_owner(tenant_id)
+    
+    return f"テナント {tenant_id} のオーナー設定を実行しました。<br><a href='/tenant_admin/tenant_admins'>テナント管理者一覧に戻る</a>"
