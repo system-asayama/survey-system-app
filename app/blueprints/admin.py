@@ -491,8 +491,8 @@ def admin_transfer_owner(admin_id):
     if not row:
         flash('管理者が見つかりません', 'error')
     else:
-        # 現在のオーナーの権限を解除（can_manage_adminsも解除）
-        cur.execute(_sql(conn, 'UPDATE "T_管理者" SET is_owner = 0, can_manage_admins = 0 WHERE id = %s'), (user_id,))
+        # 現在のオーナーの権限を解除（同じテナント・同じロールの全オーナーを解除）
+        cur.execute(_sql(conn, 'UPDATE "T_管理者" SET is_owner = 0, can_manage_admins = 0 WHERE tenant_id = %s AND role = %s AND is_owner = 1'), (tenant_id, ROLES["ADMIN"]))
         # 新しいオーナーに権限を付与
         cur.execute(_sql(conn, 'UPDATE "T_管理者" SET is_owner = 1, can_manage_admins = 1 WHERE id = %s'), (admin_id,))
         conn.commit()

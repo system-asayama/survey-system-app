@@ -641,6 +641,7 @@ def transfer_ownership(admin_id):
     # 全てのis_ownerを0にしてから、指定したユーザーを1にする
     cur.execute(_sql(conn, 'UPDATE "T_管理者" SET is_owner = 0 WHERE role = %s'), (ROLES["SYSTEM_ADMIN"],))
     cur.execute(_sql(conn, 'UPDATE "T_管理者" SET is_owner = 1 WHERE id = %s'), (admin_id,))
+    conn.commit()
     conn.close()
     
     flash(f'オーナー権限を「{new_owner_name}」に移譲しました', 'success')
