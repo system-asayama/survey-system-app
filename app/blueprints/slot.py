@@ -376,8 +376,156 @@ def get_config_with_slug(slug):
 @bp.post("/store/<slug>/spin")
 def spin_with_slug(slug):
     """店舗別スロット実行"""
-    # 既存の spin() 関数と同じロジックを使用
-    return spin()
+    import store_db
+    import sys
+    import json
+    import copy
+    
+    cfg = load_config()
+    
+    # 確率の正規化
+    psum = sum(float(s.prob) for s in cfg.symbols) or 100.0
+    for s in cfg.symbols:
+        s.prob = float(s.prob) / psum * 100.0
+    
+    spins = []
+    total_payout = 0.0
+    miss_rate = cfg.miss_probability / 100.0
+    
+    # 通常シンボルとリーチ専用シンボルを分類
+    normal_symbols = [s for s in cfg.symbols if not (hasattr(s, 'is_reach') and s.is_reach)]
+    reach_symbols = [s for s in cfg.symbols if hasattr(s, 'is_reach') and s.is_reach]
+    
+    # 5回スピン
+    for _ in range(5):
+        # まずハズレかどうかを判定
+        if random.random() < miss_rate:
+            # ハズレ：1コマ目と2コマ目は必ず異なるシンボル
+            reel1 = random.choice(normal_symbols)
+            # reel2はreel1と異なるものを選ぶ
+            other_symbols = [s for s in normal_symbols if s.id != reel1.id]
+            if other_symbols:
+                reel2 = random.choice(other_symbols)
+            else:
+                reel2 = reel1  # シンボルが1つしかない場合
+            reel3 = random.choice(normal_symbols)
+            
+            spins.append({
+                "reels": [
+                    {"id": reel1.id, "label": reel1.label, "color": reel1.color},
+                    {"id": reel2.id, "label": reel2.label, "color": reel2.color},
+                    {"id": reel3.id, "label": reel3.label, "color": reel3.color}
+                ],
+                "matched": False,
+                "is_reach": False,
+                "payout": 0
+            })
+        else:
+            # 当たりまたはリーチハズレ：シンボルを確率で抽選
+            symbol = choice_by_prob(cfg.symbols)
+            
+            # リーチ専用シンボルの場合
+            is_reach_symbol = hasattr(symbol, 'is_reach') and symbol.is_reach
+            
+            if is_reach_symbol:
+                # リーチハズレ：1,2コマ目は同じ、3コマ目は必ず異なる
+                reach_symbol_id = symbol.reach_symbol if hasattr(symbol, 'reach_symbol') else symbol.id
+                # 元のシンボルを探す
+                original_symbol = next((s for s in normal_symbols if s.id == reach_symbol_id), symbol)
+                
+                # リール3用に異なるシンボルを選ぶ（リーチ専用シンボルも除外）
+                other_symbols = [s for s in normal_symbols if s.id != reach_symbol_id]
+                if other_symbols:
+                    reel3_symbol = random.choice(other_symbols)
+                else:
+                    reel3_symbol = original_symbol
+                
+                spins.append({
+                    "reels": [
+                        {"id": original_symbol.id, "label": original_symbol.label, "color": original_symbol.color},
+                        {"id": original_symbol.id, "label": original_symbol.label, "color": original_symbol.color},
+                        {"id": reel3_symbol.id, "label": reel3_symbol.label, "color": reel3_symbol.color}
+                    ],
+                    "matched": False,
+                    "is_reach": True,
+                    "reach_symbol": {"id": original_symbol.id, "label": original_symbol.label, "color": original_symbol.color},
+                    "payout": 0
+                })
+            else:
+                # 通常の当たり：3つ揃い
+                payout = symbol.payout_3
+                total_payout += payout
+                
+                spins.append({
+                    "reels": [
+                        {"id": symbol.id, "label": symbol.label, "color": symbol.color},
+                        {"id": symbol.id, "label": symbol.label, "color": symbol.color},
+                        {"id": symbol.id, "label": symbol.label, "color": symbol.color}
+                    ],
+                    "matched": True,
+                    "is_reach": False,
+                    "symbol": {"id": symbol.id, "label": symbol.label, "color": symbol.color},
+                    "payout": payout
+                })
+    
+    # 店舗固有の景品設定をデータベースから読み込んで景品判定
+    prize = None
+    try:
+        # store_slugからstore_idを取得
+        conn = store_db.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT "id" FROM "T_店舗" WHERE "slug" = %s', (slug,))
+        result = cursor.fetchone()
+        
+        if result:
+            store_id = result[0]
+            
+            # 景品設定を取得
+            cursor.execute('SELECT prizes_json FROM "T_店舗_景品設定" WHERE store_id = %s', (store_id,))
+            prizes_row = cursor.fetchone()
+            
+            if prizes_row and prizes_row[0]:
+                prizes = json.loads(prizes_row[0])
+                
+                # 点数範囲に該当する景品を探す
+                for p in prizes:
+                    min_score = p["min_score"]
+                    max_score = p.get("max_score")
+                    
+                    # max_scoreがNoneの場合は上限なし
+                    if max_score is None:
+                        if total_payout >= min_score:
+                            prize = {
+                                "rank": p["rank"],
+                                "name": p["name"]
+                            }
+                            break
+                    else:
+                        # min_score <= total_payout <= max_scoreの範囲内か確認
+                        if min_score <= total_payout <= max_score:
+                            prize = {
+                                "rank": p["rank"],
+                                "name": p["name"]
+                            }
+                            break
+        
+        conn.close()
+    except Exception as e:
+        sys.stderr.write(f"Error loading prizes for spin: {e}\n")
+        sys.stderr.flush()
+    
+    result = {
+        "ok": True, 
+        "spins": spins, 
+        "total_payout": total_payout,
+        "expected_total_5": cfg.expected_total_5, 
+        "ts": int(time.time())
+    }
+    
+    if prize:
+        result["prize"] = prize
+    
+    return jsonify(result)
 
 
 @bp.post("/store/<slug>/calc_prob")
