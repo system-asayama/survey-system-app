@@ -338,6 +338,10 @@ def admin_edit(admin_id):
         conn.close()
         return redirect(url_for('admin.dashboard'))
     
+    # 店舗一覧を取得
+    cur.execute(_sql(conn, 'SELECT id, 名称 FROM "T_店舗" WHERE tenant_id = %s AND 有効 = 1 ORDER BY 名称'), (tenant_id,))
+    stores = [{'id': row[0], '名称': row[1]} for row in cur.fetchall()]
+    
     if request.method == 'POST':
         login_id = request.form.get('login_id', '').strip()
         name = request.form.get('name', '').strip()
@@ -345,10 +349,14 @@ def admin_edit(admin_id):
         password = request.form.get('password', '').strip()
         password_confirm = request.form.get('password_confirm', '').strip()
         
+        store_ids = request.form.getlist('store_ids')
+        
         if not login_id or not name:
             flash('ログインIDと氏名は必須です', 'error')
         elif password and password != password_confirm:
             flash('パスワードが一致しません', 'error')
+        elif not store_ids:
+            flash('少なくとも1つの店舗を選択してください', 'error')
         else:
             # 重複チェック（自分以外）
             cur.execute(_sql(conn, 'SELECT id FROM "T_管理者" WHERE login_id = %s AND id != %s'), (login_id, admin_id))
@@ -370,6 +378,11 @@ def admin_edit(admin_id):
                         SET login_id = %s, name = %s, email = %s, updated_at = CURRENT_TIMESTAMP
                         WHERE id = %s AND tenant_id = %s AND role = %s
                     '''), (login_id, name, email, admin_id, tenant_id, ROLES["ADMIN"]))
+                
+                # 所属店舗を更新
+                cur.execute(_sql(conn, 'DELETE FROM "T_管理者_店舗" WHERE admin_id = %s'), (admin_id,))
+                for store_id in store_ids:
+                    cur.execute(_sql(conn, 'INSERT INTO "T_管理者_店舗" (admin_id, store_id) VALUES (%s, %s)'), (admin_id, int(store_id)))
                 
                 conn.commit()
                 flash('管理者情報を更新しました', 'success')
@@ -395,9 +408,13 @@ def admin_edit(admin_id):
         'name': row[2],
         'email': row[3]
     }
+    
+    # 現在の所属店舗を取得
+    cur.execute(_sql(conn, 'SELECT store_id FROM "T_管理者_店舗" WHERE admin_id = %s'), (admin_id,))
+    admin_store_ids = [row[0] for row in cur.fetchall()]
     conn.close()
     
-    return render_template('admin_admin_edit.html', admin=admin, back_url=url_for('admin.admins'))
+    return render_template('admin_admin_edit.html', admin=admin, stores=stores, admin_store_ids=admin_store_ids, back_url=url_for('admin.admins'))
 
 
 @bp.route('/admins/<int:admin_id>/transfer_owner', methods=['POST'])
