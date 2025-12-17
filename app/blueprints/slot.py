@@ -76,6 +76,7 @@ def slot_page_with_slug(slug):
     """店舗別スロットページ (デモプレイ用)"""
     import store_db
     import sys
+    import json
     
     # demoパラメータを確認
     is_demo = request.args.get('demo', '').lower() == 'true'
@@ -104,22 +105,50 @@ def slot_page_with_slug(slug):
         if not survey_completed:
             return redirect(url_for('survey', store_slug=slug))
     
-    # 設定ファイルからメッセージと景品データを読み込み
-    import json
-    settings_path = os.path.join(DATA_DIR, "settings.json")
-    survey_complete_message = "アンケートにご協力いただきありがとうございます！スロットをお楽しみください。"
+    # 店舗固有の景品設定をデータベースから読み込み
+    survey_complete_message = "ご来店ありがとうございます！アンケートに回答いただいた感謝を込めて、スロットゲームをプレゼント🎁"
     prizes = []
     
-    if os.path.exists(settings_path):
-        with open(settings_path, "r", encoding="utf-8") as f:
-            settings = json.load(f)
-            survey_complete_message = settings.get("survey_complete_message", survey_complete_message)
-            prizes = settings.get("prizes", [])
+    # 店舗IDが取得できた場合、データベースから景品設定を読み込む
+    if store_id:
+        try:
+            conn = store_db.get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute('SELECT prizes_json FROM "T_店舗_景品設定" WHERE store_id = %s', (store_id,))
+            prizes_row = cursor.fetchone()
+            
+            if prizes_row and prizes_row[0]:
+                prizes = json.loads(prizes_row[0])
+                sys.stderr.write(f"DEBUG: Loaded prizes from DB: {prizes}\n")
+                sys.stderr.flush()
+            else:
+                # デフォルトの景品設定
+                prizes = [
+                    {"min_score": 500, "rank": "🏆 特賞", "name": "コース料理・ドリンク飲み放題"},
+                    {"min_score": 300, "max_score": 499, "rank": "🏆 1等", "name": "人気メニュー3品セット"},
+                    {"min_score": 200, "max_score": 299, "rank": "🏆 2等", "name": "人気メニュー2品セット"},
+                    {"min_score": 100, "max_score": 199, "rank": "🏆 3等", "name": "お肉一品・ドリンク1杯"},
+                    {"min_score": 50, "max_score": 99, "rank": "🏆 4等", "name": "お肉一品"},
+                    {"min_score": 0, "max_score": 49, "rank": "🏆 5等", "name": "ドリンクまたはアイス"}
+                ]
+            
+            conn.close()
+        except Exception as e:
+            sys.stderr.write(f"Error loading prizes from DB: {e}\n")
+            sys.stderr.flush()
+            # エラー時はデフォルトの景品設定を使用
+            prizes = [
+                {"min_score": 500, "rank": "🏆 特賞", "name": "コース料理・ドリンク飲み放題"},
+                {"min_score": 300, "max_score": 499, "rank": "🏆 1等", "name": "人気メニュー3品セット"},
+                {"min_score": 200, "max_score": 299, "rank": "🏆 2等", "name": "人気メニュー2品セット"},
+                {"min_score": 100, "max_score": 199, "rank": "🏆 3等", "name": "お肉一品・ドリンク1杯"},
+                {"min_score": 50, "max_score": 99, "rank": "🏆 4等", "name": "お肉一品"},
+                {"min_score": 0, "max_score": 49, "rank": "🏆 5等", "name": "ドリンクまたはアイス"}
+            ]
     
     sys.stderr.write(f"DEBUG slot_page_with_slug: rendering with slug={slug}\n")
     sys.stderr.flush()
     return render_template('slot.html', survey_complete_message=survey_complete_message, prizes=prizes, store_slug=slug, is_demo=is_demo)
-
 
 @bp.get("/config")
 def get_config():
