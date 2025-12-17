@@ -19,7 +19,7 @@
       <h3>アンケートアプリ</h3>
       <p>アンケート回答後にスロットゲームを提供し、景品を獲得できるアプリです。アンケート設定もここから行えます。</p>
       <div class="app-actions">
-        <a href="{{ url_for('store_slot_settings', store_id=store.id) }}" class="btn btn-primary">設定</a>
+        <a href="/admin/store/{{ store.id }}/settings" class="btn btn-primary">設定</a>
         <a href="/store/{{ store.slug }}/survey" class="btn btn-secondary" target="_blank">プレビュー</a>
       </div>
       <div class="app-status">
