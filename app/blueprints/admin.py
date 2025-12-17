@@ -218,7 +218,9 @@ def admins():
         })
     conn.close()
     
-    return render_template('admin_admins.html', admins=admins_list, is_owner=is_owner, current_user_id=user_id)
+    is_system_admin = role == 'system_admin'
+    is_tenant_admin = role == 'tenant_admin'
+    return render_template('admin_admins.html', admins=admins_list, is_owner=is_owner, current_user_id=user_id, is_system_admin=is_system_admin, is_tenant_admin=is_tenant_admin)
 
 
 @bp.route('/admins/new', methods=['GET', 'POST'])
