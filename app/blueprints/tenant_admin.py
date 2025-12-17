@@ -961,8 +961,16 @@ def tenant_admin_edit(tadmin_id):
         return redirect(url_for('tenant_admin.tenant_admins'))
     
     tenant_id = session.get('tenant_id')
+    role = session.get('role')
+    is_system_admin = role == ROLES["SYSTEM_ADMIN"]
     conn = get_db_connection()
     cur = conn.cursor()
+    
+    # システム管理者の場合、全テナント一覧を取得
+    tenants = []
+    if is_system_admin:
+        cur.execute(_sql(conn, 'SELECT id, name FROM "T_テナント" WHERE active = 1 ORDER BY name'))
+        tenants = [{'id': row[0], 'name': row[1]} for row in cur.fetchall()]
     
     if request.method == 'POST':
         login_id = request.form.get('login_id', '').strip()
@@ -970,10 +978,10 @@ def tenant_admin_edit(tadmin_id):
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '').strip()
         active = int(request.form.get('active', 1))
+        tenant_ids = request.form.getlist('tenant_ids') if is_system_admin else [str(tenant_id)]
         
         # システム管理者のみオーナー権限を変更可能
-        role = session.get('role')
-        if role == 'system_admin':
+        if is_system_admin:
             is_owner = 1 if request.form.get('is_owner') else 0
         else:
             # テナント管理者はオーナー権限を変更できない
@@ -983,6 +991,8 @@ def tenant_admin_edit(tadmin_id):
         
         if not login_id or not name:
             flash('ログインIDと氏名は必須です', 'error')
+        elif is_system_admin and not tenant_ids:
+            flash('少なくとも1つのテナントを選択してください', 'error')
         else:
             # 重複チェック（自分以外）
             cur.execute(_sql(conn, 'SELECT id FROM "T_管理者" WHERE login_id = %s AND id != %s'), (login_id, tadmin_id))
@@ -1005,6 +1015,15 @@ def tenant_admin_edit(tadmin_id):
                         WHERE id = %s AND tenant_id = %s AND role = %s
                     '''), (login_id, name, email, active, is_owner, tadmin_id, tenant_id, ROLES["TENANT_ADMIN"]))
                 
+                # システム管理者の場合、所属テナントを更新
+                if is_system_admin:
+                    cur.execute(_sql(conn, 'DELETE FROM "T_テナント管理者_テナント" WHERE tenant_admin_id = %s'), (tadmin_id,))
+                    for tid in tenant_ids:
+                        cur.execute(_sql(conn, '''
+                            INSERT INTO "T_テナント管理者_テナント" (tenant_admin_id, tenant_id)
+                            VALUES (%s, %s)
+                        '''), (tadmin_id, int(tid)))
+                
                 conn.commit()
                 flash('テナント管理者情報を更新しました', 'success')
                 conn.close()
@@ -1017,9 +1036,9 @@ def tenant_admin_edit(tadmin_id):
         WHERE id = %s AND tenant_id = %s AND role = %s
     '''), (tadmin_id, tenant_id, ROLES["TENANT_ADMIN"]))
     row = cur.fetchone()
-    conn.close()
     
     if not row:
+        conn.close()
         flash('テナント管理者が見つかりません', 'error')
         return redirect(url_for('tenant_admin.tenant_admins'))
     
@@ -1033,7 +1052,18 @@ def tenant_admin_edit(tadmin_id):
         'is_owner': row[6]
     }
     
-    return render_template('tenant_tenant_admin_edit.html', tadmin=tadmin)
+    # 現在の所属テナントを取得
+    tadmin_tenant_ids = []
+    if is_system_admin:
+        cur.execute(_sql(conn, 'SELECT tenant_id FROM "T_テナント管理者_テナント" WHERE tenant_admin_id = %s'), (tadmin_id,))
+        tadmin_tenant_ids = [row[0] for row in cur.fetchall()]
+        # 所属テナントがない場合は現在のテナントを追加
+        if not tadmin_tenant_ids:
+            tadmin_tenant_ids = [tenant_id]
+    
+    conn.close()
+    
+    return render_template('tenant_tenant_admin_edit.html', tadmin=tadmin, tenants=tenants, tadmin_tenant_ids=tadmin_tenant_ids)
 
 
 @bp.route('/tenant_admins/<int:tadmin_id>/delete', methods=['POST'])
