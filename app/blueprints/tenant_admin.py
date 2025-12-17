@@ -4,7 +4,7 @@
 """
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from ..utils import require_roles, ROLES, get_db_connection, is_tenant_owner, can_manage_tenant_admins
+from ..utils import require_roles, ROLES, get_db_connection, is_tenant_owner, can_manage_tenant_admins, ensure_tenant_owner
 from ..utils.db import _sql
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -936,6 +936,10 @@ def tenant_admin_new():
                 '''), (login_id, name, ph, ROLES["TENANT_ADMIN"], tenant_id))
                 conn.commit()
                 conn.close()
+                
+                # テナント管理者が一人の場合、自動的にオーナーに設定
+                ensure_tenant_owner(tenant_id)
+                
                 flash('テナント管理者を作成しました', 'success')
                 return redirect(url_for('tenant_admin.tenant_admins'))
     
@@ -962,6 +966,16 @@ def tenant_admin_edit(tadmin_id):
         password = request.form.get('password', '').strip()
         active = int(request.form.get('active', 1))
         
+        # システム管理者のみオーナー権限を変更可能
+        role = session.get('role')
+        if role == 'system_admin':
+            is_owner = 1 if request.form.get('is_owner') else 0
+        else:
+            # テナント管理者はオーナー権限を変更できない
+            cur.execute(_sql(conn, 'SELECT is_owner FROM "T_管理者" WHERE id = %s'), (tadmin_id,))
+            row_owner = cur.fetchone()
+            is_owner = row_owner[0] if row_owner else 0
+        
         if not login_id or not name:
             flash('ログインIDと氏名は必須です', 'error')
         else:
@@ -975,16 +989,16 @@ def tenant_admin_edit(tadmin_id):
                     ph = generate_password_hash(password)
                     cur.execute(_sql(conn, '''
                         UPDATE "T_管理者"
-                        SET login_id = %s, name = %s, email = %s, password_hash = %s, active = %s
+                        SET login_id = %s, name = %s, email = %s, password_hash = %s, active = %s, is_owner = %s
                         WHERE id = %s AND tenant_id = %s AND role = %s
-                    '''), (login_id, name, email, ph, active, tadmin_id, tenant_id, ROLES["TENANT_ADMIN"]))
+                    '''), (login_id, name, email, ph, active, is_owner, tadmin_id, tenant_id, ROLES["TENANT_ADMIN"]))
                 else:
                     # パスワード変更なし
                     cur.execute(_sql(conn, '''
                         UPDATE "T_管理者"
-                        SET login_id = %s, name = %s, email = %s, active = %s
+                        SET login_id = %s, name = %s, email = %s, active = %s, is_owner = %s
                         WHERE id = %s AND tenant_id = %s AND role = %s
-                    '''), (login_id, name, email, active, tadmin_id, tenant_id, ROLES["TENANT_ADMIN"]))
+                    '''), (login_id, name, email, active, is_owner, tadmin_id, tenant_id, ROLES["TENANT_ADMIN"]))
                 
                 conn.commit()
                 flash('テナント管理者情報を更新しました', 'success')
@@ -993,7 +1007,7 @@ def tenant_admin_edit(tadmin_id):
     
     # GETリクエスト：テナント管理者情報を取得
     cur.execute(_sql(conn, '''
-        SELECT id, login_id, name, email, active, can_manage_admins
+        SELECT id, login_id, name, email, active, can_manage_admins, is_owner
         FROM "T_管理者"
         WHERE id = %s AND tenant_id = %s AND role = %s
     '''), (tadmin_id, tenant_id, ROLES["TENANT_ADMIN"]))
@@ -1010,7 +1024,8 @@ def tenant_admin_edit(tadmin_id):
         'name': row[2],
         'email': row[3],
         'active': row[4],
-        'can_manage_admins': row[5]
+        'can_manage_admins': row[5],
+        'is_owner': row[6]
     }
     
     return render_template('tenant_tenant_admin_edit.html', tadmin=tadmin)
@@ -1047,6 +1062,9 @@ def tenant_admin_delete(tadmin_id):
         cur.execute(_sql(conn, 'DELETE FROM "T_管理者" WHERE id = %s'), (tadmin_id,))
         conn.commit()
         flash(f'{row[0]} を削除しました', 'success')
+        
+        # 削除後、テナント管理者が一人の場合、自動的にオーナーに設定
+        ensure_tenant_owner(tenant_id)
     
     conn.close()
     return redirect(url_for('tenant_admin.tenant_admins'))

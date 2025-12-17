@@ -38,6 +38,15 @@
     </select>
   </div>
   
+  {% if session.get('role') == 'system_admin' %}
+  <div class="form-group">
+    <label>
+      <input type="checkbox" name="is_owner" value="1" {% if tadmin.is_owner %}checked{% endif %}>
+      オーナー権限（テナント内の最高管理者）
+    </label>
+  </div>
+  {% endif %}
+  
   <div class="actions">
     <button type="submit" class="btn">更新</button>
     <a href="{{ url_for('tenant_admin.tenant_admins') }}" class="btn sub">キャンセル</a>
