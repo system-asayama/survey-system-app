@@ -743,6 +743,7 @@ def employee_edit(employee_id):
         password = request.form.get('password', '').strip()
         password_confirm = request.form.get('password_confirm', '').strip()
         store_ids = request.form.getlist('store_ids')
+        active = int(request.form.get('active', 1))
         
         if not login_id or not name or not email:
             flash('ログインID、氏名、メールアドレスは必須です', 'error')
@@ -771,15 +772,15 @@ def employee_edit(employee_id):
                         ph = generate_password_hash(password)
                         cur.execute(_sql(conn, '''
                             UPDATE "T_従業員"
-                            SET login_id = %s, name = %s, email = %s, password_hash = %s, updated_at = CURRENT_TIMESTAMP
+                            SET login_id = %s, name = %s, email = %s, password_hash = %s, active = %s, updated_at = CURRENT_TIMESTAMP
                             WHERE id = %s AND tenant_id = %s
-                        '''), (login_id, name, email, ph, employee_id, tenant_id))
+                        '''), (login_id, name, email, ph, active, employee_id, tenant_id))
                     else:
                         cur.execute(_sql(conn, '''
                             UPDATE "T_従業員"
-                            SET login_id = %s, name = %s, email = %s, updated_at = CURRENT_TIMESTAMP
+                            SET login_id = %s, name = %s, email = %s, active = %s, updated_at = CURRENT_TIMESTAMP
                             WHERE id = %s AND tenant_id = %s
-                        '''), (login_id, name, email, employee_id, tenant_id))
+                        '''), (login_id, name, email, active, employee_id, tenant_id))
                     
                     # 店舗の紐付けを更新
                     cur.execute(_sql(conn, 'DELETE FROM "T_従業員_店舗" WHERE employee_id = %s'), (employee_id,))
@@ -796,7 +797,7 @@ def employee_edit(employee_id):
     
     # 従業員情報を取得
     cur.execute(_sql(conn, '''
-        SELECT login_id, name, email FROM "T_従業員" WHERE id = %s AND tenant_id = %s
+        SELECT login_id, name, email, active FROM "T_従業員" WHERE id = %s AND tenant_id = %s
     '''), (employee_id, tenant_id))
     row = cur.fetchone()
     
@@ -809,7 +810,8 @@ def employee_edit(employee_id):
         'id': employee_id,
         'login_id': row[0],
         'name': row[1],
-        'email': row[2]
+        'email': row[2],
+        'active': row[3]
     }
     
     # 現在の店舗割り当てを取得
