@@ -1164,18 +1164,15 @@ def toggle_tenant_admin_manage_permission(tadmin_id):
 @require_roles(ROLES["TENANT_ADMIN"], ROLES["SYSTEM_ADMIN"])
 def transfer_tenant_ownership(tadmin_id):
     """テナントオーナー権限を他のテナント管理者に移譲"""
-    # オーナーのみ実行可能
-    if not is_tenant_owner():
+    role = session.get('role')
+    is_system_admin = role == ROLES["SYSTEM_ADMIN"]
+    
+    # システム管理者またはオーナーのみ実行可能
+    if not is_system_admin and not is_tenant_owner():
         flash('オーナーのみがオーナー権限を移譲できます', 'error')
         return redirect(url_for('tenant_admin.tenant_admins'))
     
-    # 自分自身には移譲できない
-    if tadmin_id == session.get('user_id'):
-        flash('自分自身にオーナー権限を移譲することはできません', 'error')
-        return redirect(url_for('tenant_admin.tenant_admins'))
-    
     tenant_id = session.get('tenant_id')
-    current_user_id = session.get('user_id')
     conn = get_db_connection()
     cur = conn.cursor()
     
@@ -1198,8 +1195,8 @@ def transfer_tenant_ownership(tadmin_id):
     cur.execute(_sql(conn, '''
         UPDATE "T_管理者"
         SET is_owner = 0
-        WHERE id = %s
-    '''), (current_user_id,))
+        WHERE tenant_id = %s AND role = %s AND is_owner = 1
+    '''), (tenant_id, ROLES["TENANT_ADMIN"]))
     
     # 新しいオーナーのis_ownerを1に設定し、can_manage_adminsも1に設定
     cur.execute(_sql(conn, '''
