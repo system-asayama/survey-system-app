@@ -14,7 +14,13 @@ bp = Blueprint('employee', __name__, url_prefix='/employee')
 @require_roles(ROLES["EMPLOYEE"], ROLES["SYSTEM_ADMIN"])
 def dashboard():
     """従業員ダッシュボード"""
-    return render_template('employee_dashboard.html')
+    # ロールに応じたマイページURLを設定
+    role = session.get('role')
+    if role == 'system_admin':
+        mypage_url = url_for('system_admin.mypage')
+    else:
+        mypage_url = url_for('employee.mypage')
+    return render_template('employee_dashboard.html', mypage_url=mypage_url)
 
 
 @bp.route('/mypage', methods=['GET', 'POST'])

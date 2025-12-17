@@ -15,7 +15,15 @@ bp = Blueprint('admin', __name__, url_prefix='/admin')
 @require_roles(ROLES["ADMIN"], ROLES["TENANT_ADMIN"], ROLES["SYSTEM_ADMIN"])
 def dashboard():
     """管理者ダッシュボード"""
-    return render_template('admin_dashboard.html', tenant_id=session.get('tenant_id'))
+    # ロールに応じたマイページURLを設定
+    role = session.get('role')
+    if role == 'system_admin':
+        mypage_url = url_for('system_admin.mypage')
+    elif role == 'tenant_admin':
+        mypage_url = url_for('tenant_admin.mypage')
+    else:
+        mypage_url = url_for('admin.mypage')
+    return render_template('admin_dashboard.html', tenant_id=session.get('tenant_id'), mypage_url=mypage_url)
 
 
 @bp.route('/store_info')
