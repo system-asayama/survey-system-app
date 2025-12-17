@@ -130,7 +130,7 @@ def _generate_review_text(survey_data, store_id):
     try:
         conn = store_db.get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT id FROM T_店舗_アンケート設定 WHERE store_id = ?", (store_id,))
+        cursor.execute("SELECT id FROM T_店舗_アンケート設定 WHERE store_id = %s", (store_id,))
         result = cursor.fetchone()
         if result:
             survey_app_id = result[0]
@@ -154,7 +154,7 @@ def _generate_review_text(survey_data, store_id):
     try:
         conn = store_db.get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT config_json FROM T_店舗_アンケート設定 WHERE store_id = ?", (store_id,))
+        cursor.execute("SELECT config_json FROM T_店舗_アンケート設定 WHERE store_id = %s", (store_id,))
         result = cursor.fetchone()
         if result and result[0]:
             import json
