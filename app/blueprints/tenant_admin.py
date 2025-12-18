@@ -235,10 +235,12 @@ def store_new():
                 cur.execute(_sql(conn, '''
                     INSERT INTO "T_店舗" (tenant_id, 名称, slug)
                     VALUES (%s, %s, %s)
+                    RETURNING id
                 '''), (tenant_id, name, slug))
                 
                 # 新しく作成された店舗IDを取得
-                store_id = cur.lastrowid
+                result = cur.fetchone()
+                store_id = result[0] if result else None
                 
                 # デフォルトアンケート設定を作成
                 import json
