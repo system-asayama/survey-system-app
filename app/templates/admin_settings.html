@@ -154,6 +154,25 @@
       .btn-remove {
         width: 100%;
       }
+      
+      /* 確率計算ツールのスマホ用レイアウト */
+      .calc-tool-inputs {
+        flex-direction: column !important;
+        align-items: stretch !important;
+      }
+      
+      .calc-tool-inputs > div {
+        width: 100%;
+      }
+      
+      .calc-tool-inputs input {
+        width: 100% !important;
+      }
+      
+      .calc-tool-inputs button {
+        width: 100%;
+        margin-left: 0 !important;
+      }
     }
   </style>
   <script>
@@ -629,7 +648,7 @@
         <h3 style="margin-top: 0;">📊 確率計算ツール</h3>
         <p class="help-text">特定の点数範囲になる確率を計算します。</p>
         
-        <div style="display: flex; gap: 16px; align-items: flex-end; margin-bottom: 16px;">
+        <div class="calc-tool-inputs" style="display: flex; gap: 16px; align-items: flex-end; margin-bottom: 16px;">
           <div>
             <label>最小点数</label>
             <input type="number" id="calc_min" value="100" min="0" style="width: 120px;">
