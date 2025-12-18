@@ -173,6 +173,31 @@
         width: 100%;
         margin-left: 0 !important;
       }
+      
+      /* スロットテーブルのID列固定と横スクロール */
+      .slot-table-wrapper {
+        position: relative;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      
+      .slot-table-wrapper table {
+        border-collapse: separate;
+        border-spacing: 0;
+      }
+      
+      .slot-table-wrapper th:first-child,
+      .slot-table-wrapper td:first-child {
+        position: sticky;
+        left: 0;
+        background: white;
+        z-index: 2;
+        box-shadow: 2px 0 4px rgba(0,0,0,0.1);
+      }
+      
+      .slot-table-wrapper thead th:first-child {
+        z-index: 3;
+      }
     }
   </style>
   <script>
@@ -593,7 +618,7 @@
           <div class="help-text">1回のスピンでハズレになる確率です。「確率を自動調整」を押すと、ハズレ確率と期待値に基づいて各シンボルが3つ揃う確率が自動計算されます。</div>
         </div>
         
-        <div style="overflow-x: auto;">
+        <div class="slot-table-wrapper" style="overflow-x: auto;">
           <table class="grid" style="width: 100%; min-width: 700px;">
             <thead>
               <tr>
