@@ -22,6 +22,9 @@
         <a href="/admin/store/{{ store.id }}/settings" class="btn btn-primary">設定</a>
         <a href="/store/{{ store.slug }}/survey" class="btn btn-secondary" target="_blank">プレビュー</a>
       </div>
+      <div class="app-actions" style="margin-top: 10px;">
+        <a href="/admin/store/{{ store.id }}/survey/results" class="btn btn-info">アンケート結果</a>
+      </div>
       <div class="app-status">
         <span class="status-badge status-active">有効</span>
       </div>
@@ -169,6 +172,15 @@
   
   .btn-secondary:hover {
     background: #0b7dda;
+  }
+  
+  .btn-info {
+    background: #FF9800;
+    color: white;
+  }
+  
+  .btn-info:hover {
+    background: #F57C00;
   }
   
   .btn-disabled {
