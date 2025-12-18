@@ -1,6 +1,66 @@
 {% extends "base.html" %}
 {% block title %}テナント一覧{% endblock %}
 {% block content %}
+<style>
+  @media (max-width: 768px) {
+    .tenant-table {
+      display: none;
+    }
+    .tenant-cards {
+      display: block;
+    }
+    .tenant-card {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .tenant-card-row {
+      display: flex;
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .tenant-card-row:last-child {
+      border-bottom: none;
+    }
+    .tenant-card-label {
+      font-weight: bold;
+      color: #666;
+      min-width: 80px;
+      white-space: nowrap;
+    }
+    .tenant-card-value {
+      flex: 1;
+      color: #333;
+    }
+    .tenant-card-actions {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 2px solid #f0f0f0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .tenant-card-actions .btn {
+      font-size: 0.9em;
+      padding: 6px 12px;
+    }
+    .tenant-card-actions form {
+      display: inline;
+    }
+  }
+  @media (min-width: 769px) {
+    .tenant-table {
+      display: table;
+    }
+    .tenant-cards {
+      display: none;
+    }
+  }
+</style>
+
 <h1>テナント一覧</h1>
 
 <div style="margin-bottom:20px">
@@ -9,7 +69,8 @@
 </div>
 
 {% if tenants %}
-<table style="width:100%;border-collapse:collapse">
+<!-- デスクトップ用テーブル -->
+<table class="tenant-table" style="width:100%;border-collapse:collapse">
   <thead>
     <tr style="background:#f5f5f5;border-bottom:2px solid #ddd">
       <th style="padding:12px;text-align:left">ID</th>
@@ -46,6 +107,45 @@
     {% endfor %}
   </tbody>
 </table>
+
+<!-- スマホ用カード -->
+<div class="tenant-cards">
+  {% for t in tenants %}
+  <div class="tenant-card">
+    <div class="tenant-card-row">
+      <div class="tenant-card-label">ID:</div>
+      <div class="tenant-card-value">{{ t.id }}</div>
+    </div>
+    <div class="tenant-card-row">
+      <div class="tenant-card-label">名称:</div>
+      <div class="tenant-card-value"><strong>{{ t.名称 }}</strong></div>
+    </div>
+    <div class="tenant-card-row">
+      <div class="tenant-card-label">Slug:</div>
+      <div class="tenant-card-value"><code>{{ t.slug }}</code></div>
+    </div>
+    <div class="tenant-card-row">
+      <div class="tenant-card-label">有効:</div>
+      <div class="tenant-card-value">
+        {% if t.有効 == 1 %}
+          <span style="color:green">✓ 有効</span>
+        {% else %}
+          <span style="color:#999">無効</span>
+        {% endif %}
+      </div>
+    </div>
+    
+    <div class="tenant-card-actions">
+      <a class="btn small" href="{{ url_for('system_admin.tenant_detail', tid=t.id) }}">詳細</a>
+      <a class="btn small secondary" href="{{ url_for('system_admin.tenant_edit', tid=t.id) }}">編集</a>
+      <form method="post" action="{{ url_for('system_admin.tenant_delete', tid=t.id) }}" 
+            onsubmit="return confirm('本当に削除しますか？');">
+        <button class="btn small" type="submit" style="background:#d32f2f">削除</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
 {% else %}
 <div class="card" style="text-align:center;padding:40px">
   <p style="color:#999">テナントがまだ作成されていません</p>
