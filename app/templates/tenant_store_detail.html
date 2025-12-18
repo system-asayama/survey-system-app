@@ -1,13 +1,79 @@
 {% extends "base.html" %}
 {% block title %}店舗詳細{% endblock %}
 {% block content %}
+<style>
+  .info-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+  }
+  
+  .info-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .info-table th {
+    text-align: left;
+    padding: 8px;
+    white-space: nowrap;
+  }
+  
+  .info-table td {
+    padding: 8px;
+    word-break: break-all;
+  }
+  
+  @media (max-width: 768px) {
+    .info-table-wrapper {
+      margin-left: -16px;
+      margin-right: -16px;
+      padding-left: 16px;
+      padding-right: 16px;
+    }
+    
+    .info-table {
+      display: block;
+    }
+    
+    .info-table tbody {
+      display: block;
+    }
+    
+    .info-table tr {
+      display: block;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .info-table th,
+    .info-table td {
+      display: block;
+      width: 100%;
+      padding: 4px 0;
+    }
+    
+    .info-table th {
+      font-weight: 600;
+      color: #666;
+      font-size: 0.85em;
+    }
+    
+    .info-table td {
+      padding-left: 0;
+      margin-bottom: 8px;
+    }
+  }
+</style>
+
 <h1>店舗詳細</h1>
 
 <div class="card">
   <h2>{{ store['名称'] }}</h2>
   
   <div style="margin-top:20px">
-    <table class="table">
+    <div class="info-table-wrapper">
+      <table class="info-table table">
       <tbody>
         <tr>
           <th style="width:200px">店舗ID</th>
@@ -30,7 +96,8 @@
           <td>{{ store.updated_at }}</td>
         </tr>
       </tbody>
-    </table>
+      </table>
+    </div>
   </div>
 
   <div style="margin-top:30px">
