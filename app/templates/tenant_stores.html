@@ -155,6 +155,7 @@
         <td class="store-actions">
           <a class="btn small" href="{{ url_for('tenant_admin.store_detail', store_id=store.id) }}">詳細</a>
           <a class="btn small" href="{{ url_for('tenant_admin.store_edit', store_id=store.id) }}">編集</a>
+          <a class="btn small" href="{{ url_for('admin.settings', store_id=store.id) }}">アプリ管理</a>
           <form method="post" action="{{ url_for('tenant_admin.store_delete', store_id=store.id) }}" style="display:inline" onsubmit="return confirm('本当に削除しますか？')">
             {% if get_csrf %}<input type="hidden" name="csrf_token" value="{{ get_csrf() }}">{% endif %}
             <button class="btn small delete" type="submit">削除</button>
