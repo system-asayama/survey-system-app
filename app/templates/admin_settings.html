@@ -420,7 +420,7 @@
         });
       });
       
-      const storeId = {{ store.id }};
+      const storeId = {{ store.id if store else 'null' }};
       
       try {
         const response = await fetch(`/admin/store/${storeId}/optimize_probabilities`, {
@@ -527,10 +527,12 @@
 <body>
   <div class="admin-header">
     <h1>📋 アンケートアプリ設定</h1>
+    {% if store %}
     <div style="display: flex; gap: 10px;">
       <a href="/admin/store/{{ store.id }}/qr_print" target="_blank" style="padding: 8px 16px; background: #10b981; color: white; text-decoration: none; border-radius: 6px; font-size: 14px;">📱 QR印刷</a>
       <a href="/store/{{ store.slug }}/slot?demo=true" target="_blank" style="padding: 8px 16px; background: #3b82f6; color: white; text-decoration: none; border-radius: 6px; font-size: 14px;">🎰 デモプレイ</a>
     </div>
+    {% endif %}
   </div>
 
   <div class="container">
@@ -605,7 +607,7 @@
       <p class="help-text" style="margin-bottom: 20px;">スロットのシンボルと配当、確率を設定できます。確率は自動調整されますが、手動でも調整可能です。</p>
       
 
-      <form method="post" action="{{ url_for('store_save_slot_config', store_id=store.id) }}">
+      <form method="post" action="{{ url_for('store_save_slot_config', store_id=store.id) if store else '#' }}">
         <div class="form-group">
           <label>5回スピンの期待値</label>
           <input type="number" id="expected_total_5" name="expected_total_5" value="{{ slot_config.expected_total_5 }}" step="0.01" min="0" style="width: 200px;">
@@ -699,7 +701,7 @@
       <h2>🤖 OpenAI API設定（アプリ個別）</h2>
       <p class="help-text" style="margin-bottom: 20px;">このアプリ専用のOpenAI APIキーを設定できます。未設定の場合は店舗設定またはテナント設定のキーが使用されます。</p>
       <form method="post" action="/admin/save_openai_key">
-        <input type="hidden" name="store_id" value="{{ store.id }}">
+        <input type="hidden" name="store_id" value="{{ store.id if store else '' }}">
         <div class="form-group">
           <label for="openai_api_key">OpenAI APIキー</label>
           <input type="password" id="openai_api_key" name="openai_api_key" value="{{ slot_app.openai_api_key or '' }}" placeholder="sk-...">
