@@ -367,7 +367,7 @@ def submit_survey():
             "message": "アンケートにご協力いただきありがとうございます！",
             "rating": rating,
             "generated_review": generated_review,
-            "redirect_url": url_for('slot.slot_page_with_slug', slug=g.store_slug)
+            "redirect_url": url_for("slot.slot_page_with_slug", slug=g.store_slug, _external=True)
         })
     except Exception as e:
         import sys
