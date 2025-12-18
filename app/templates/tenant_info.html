@@ -2,66 +2,55 @@
 {% block title %}テナント情報{% endblock %}
 {% block content %}
 <style>
-  .info-table-wrapper {
-    width: 100%;
-    overflow-x: auto;
-  }
-  
-  .info-table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  
-  .info-table th {
-    text-align: left;
-    padding: 8px;
-    white-space: nowrap;
-  }
-  
-  .info-table td {
-    padding: 8px;
-    word-break: break-all;
-  }
-  
   @media (max-width: 768px) {
-    .info-table-wrapper {
-      margin-left: -16px;
-      margin-right: -16px;
-      padding-left: 16px;
-      padding-right: 16px;
+    .card {
+      padding: 0.75rem;
     }
     
-    .info-table {
-      display: block;
+    .card h2 {
+      font-size: 1.2rem;
+      margin-bottom: 1rem;
     }
     
-    .info-table tbody {
-      display: block;
+    .info-section {
+      background: #fff;
+      border-radius: 8px;
+      padding: 0;
     }
     
-    .info-table tr {
-      display: block;
-      margin-bottom: 12px;
-      padding-bottom: 12px;
+    .info-item {
+      padding: 12px 0;
       border-bottom: 1px solid #eee;
     }
     
-    .info-table th,
-    .info-table td {
-      display: block;
-      width: 100%;
-      padding: 4px 0;
+    .info-item:last-child {
+      border-bottom: none;
     }
     
-    .info-table th {
+    .info-label {
       font-weight: 600;
       color: #666;
       font-size: 0.85em;
+      margin-bottom: 4px;
     }
     
-    .info-table td {
-      padding-left: 0;
-      margin-bottom: 8px;
+    .info-value {
+      color: #333;
+      font-size: 0.95em;
+      word-break: break-all;
+    }
+    
+    .actions {
+      margin-top: 20px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    
+    .btn {
+      flex: 1;
+      text-align: center;
+      min-width: 100px;
     }
   }
 </style>
@@ -71,32 +60,26 @@
 <div class="card">
   <h2>{{ tenant['名称'] }}</h2>
   
-  <div style="margin-top:20px">
-    <div class="info-table-wrapper">
-      <table class="info-table table">
-      <tbody>
-        <tr>
-          <th style="width:200px">テナントID</th>
-          <td>{{ tenant.id }}</td>
-        </tr>
-        <tr>
-          <th>名称</th>
-          <td>{{ tenant['名称'] }}</td>
-        </tr>
-        <tr>
-          <th>Slug</th>
-          <td>{{ tenant.slug }}</td>
-        </tr>
-        <tr>
-          <th>作成日時</th>
-          <td>{{ tenant.created_at }}</td>
-        </tr>
-      </tbody>
-      </table>
+  <div class="info-section" style="margin-top:20px">
+    <div class="info-item">
+      <div class="info-label">テナントID</div>
+      <div class="info-value">{{ tenant.id }}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">名称</div>
+      <div class="info-value">{{ tenant['名称'] }}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Slug</div>
+      <div class="info-value">{{ tenant.slug }}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">作成日時</div>
+      <div class="info-value">{{ tenant.created_at }}</div>
     </div>
   </div>
 
-  <div style="margin-top:20px">
+  <div class="actions" style="margin-top:20px">
     <a class="btn" href="{{ url_for('tenant_admin.me_edit') }}">編集</a>
     <a class="btn sub" href="{{ url_for('tenant_admin.dashboard') }}">戻る</a>
   </div>
