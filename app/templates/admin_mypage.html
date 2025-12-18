@@ -9,31 +9,31 @@
   <div style="margin-top:20px">
     <table style="width:100%; border-collapse:collapse">
       <tr style="border-bottom:1px solid #eee">
-        <th style="text-align:left; padding:8px; width:40%">ユーザーID</th>
+        <th style="text-align:left; padding:8px; width:40%; white-space:nowrap">ユーザーID</th>
         <td style="padding:8px">{{ user.id }}</td>
       </tr>
       <tr style="border-bottom:1px solid #eee">
-        <th style="text-align:left; padding:8px">ログインID</th>
+        <th style="text-align:left; padding:8px; white-space:nowrap">ログインID</th>
         <td style="padding:8px">{{ user.login_id }}</td>
       </tr>
       <tr style="border-bottom:1px solid #eee">
-        <th style="text-align:left; padding:8px">氏名</th>
+        <th style="text-align:left; padding:8px; white-space:nowrap">氏名</th>
         <td style="padding:8px">{{ user.name }}</td>
       </tr>
       <tr style="border-bottom:1px solid #eee">
-        <th style="text-align:left; padding:8px">メールアドレス</th>
-        <td style="padding:8px">{{ user.email or '未設定' }}</td>
+        <th style="text-align:left; padding:8px; white-space:nowrap">メールアドレス</th>
+        <td style="padding:8px; word-break:break-all; overflow-wrap:break-word">{{ user.email or '未設定' }}</td>
       </tr>
       <tr style="border-bottom:1px solid #eee">
-        <th style="text-align:left; padding:8px">ロール</th>
+        <th style="text-align:left; padding:8px; white-space:nowrap">ロール</th>
         <td style="padding:8px">管理者</td>
       </tr>
       <tr style="border-bottom:1px solid #eee">
-        <th style="text-align:left; padding:8px">テナント名</th>
+        <th style="text-align:left; padding:8px; white-space:nowrap">テナント名</th>
         <td style="padding:8px">{{ tenant_name }}</td>
       </tr>
       <tr style="border-bottom:1px solid #eee">
-        <th style="text-align:left; padding:8px">所属店舗</th>
+        <th style="text-align:left; padding:8px; white-space:nowrap">所属店舗</th>
         <td style="padding:8px">
           {% for store in stores %}
             {{ store }}<br>
@@ -41,7 +41,7 @@
         </td>
       </tr>
       <tr style="border-bottom:1px solid #eee">
-        <th style="text-align:left; padding:8px">権限</th>
+        <th style="text-align:left; padding:8px; white-space:nowrap">権限</th>
         <td style="padding:8px">
           {% if user.can_manage_admins %}
             <span style="background-color:#28a745; color:white; padding:5px 10px; border-radius:3px; font-size:12px">管理者管理</span>
@@ -49,11 +49,11 @@
         </td>
       </tr>
       <tr style="border-bottom:1px solid #eee">
-        <th style="text-align:left; padding:8px">作成日時</th>
+        <th style="text-align:left; padding:8px; white-space:nowrap">作成日時</th>
         <td style="padding:8px">{{ user.created_at }}</td>
       </tr>
       <tr>
-        <th style="text-align:left; padding:8px">更新日時</th>
+        <th style="text-align:left; padding:8px; white-space:nowrap">更新日時</th>
         <td style="padding:8px">{{ user.updated_at }}</td>
       </tr>
     </table>
