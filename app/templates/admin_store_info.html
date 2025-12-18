@@ -156,6 +156,7 @@
             <th>名称</th>
             <th>Slug</th>
             <th>作成日時</th>
+            <th>更新日時</th>
             <th>操作</th>
           </tr>
         </thead>
@@ -166,14 +167,11 @@
             <td data-label="名称: " class="store-name">{{ store['名称'] }}</td>
             <td data-label="Slug: " class="store-slug"><code>{{ store.slug }}</code></td>
             <td data-label="作成日時: " class="store-date">{{ store.created_at }}</td>
+            <td data-label="更新日時: " class="store-date">{{ store.updated_at }}</td>
             <td class="store-actions">
+              <a class="btn small" href="{{ url_for('admin.store_detail', store_id=store.id) }}">詳細</a>
               <a class="btn small" href="{{ url_for('admin.store_edit', store_id=store.id) }}">編集</a>
               <a class="btn small" href="{{ url_for('admin.store_apps', store_id=store.id) }}">アプリ管理</a>
-              {% if session.get('role') in ['system_admin', 'tenant_admin'] %}
-              <form method="post" action="{{ url_for('admin.store_delete', store_id=store.id) }}" style="display:inline" onsubmit="return confirm('本当に削除しますか？');">
-                <button class="btn small delete" type="submit">削除</button>
-              </form>
-              {% endif %}
             </td>
           </tr>
           {% endfor %}
