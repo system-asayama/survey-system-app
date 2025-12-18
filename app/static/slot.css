@@ -157,3 +157,23 @@ dialog::backdrop{background:rgba(0,0,0,.3)}
   border-radius:50%;
   border:1px solid #e5e7eb;
 }
+
+/* スマホ用レイアウト */
+@media (max-width: 768px) {
+  .wrap {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .slot {
+    order: 1;
+  }
+  
+  .history {
+    order: 2;
+  }
+  
+  .reel .cell {
+    font-size: 36px;
+  }
+}
