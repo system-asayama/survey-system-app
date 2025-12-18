@@ -87,7 +87,7 @@
     }
     .prize-row {
       display: grid;
-      grid-template-columns: 1fr 1fr 2fr auto;
+      grid-template-columns: 1fr 1fr 1fr 2fr auto;
       gap: 12px;
       margin-bottom: 12px;
       align-items: start;
@@ -117,6 +117,43 @@
       font-weight: 600;
       font-size: 13px;
       color: #6b7280;
+    }
+    
+    /* スマホ用レイアウト */
+    @media (max-width: 768px) {
+      .container {
+        padding: 0 12px;
+        margin: 16px auto;
+      }
+      
+      .section {
+        padding: 16px;
+      }
+      
+      .prize-header {
+        display: none;
+      }
+      
+      .prize-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        padding: 12px;
+        background: #f9fafb;
+        border-radius: 8px;
+        margin-bottom: 16px;
+      }
+      
+      .prize-row input {
+        padding: 12px;
+      }
+      
+      .prize-row input::placeholder {
+        font-size: 13px;
+      }
+      
+      .btn-remove {
+        width: 100%;
+      }
     }
   </style>
   <script>
