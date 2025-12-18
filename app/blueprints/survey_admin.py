@@ -163,7 +163,7 @@ def admin_export_csv():
 
 # ===== 設定 =====
 @bp.route("/settings", methods=["GET", "POST"])
-@require_roles(ROLES["ADMIN"])
+@require_roles(ROLES["SYSTEM_ADMIN"], ROLES["TENANT_ADMIN"], ROLES["ADMIN"])
 def admin_settings():
     """管理画面設定"""
 # 統一認証システムからユーザー情報を取得
