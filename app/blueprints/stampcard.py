@@ -27,7 +27,7 @@ def load_store():
     if store_slug:
         conn = store_db.get_db_connection()
         cur = conn.cursor()
-        cur.execute('SELECT id, 名称 as name FROM "T_店舗" WHERE slug = ?', (store_slug,))
+        cur.execute('SELECT id, 名称 as name FROM "T_店舗" WHERE slug = %s', (store_slug,))
         store = cur.fetchone()
         conn.close()
         
@@ -66,14 +66,14 @@ def customer_register(store_slug):
         try:
             # 重複チェック
             if phone:
-                cur.execute('SELECT id FROM "T_顧客" WHERE store_id = ? AND phone = ?', (g.store_id, phone))
+                cur.execute('SELECT id FROM "T_顧客" WHERE store_id = %s AND phone = %s', (g.store_id, phone))
                 if cur.fetchone():
                     flash('この電話番号は既に登録されています', 'error')
                     conn.close()
                     return render_template('stampcard_register.html', store_name=g.store_name)
             
             if email:
-                cur.execute('SELECT id FROM "T_顧客" WHERE store_id = ? AND email = ?', (g.store_id, email))
+                cur.execute('SELECT id FROM "T_顧客" WHERE store_id = %s AND email = %s', (g.store_id, email))
                 if cur.fetchone():
                     flash('このメールアドレスは既に登録されています', 'error')
                     conn.close()
@@ -83,7 +83,7 @@ def customer_register(store_slug):
             password_hash = generate_password_hash(password)
             cur.execute('''
                 INSERT INTO "T_顧客" (store_id, name, phone, email, password_hash, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                VALUES (%s, %s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             ''', (g.store_id, name, phone, email, password_hash))
             
             customer_id = cur.lastrowid
@@ -91,7 +91,7 @@ def customer_register(store_slug):
             # スタンプカード作成
             cur.execute('''
                 INSERT INTO "T_スタンプカード" (customer_id, store_id, current_stamps, total_stamps, rewards_used, created_at, updated_at)
-                VALUES (?, ?, 0, 0, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                VALUES (%s, %s, 0, 0, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             ''', (customer_id, g.store_id))
             
             conn.commit()
@@ -131,7 +131,7 @@ def customer_login(store_slug):
         cur.execute('''
             SELECT id, name, password_hash 
             FROM "T_顧客" 
-            WHERE store_id = ? AND (phone = ? OR email = ?)
+            WHERE store_id = %s AND (phone = %s OR email = %s)
         ''', (g.store_id, login_id, login_id))
         
         customer = cur.fetchone()
@@ -143,7 +143,7 @@ def customer_login(store_slug):
             session['store_id'] = g.store_id
             
             # 最終ログイン時刻を更新
-            cur.execute('UPDATE "T_顧客" SET last_login = CURRENT_TIMESTAMP WHERE id = ?', (customer[0],))
+            cur.execute('UPDATE "T_顧客" SET last_login = CURRENT_TIMESTAMP WHERE id = %s', (customer[0],))
             conn.commit()
             conn.close()
             
@@ -180,7 +180,7 @@ def customer_mypage(store_slug):
     cur.execute('''
         SELECT id, current_stamps, total_stamps, rewards_used, created_at
         FROM "T_スタンプカード"
-        WHERE customer_id = ? AND store_id = ?
+        WHERE customer_id = %s AND store_id = %s
     ''', (customer_id, g.store_id))
     card = cur.fetchone()
     
@@ -188,7 +188,7 @@ def customer_mypage(store_slug):
     cur.execute('''
         SELECT required_stamps, reward_description, card_title
         FROM "T_店舗_スタンプカード設定"
-        WHERE store_id = ?
+        WHERE store_id = %s
     ''', (g.store_id,))
     settings = cur.fetchone()
     
@@ -196,7 +196,7 @@ def customer_mypage(store_slug):
     cur.execute('''
         SELECT stamps_added, action_type, note, created_at
         FROM "T_スタンプ履歴"
-        WHERE customer_id = ? AND store_id = ?
+        WHERE customer_id = %s AND store_id = %s
         ORDER BY created_at DESC
         LIMIT 10
     ''', (customer_id, g.store_id))
@@ -206,7 +206,7 @@ def customer_mypage(store_slug):
     cur.execute('''
         SELECT stamps_used, reward_description, created_at
         FROM "T_特典利用履歴"
-        WHERE customer_id = ? AND store_id = ?
+        WHERE customer_id = %s AND store_id = %s
         ORDER BY created_at DESC
         LIMIT 5
     ''', (customer_id, g.store_id))
@@ -228,7 +228,7 @@ def customer_mypage(store_slug):
         cur = conn.cursor()
         cur.execute('''
             INSERT INTO "T_スタンプカード" (customer_id, store_id, current_stamps, total_stamps, rewards_used, created_at, updated_at)
-            VALUES (?, ?, 0, 0, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            VALUES (%s, %s, 0, 0, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         ''', (customer_id, g.store_id))
         conn.commit()
         card_id = cur.lastrowid
@@ -269,8 +269,8 @@ def scan_qr(store_slug):
             today = datetime.now().date()
             cur.execute('''
                 SELECT id FROM "T_スタンプ履歴"
-                WHERE customer_id = ? AND store_id = ? 
-                AND DATE(created_at) = ?
+                WHERE customer_id = %s AND store_id = %s 
+                AND DATE(created_at) = %s
                 AND action_type = 'add'
             ''', (customer_id, g.store_id, today))
             
@@ -283,7 +283,7 @@ def scan_qr(store_slug):
             cur.execute('''
                 SELECT id, current_stamps, total_stamps
                 FROM "T_スタンプカード"
-                WHERE customer_id = ? AND store_id = ?
+                WHERE customer_id = %s AND store_id = %s
             ''', (customer_id, g.store_id))
             card = cur.fetchone()
             
@@ -302,13 +302,13 @@ def scan_qr(store_slug):
                 SET current_stamps = current_stamps + 1,
                     total_stamps = total_stamps + 1,
                     updated_at = CURRENT_TIMESTAMP
-                WHERE id = ?
+                WHERE id = %s
             ''', (card_id,))
             
             # スタンプ履歴を記録
             cur.execute('''
                 INSERT INTO "T_スタンプ履歴" (card_id, customer_id, store_id, stamps_added, action_type, note, created_by, created_at)
-                VALUES (?, ?, ?, 1, 'add', 'QRコードスキャン', 'customer', CURRENT_TIMESTAMP)
+                VALUES (%s, %s, %s, 1, 'add', 'QRコードスキャン', 'customer', CURRENT_TIMESTAMP)
             ''', (card_id, customer_id, g.store_id))
             
             conn.commit()
@@ -339,7 +339,7 @@ def use_reward(store_slug):
         cur.execute('''
             SELECT id, current_stamps
             FROM "T_スタンプカード"
-            WHERE customer_id = ? AND store_id = ?
+            WHERE customer_id = %s AND store_id = %s
         ''', (customer_id, g.store_id))
         card = cur.fetchone()
         
@@ -354,7 +354,7 @@ def use_reward(store_slug):
         cur.execute('''
             SELECT required_stamps, reward_description
             FROM "T_店舗_スタンプカード設定"
-            WHERE store_id = ?
+            WHERE store_id = %s
         ''', (g.store_id,))
         settings = cur.fetchone()
         
@@ -369,22 +369,22 @@ def use_reward(store_slug):
         # スタンプを消費
         cur.execute('''
             UPDATE "T_スタンプカード"
-            SET current_stamps = current_stamps - ?,
+            SET current_stamps = current_stamps - %s,
                 rewards_used = rewards_used + 1,
                 updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
+            WHERE id = %s
         ''', (required_stamps, card_id))
         
         # 特典利用履歴を記録
         cur.execute('''
             INSERT INTO "T_特典利用履歴" (card_id, customer_id, store_id, stamps_used, reward_description, used_by, created_at)
-            VALUES (?, ?, ?, ?, ?, 'customer', CURRENT_TIMESTAMP)
+            VALUES (%s, %s, %s, %s, %s, 'customer', CURRENT_TIMESTAMP)
         ''', (card_id, customer_id, g.store_id, required_stamps, reward_description))
         
         # スタンプ履歴を記録
         cur.execute('''
             INSERT INTO "T_スタンプ履歴" (card_id, customer_id, store_id, stamps_added, action_type, note, created_by, created_at)
-            VALUES (?, ?, ?, ?, 'use', ?, 'customer', CURRENT_TIMESTAMP)
+            VALUES (%s, %s, %s, %s, 'use', %s, 'customer', CURRENT_TIMESTAMP)
         ''', (card_id, customer_id, g.store_id, -required_stamps, f'特典利用: {reward_description}'))
         
         conn.commit()

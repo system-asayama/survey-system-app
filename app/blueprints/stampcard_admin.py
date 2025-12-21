@@ -17,7 +17,7 @@ def settings(store_id):
     cur = conn.cursor()
     
     # 店舗情報取得
-    cur.execute('SELECT 名称 FROM "T_店舗" WHERE id = ?', (store_id,))
+    cur.execute('SELECT 名称 FROM "T_店舗" WHERE id = %s', (store_id,))
     store = cur.fetchone()
     
     if not store:
@@ -35,26 +35,26 @@ def settings(store_id):
         
         try:
             # 既存設定を確認
-            cur.execute('SELECT id FROM "T_店舗_スタンプカード設定" WHERE store_id = ?', (store_id,))
+            cur.execute('SELECT id FROM "T_店舗_スタンプカード設定" WHERE store_id = %s', (store_id,))
             existing = cur.fetchone()
             
             if existing:
                 # 更新
                 cur.execute('''
                     UPDATE "T_店舗_スタンプカード設定"
-                    SET required_stamps = ?,
-                        reward_description = ?,
-                        card_title = ?,
-                        enabled = ?,
+                    SET required_stamps = %s,
+                        reward_description = %s,
+                        card_title = %s,
+                        enabled = %s,
                         updated_at = CURRENT_TIMESTAMP
-                    WHERE store_id = ?
+                    WHERE store_id = %s
                 ''', (required_stamps, reward_description, card_title, enabled, store_id))
             else:
                 # 新規作成
                 cur.execute('''
                     INSERT INTO "T_店舗_スタンプカード設定" 
                     (store_id, required_stamps, reward_description, card_title, enabled, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    VALUES (%s, %s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 ''', (store_id, required_stamps, reward_description, card_title, enabled))
             
             conn.commit()
@@ -71,7 +71,7 @@ def settings(store_id):
     cur.execute('''
         SELECT required_stamps, reward_description, card_title, enabled
         FROM "T_店舗_スタンプカード設定"
-        WHERE store_id = ?
+        WHERE store_id = %s
     ''', (store_id,))
     settings = cur.fetchone()
     
@@ -101,7 +101,7 @@ def customers(store_id):
     cur = conn.cursor()
     
     # 店舗情報取得
-    cur.execute('SELECT 名称 FROM "T_店舗" WHERE id = ?', (store_id,))
+    cur.execute('SELECT 名称 FROM "T_店舗" WHERE id = %s', (store_id,))
     store = cur.fetchone()
     
     if not store:
@@ -124,8 +124,8 @@ def customers(store_id):
             sc.total_stamps,
             sc.rewards_used
         FROM "T_顧客" c
-        LEFT JOIN "T_スタンプカード" sc ON c.id = sc.customer_id AND sc.store_id = ?
-        WHERE c.store_id = ?
+        LEFT JOIN "T_スタンプカード" sc ON c.id = sc.customer_id AND sc.store_id = %s
+        WHERE c.store_id = %s
         ORDER BY c.created_at DESC
     ''', (store_id, store_id))
     
@@ -145,7 +145,7 @@ def customer_detail(store_id, customer_id):
     cur = conn.cursor()
     
     # 店舗情報取得
-    cur.execute('SELECT 名称 FROM "T_店舗" WHERE id = ?', (store_id,))
+    cur.execute('SELECT 名称 FROM "T_店舗" WHERE id = %s', (store_id,))
     store = cur.fetchone()
     
     if not store:
@@ -159,7 +159,7 @@ def customer_detail(store_id, customer_id):
     cur.execute('''
         SELECT id, name, phone, email, created_at, last_login
         FROM "T_顧客"
-        WHERE id = ? AND store_id = ?
+        WHERE id = %s AND store_id = %s
     ''', (customer_id, store_id))
     customer = cur.fetchone()
     
@@ -172,7 +172,7 @@ def customer_detail(store_id, customer_id):
     cur.execute('''
         SELECT id, current_stamps, total_stamps, rewards_used, created_at
         FROM "T_スタンプカード"
-        WHERE customer_id = ? AND store_id = ?
+        WHERE customer_id = %s AND store_id = %s
     ''', (customer_id, store_id))
     card = cur.fetchone()
     
@@ -180,7 +180,7 @@ def customer_detail(store_id, customer_id):
     cur.execute('''
         SELECT stamps_added, action_type, note, created_by, created_at
         FROM "T_スタンプ履歴"
-        WHERE customer_id = ? AND store_id = ?
+        WHERE customer_id = %s AND store_id = %s
         ORDER BY created_at DESC
         LIMIT 50
     ''', (customer_id, store_id))
@@ -190,7 +190,7 @@ def customer_detail(store_id, customer_id):
     cur.execute('''
         SELECT stamps_used, reward_description, used_by, created_at
         FROM "T_特典利用履歴"
-        WHERE customer_id = ? AND store_id = ?
+        WHERE customer_id = %s AND store_id = %s
         ORDER BY created_at DESC
         LIMIT 20
     ''', (customer_id, store_id))
@@ -221,7 +221,7 @@ def add_stamp(store_id, customer_id):
         cur.execute('''
             SELECT id, current_stamps, total_stamps
             FROM "T_スタンプカード"
-            WHERE customer_id = ? AND store_id = ?
+            WHERE customer_id = %s AND store_id = %s
         ''', (customer_id, store_id))
         card = cur.fetchone()
         
@@ -235,10 +235,10 @@ def add_stamp(store_id, customer_id):
         # スタンプを追加
         cur.execute('''
             UPDATE "T_スタンプカード"
-            SET current_stamps = current_stamps + ?,
-                total_stamps = total_stamps + ?,
+            SET current_stamps = current_stamps + %s,
+                total_stamps = total_stamps + %s,
                 updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
+            WHERE id = %s
         ''', (stamps_to_add, stamps_to_add, card_id))
         
         # 履歴を記録
@@ -246,7 +246,7 @@ def add_stamp(store_id, customer_id):
         cur.execute('''
             INSERT INTO "T_スタンプ履歴" 
             (card_id, customer_id, store_id, stamps_added, action_type, note, created_by, created_at)
-            VALUES (?, ?, ?, ?, 'add', ?, ?, CURRENT_TIMESTAMP)
+            VALUES (%s, %s, %s, %s, 'add', %s, %s, CURRENT_TIMESTAMP)
         ''', (card_id, customer_id, store_id, stamps_to_add, note, admin_name))
         
         conn.commit()
@@ -276,7 +276,7 @@ def remove_stamp(store_id, customer_id):
         cur.execute('''
             SELECT id, current_stamps, total_stamps
             FROM "T_スタンプカード"
-            WHERE customer_id = ? AND store_id = ?
+            WHERE customer_id = %s AND store_id = %s
         ''', (customer_id, store_id))
         card = cur.fetchone()
         
@@ -297,9 +297,9 @@ def remove_stamp(store_id, customer_id):
         # スタンプを削除
         cur.execute('''
             UPDATE "T_スタンプカード"
-            SET current_stamps = current_stamps - ?,
+            SET current_stamps = current_stamps - %s,
                 updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
+            WHERE id = %s
         ''', (stamps_to_remove, card_id))
         
         # 履歴を記録
@@ -307,7 +307,7 @@ def remove_stamp(store_id, customer_id):
         cur.execute('''
             INSERT INTO "T_スタンプ履歴" 
             (card_id, customer_id, store_id, stamps_added, action_type, note, created_by, created_at)
-            VALUES (?, ?, ?, ?, 'remove', ?, ?, CURRENT_TIMESTAMP)
+            VALUES (%s, %s, %s, %s, 'remove', %s, %s, CURRENT_TIMESTAMP)
         ''', (card_id, customer_id, store_id, -stamps_to_remove, note, admin_name))
         
         conn.commit()
@@ -332,7 +332,7 @@ def stats(store_id):
     cur = conn.cursor()
     
     # 店舗情報取得
-    cur.execute('SELECT 名称 FROM "T_店舗" WHERE id = ?', (store_id,))
+    cur.execute('SELECT 名称 FROM "T_店舗" WHERE id = %s', (store_id,))
     store = cur.fetchone()
     
     if not store:
@@ -343,14 +343,14 @@ def stats(store_id):
     store_name = store[0]
     
     # 登録顧客数
-    cur.execute('SELECT COUNT(*) FROM "T_顧客" WHERE store_id = ?', (store_id,))
+    cur.execute('SELECT COUNT(*) FROM "T_顧客" WHERE store_id = %s', (store_id,))
     total_customers = cur.fetchone()[0]
     
     # アクティブ顧客数（過去30日間にログインした顧客）
     cur.execute('''
         SELECT COUNT(*) 
         FROM "T_顧客" 
-        WHERE store_id = ? 
+        WHERE store_id = %s 
         AND last_login >= datetime('now', '-30 days')
     ''', (store_id,))
     active_customers = cur.fetchone()[0]
@@ -359,7 +359,7 @@ def stats(store_id):
     cur.execute('''
         SELECT COALESCE(SUM(total_stamps), 0)
         FROM "T_スタンプカード"
-        WHERE store_id = ?
+        WHERE store_id = %s
     ''', (store_id,))
     total_stamps = cur.fetchone()[0]
     
@@ -367,7 +367,7 @@ def stats(store_id):
     cur.execute('''
         SELECT COALESCE(SUM(rewards_used), 0)
         FROM "T_スタンプカード"
-        WHERE store_id = ?
+        WHERE store_id = %s
     ''', (store_id,))
     total_rewards = cur.fetchone()[0]
     
@@ -375,7 +375,7 @@ def stats(store_id):
     cur.execute('''
         SELECT DATE(created_at) as date, COUNT(*) as count
         FROM "T_スタンプ履歴"
-        WHERE store_id = ? 
+        WHERE store_id = %s 
         AND action_type = 'add'
         AND created_at >= datetime('now', '-30 days')
         GROUP BY DATE(created_at)
@@ -387,7 +387,7 @@ def stats(store_id):
     cur.execute('''
         SELECT DATE(created_at) as date, COUNT(*) as count
         FROM "T_特典利用履歴"
-        WHERE store_id = ?
+        WHERE store_id = %s
         AND created_at >= datetime('now', '-30 days')
         GROUP BY DATE(created_at)
         ORDER BY date ASC
