@@ -3,7 +3,8 @@
 管理者向けのスタンプカード管理機能を提供
 """
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify
-from ..utils import get_db_connection, require_roles, ROLES
+from app.utils.db import get_db_connection, _sql
+from app.utils.decorators import require_roles, ROLES
 
 stampcard_admin_bp = Blueprint('stampcard_admin', __name__)
 
@@ -407,3 +408,64 @@ def stats(store_id):
                          },
                          stamp_trend=stamp_trend,
                          reward_trend=reward_trend)
+
+
+# プレビューページ
+@stampcard_admin_bp.route('/admin/store/<int:store_id>/stampcard/preview')
+@require_roles('admin', 'store_manager', 'owner')
+def preview(store_id):
+    """スタンプカードのプレビューページ（タブ切り替え式）"""
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # 店舗情報を取得
+    cur.execute(_sql(conn, 'SELECT 名称, slug FROM "T_店舗" WHERE id = %s'), (store_id,))
+    store = cur.fetchone()
+    
+    if not store:
+        conn.close()
+        return "店舗が見つかりません", 404
+    
+    store_name = store[0]
+    store_slug = store[1]
+    
+    # スタンプカード設定を取得
+    cur.execute(_sql(conn, '''
+        SELECT card_title, required_stamps, reward_description, enabled
+        FROM "T_店舗_スタンプカード設定"
+        WHERE store_id = %s
+    '''), (store_id,))
+    
+    settings = cur.fetchone()
+    
+    if settings:
+        card_title = settings[0]
+        required_stamps = settings[1]
+        reward_description = settings[2]
+        enabled = settings[3]
+    else:
+        card_title = "スタンプカード"
+        required_stamps = 10
+        reward_description = "特典内容が設定されていません"
+        enabled = False
+    
+    conn.close()
+    
+    # プレビュー用のテストデータ
+    preview_data = {
+        'customer_name': 'プレビュー 太郎',
+        'current_stamps': 5,
+        'required_stamps': required_stamps,
+        'total_stamps': 15,
+        'rewards_used': 1,
+        'card_title': card_title,
+        'reward_description': reward_description,
+        'store_name': store_name,
+        'store_slug': store_slug
+    }
+    
+    return render_template('stampcard_admin_preview.html',
+                         store_id=store_id,
+                         store_name=store_name,
+                         store_slug=store_slug,
+                         preview_data=preview_data)
