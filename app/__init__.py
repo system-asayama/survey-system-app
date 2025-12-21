@@ -133,6 +133,21 @@ def create_app() -> Flask:
     except Exception as e:
         print(f"⚠️ Stamp Card Admin Blueprint登録エラー: {e}")
 
+    # 予約システム機能
+    try:
+        from .blueprints.reservation import reservation_bp
+        app.register_blueprint(reservation_bp)
+        print("✅ Reservation Blueprint登録完了")
+    except Exception as e:
+        print(f"⚠️ Reservation Blueprint登録エラー: {e}")
+
+    try:
+        from .blueprints.reservation_admin import reservation_admin_bp
+        app.register_blueprint(reservation_admin_bp)
+        print("✅ Reservation Admin Blueprint登録完了")
+    except Exception as e:
+        print(f"⚠️ Reservation Admin Blueprint登録エラー: {e}")
+
     # 店舗スロット設定ルート
     try:
         import sys
