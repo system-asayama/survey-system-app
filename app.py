@@ -834,6 +834,24 @@ try:
 except Exception as e:
     print(f"⚠️ Slot Blueprint登録失敗: {e}")
 
+# ===== Stamp Card Blueprint =====
+try:
+    from app.blueprints.stampcard import stampcard_bp
+    app.register_blueprint(stampcard_bp)
+    print("✅ Stamp Card Blueprint登録完了")
+except Exception as e:
+    print(f"⚠️ Stamp Card Blueprint登録失敗: {e}")
+
+# ===== Stamp Card Admin Blueprint =====
+try:
+    from app.blueprints.stampcard_admin import stampcard_admin_bp
+    app.register_blueprint(stampcard_admin_bp)  # URL prefixはルート内で指定済み
+    print("✅ Stamp Card Admin Blueprint登録完了")
+except Exception as e:
+    print(f"⚠️ Stamp Card Admin Blueprint登録失敗: {e}")
+    import traceback
+    traceback.print_exc()
+
 
 
 

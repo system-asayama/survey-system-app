@@ -31,22 +31,28 @@
     </div>
     
     <!-- 将来の拡張用プレースホルダー -->
-    <div class="app-card app-card-disabled">
-      <div class="app-icon">📅</div>
-      <h3>予約システム</h3>
-      <p>オンライン予約を受け付けるアプリです。</p>
+    <!-- スタンプカードアプリ -->
+    <div class="app-card">
+      <div class="app-icon">🎟️</div>
+      <h3>スタンプカード</h3>
+      <p>デジタルスタンプカードを提供し、顧客のリピート率を向上させます。</p>
       <div class="app-actions">
-        <button class="btn btn-disabled" disabled>準備中</button>
+        <a href="/admin/store/{{ store.id }}/stampcard/settings" class="btn btn-primary">設定</a>
+        <a href="/admin/store/{{ store.id }}/stampcard/customers" class="btn btn-secondary">顧客管理</a>
+      </div>
+      <div class="app-actions" style="margin-top: 10px;">
+        <a href="/admin/store/{{ store.id }}/stampcard/stats" class="btn btn-info">統計</a>
+        <a href="/store/{{ store.slug }}/stampcard/qr" class="btn btn-success" target="_blank">QRコード</a>
       </div>
       <div class="app-status">
-        <span class="status-badge status-inactive">準備中</span>
+        <span class="status-badge status-active">有効</span>
       </div>
     </div>
     
     <div class="app-card app-card-disabled">
-      <div class="app-icon">💳</div>
-      <h3>ポイントカード</h3>
-      <p>デジタルポイントカードを提供するアプリです。</p>
+      <div class="app-icon">📅</div>
+      <h3>予約システム</h3>
+      <p>オンライン予約を受け付けるアプリです。</p>
       <div class="app-actions">
         <button class="btn btn-disabled" disabled>準備中</button>
       </div>
@@ -181,6 +187,15 @@
   
   .btn-info:hover {
     background: #F57C00;
+  }
+  
+  .btn-success {
+    background: #8BC34A;
+    color: white;
+  }
+  
+  .btn-success:hover {
+    background: #7CB342;
   }
   
   .btn-disabled {

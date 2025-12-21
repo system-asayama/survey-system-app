@@ -423,6 +423,176 @@ def init_database():
         conn.commit()
         print("✓ T_アンケート回答テーブルを確認しました")
         
+        # 13. T_顧客テーブル（スタンプカード用）
+        if db_type == 'postgresql':
+            cur.execute(f'''
+                CREATE TABLE IF NOT EXISTS "T_顧客" (
+                    id              {serial_type},
+                    store_id        INTEGER NOT NULL,
+                    phone           TEXT,
+                    email           TEXT,
+                    name            TEXT NOT NULL,
+                    password_hash   TEXT,
+                    created_at      {timestamp_type},
+                    updated_at      {timestamp_type},
+                    last_login      TIMESTAMP,
+                    UNIQUE(store_id, phone),
+                    UNIQUE(store_id, email)
+                )
+            ''')
+        else:
+            cur.execute(f'''
+                CREATE TABLE IF NOT EXISTS "T_顧客" (
+                    id              {serial_type},
+                    store_id        INTEGER NOT NULL,
+                    phone           TEXT,
+                    email           TEXT,
+                    name            TEXT NOT NULL,
+                    password_hash   TEXT,
+                    created_at      {timestamp_type},
+                    updated_at      {timestamp_type},
+                    last_login      TIMESTAMP,
+                    FOREIGN KEY (store_id) REFERENCES T_店舗(id) ON DELETE CASCADE,
+                    UNIQUE(store_id, phone),
+                    UNIQUE(store_id, email)
+                )
+            ''')
+        conn.commit()
+        print("✓ T_顧客テーブルを確認しました")
+        
+        # 14. T_店舗_スタンプカード設定テーブル
+        if db_type == 'postgresql':
+            cur.execute(f'''
+                CREATE TABLE IF NOT EXISTS "T_店舗_スタンプカード設定" (
+                    id                  {serial_type},
+                    store_id            INTEGER NOT NULL UNIQUE,
+                    required_stamps     INTEGER DEFAULT 10,
+                    reward_description  TEXT,
+                    card_title          TEXT DEFAULT 'スタンプカード',
+                    enabled             INTEGER DEFAULT 1,
+                    created_at          {timestamp_type},
+                    updated_at          {timestamp_type}
+                )
+            ''')
+        else:
+            cur.execute(f'''
+                CREATE TABLE IF NOT EXISTS "T_店舗_スタンプカード設定" (
+                    id                  {serial_type},
+                    store_id            INTEGER NOT NULL UNIQUE,
+                    required_stamps     INTEGER DEFAULT 10,
+                    reward_description  TEXT,
+                    card_title          TEXT DEFAULT 'スタンプカード',
+                    enabled             INTEGER DEFAULT 1,
+                    created_at          {timestamp_type},
+                    updated_at          {timestamp_type},
+                    FOREIGN KEY (store_id) REFERENCES T_店舗(id) ON DELETE CASCADE
+                )
+            ''')
+        conn.commit()
+        print("✓ T_店舗_スタンプカード設定テーブルを確認しました")
+        
+        # 15. T_スタンプカードテーブル
+        if db_type == 'postgresql':
+            cur.execute(f'''
+                CREATE TABLE IF NOT EXISTS "T_スタンプカード" (
+                    id              {serial_type},
+                    customer_id     INTEGER NOT NULL,
+                    store_id        INTEGER NOT NULL,
+                    current_stamps  INTEGER DEFAULT 0,
+                    total_stamps    INTEGER DEFAULT 0,
+                    rewards_used    INTEGER DEFAULT 0,
+                    created_at      {timestamp_type},
+                    updated_at      {timestamp_type},
+                    UNIQUE(customer_id, store_id)
+                )
+            ''')
+        else:
+            cur.execute(f'''
+                CREATE TABLE IF NOT EXISTS "T_スタンプカード" (
+                    id              {serial_type},
+                    customer_id     INTEGER NOT NULL,
+                    store_id        INTEGER NOT NULL,
+                    current_stamps  INTEGER DEFAULT 0,
+                    total_stamps    INTEGER DEFAULT 0,
+                    rewards_used    INTEGER DEFAULT 0,
+                    created_at      {timestamp_type},
+                    updated_at      {timestamp_type},
+                    FOREIGN KEY (customer_id) REFERENCES T_顧客(id) ON DELETE CASCADE,
+                    FOREIGN KEY (store_id) REFERENCES T_店舗(id) ON DELETE CASCADE,
+                    UNIQUE(customer_id, store_id)
+                )
+            ''')
+        conn.commit()
+        print("✓ T_スタンプカードテーブルを確認しました")
+        
+        # 16. T_スタンプ履歴テーブル
+        if db_type == 'postgresql':
+            cur.execute(f'''
+                CREATE TABLE IF NOT EXISTS "T_スタンプ履歴" (
+                    id              {serial_type},
+                    card_id         INTEGER NOT NULL,
+                    customer_id     INTEGER NOT NULL,
+                    store_id        INTEGER NOT NULL,
+                    stamps_added    INTEGER DEFAULT 1,
+                    action_type     TEXT DEFAULT 'add',
+                    note            TEXT,
+                    created_by      TEXT,
+                    created_at      {timestamp_type}
+                )
+            ''')
+        else:
+            cur.execute(f'''
+                CREATE TABLE IF NOT EXISTS "T_スタンプ履歴" (
+                    id              {serial_type},
+                    card_id         INTEGER NOT NULL,
+                    customer_id     INTEGER NOT NULL,
+                    store_id        INTEGER NOT NULL,
+                    stamps_added    INTEGER DEFAULT 1,
+                    action_type     TEXT DEFAULT 'add',
+                    note            TEXT,
+                    created_by      TEXT,
+                    created_at      {timestamp_type},
+                    FOREIGN KEY (card_id) REFERENCES T_スタンプカード(id) ON DELETE CASCADE,
+                    FOREIGN KEY (customer_id) REFERENCES T_顧客(id) ON DELETE CASCADE,
+                    FOREIGN KEY (store_id) REFERENCES T_店舗(id) ON DELETE CASCADE
+                )
+            ''')
+        conn.commit()
+        print("✓ T_スタンプ履歴テーブルを確認しました")
+        
+        # 17. T_特典利用履歴テーブル
+        if db_type == 'postgresql':
+            cur.execute(f'''
+                CREATE TABLE IF NOT EXISTS "T_特典利用履歴" (
+                    id              {serial_type},
+                    card_id         INTEGER NOT NULL,
+                    customer_id     INTEGER NOT NULL,
+                    store_id        INTEGER NOT NULL,
+                    stamps_used     INTEGER NOT NULL,
+                    reward_description TEXT,
+                    used_by         TEXT,
+                    created_at      {timestamp_type}
+                )
+            ''')
+        else:
+            cur.execute(f'''
+                CREATE TABLE IF NOT EXISTS "T_特典利用履歴" (
+                    id              {serial_type},
+                    card_id         INTEGER NOT NULL,
+                    customer_id     INTEGER NOT NULL,
+                    store_id        INTEGER NOT NULL,
+                    stamps_used     INTEGER NOT NULL,
+                    reward_description TEXT,
+                    used_by         TEXT,
+                    created_at      {timestamp_type},
+                    FOREIGN KEY (card_id) REFERENCES T_スタンプカード(id) ON DELETE CASCADE,
+                    FOREIGN KEY (customer_id) REFERENCES T_顧客(id) ON DELETE CASCADE,
+                    FOREIGN KEY (store_id) REFERENCES T_店舗(id) ON DELETE CASCADE
+                )
+            ''')
+        conn.commit()
+        print("✓ T_特典利用履歴テーブルを確認しました")
+        
         # ===== 既存テーブルへのカラム追加（アップデート対応） =====
         print("\n" + "-" * 60)
         print("既存テーブルのカラム確認・追加を開始します")

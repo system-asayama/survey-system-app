@@ -118,6 +118,21 @@ def create_app() -> Flask:
     except Exception as e:
         print(f"⚠️ survey_admin blueprint 登録エラー: {e}")
 
+    # スタンプカード機能
+    try:
+        from .blueprints.stampcard import stampcard_bp
+        app.register_blueprint(stampcard_bp)
+        print("✅ Stamp Card Blueprint登録完了")
+    except Exception as e:
+        print(f"⚠️ Stamp Card Blueprint登録エラー: {e}")
+
+    try:
+        from .blueprints.stampcard_admin import stampcard_admin_bp
+        app.register_blueprint(stampcard_admin_bp)
+        print("✅ Stamp Card Admin Blueprint登録完了")
+    except Exception as e:
+        print(f"⚠️ Stamp Card Admin Blueprint登録エラー: {e}")
+
     # 店舗スロット設定ルート
     try:
         import sys
