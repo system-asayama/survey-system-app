@@ -678,6 +678,85 @@ def init_database():
             add_column_if_not_exists(cur, conn, 'T_アンケート回答', 'recommend', 'TEXT', db_type)
             add_column_if_not_exists(cur, conn, 'T_アンケート回答', 'comment', 'TEXT', db_type)
         
+        # 予約システムのテーブルを作成
+        print("\n" + "-" * 60)
+        print("予約システム用テーブルの作成を開始します")
+        print("-" * 60)
+        
+        # 1. T_店舗_予約設定テーブル
+        print("\n✓ T_店舗_予約設定テーブルを確認しました")
+        cur.execute(f'''
+            CREATE TABLE IF NOT EXISTS "T_店舗_予約設定" (
+                id              {serial_type},
+                store_id        INTEGER NOT NULL,
+                営業開始時刻    TEXT DEFAULT '11:00',
+                営業終了時刻    TEXT DEFAULT '22:00',
+                最終入店時刻    TEXT DEFAULT '21:00',
+                予約単位_分     INTEGER DEFAULT 30,
+                予約受付日数    INTEGER DEFAULT 60,
+                定休日          TEXT DEFAULT NULL,
+                予約受付可否    INTEGER DEFAULT 1,
+                特記事項        TEXT DEFAULT NULL,
+                created_at      {timestamp_type},
+                updated_at      TIMESTAMP DEFAULT NULL,
+                FOREIGN KEY (store_id) REFERENCES "T_店舗"(id)
+            )
+        ''')
+        conn.commit()
+        
+        # 2. T_テーブル設定テーブル
+        print("✓ T_テーブル設定テーブルを確認しました")
+        cur.execute(f'''
+            CREATE TABLE IF NOT EXISTS "T_テーブル設定" (
+                id              {serial_type},
+                store_id        INTEGER NOT NULL,
+                テーブル名      TEXT NOT NULL,
+                座席数          INTEGER NOT NULL,
+                テーブル数      INTEGER DEFAULT 1,
+                表示順序        INTEGER DEFAULT 0,
+                有効            INTEGER DEFAULT 1,
+                created_at      {timestamp_type},
+                updated_at      TIMESTAMP DEFAULT NULL,
+                FOREIGN KEY (store_id) REFERENCES "T_店舗"(id)
+            )
+        ''')
+        conn.commit()
+        
+        # 3. T_予約テーブル
+        print("✓ T_予約テーブルを確認しました")
+        cur.execute(f'''
+            CREATE TABLE IF NOT EXISTS "T_予約" (
+                id              {serial_type},
+                store_id        INTEGER NOT NULL,
+                予約番号        TEXT UNIQUE NOT NULL,
+                予約日          TEXT NOT NULL,
+                予約時刻        TEXT NOT NULL,
+                人数            INTEGER NOT NULL,
+                顧客名          TEXT NOT NULL,
+                顧客電話番号    TEXT NOT NULL,
+                顧客メール      TEXT DEFAULT NULL,
+                特記事項        TEXT DEFAULT NULL,
+                ステータス      TEXT DEFAULT 'confirmed',
+                テーブル割当    TEXT DEFAULT NULL,
+                created_at      {timestamp_type},
+                updated_at      TIMESTAMP DEFAULT NULL,
+                cancelled_at    TIMESTAMP DEFAULT NULL,
+                FOREIGN KEY (store_id) REFERENCES "T_店舗"(id)
+            )
+        ''')
+        conn.commit()
+        
+        # 4. インデックスの作成
+        try:
+            cur.execute('CREATE INDEX IF NOT EXISTS idx_reservation_settings_store ON "T_店舗_予約設定"(store_id)')
+            cur.execute('CREATE INDEX IF NOT EXISTS idx_table_settings_store ON "T_テーブル設定"(store_id)')
+            cur.execute('CREATE INDEX IF NOT EXISTS idx_reservations_store ON "T_予約"(store_id)')
+            cur.execute('CREATE INDEX IF NOT EXISTS idx_reservations_date ON "T_予約"(予約日)')
+            cur.execute('CREATE INDEX IF NOT EXISTS idx_reservations_status ON "T_予約"(ステータス)')
+            conn.commit()
+        except Exception as e:
+            print(f"  ! インデックス作成エラー（無視します）: {e}")
+        
         print("\n" + "=" * 60)
         print(f"✓ データベース初期化が完了しました ({db_type})")
         print("=" * 60)
