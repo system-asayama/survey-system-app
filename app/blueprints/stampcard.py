@@ -186,11 +186,20 @@ def customer_mypage(store_slug):
     
     # スタンプカード設定取得
     cur.execute('''
-        SELECT required_stamps, reward_description, card_title
+        SELECT required_stamps, reward_description, card_title, use_multi_rewards
         FROM "T_店舗_スタンプカード設定"
         WHERE store_id = %s
     ''', (g.store_id,))
     settings = cur.fetchone()
+    
+    # 複数特典設定取得
+    cur.execute('''
+        SELECT id, required_stamps, reward_description, is_repeatable
+        FROM "T_特典設定"
+        WHERE store_id = %s AND enabled = 1
+        ORDER BY required_stamps
+    ''', (g.store_id,))
+    multi_rewards = cur.fetchall()
     
     # スタンプ履歴取得（最新10件）
     cur.execute('''
@@ -216,11 +225,12 @@ def customer_mypage(store_slug):
     
     # デフォルト設定
     if not settings:
-        settings = (10, '1品無料', 'スタンプカード')
+        settings = (10, '1品無料', 'スタンプカード', 0)
     
     required_stamps = settings[0]
     reward_description = settings[1]
     card_title = settings[2]
+    use_multi_rewards = settings[3] if len(settings) > 3 else 0
     
     # スタンプカードがない場合は作成
     if not card:
@@ -235,6 +245,40 @@ def customer_mypage(store_slug):
         conn.close()
         card = (card_id, 0, 0, 0, datetime.now())
     
+    # 特典データの準備
+    rewards_list = []
+    if use_multi_rewards and multi_rewards:
+        # 複数特典モード
+        for reward in multi_rewards:
+            reward_id = reward[0]
+            req_stamps = reward[1]
+            desc = reward[2]
+            is_repeatable = reward[3]
+            
+            # この特典が利用可能かチェック
+            can_use = False
+            if card[1] >= req_stamps:
+                if is_repeatable:
+                    # 繰り返し可能な場合、常に利用可能
+                    can_use = True
+                else:
+                    # 初回のみの場合、利用済みかチェック
+                    cur.execute('''
+                        SELECT id FROM "T_特典利用履歴"
+                        WHERE customer_id = %s AND store_id = %s AND reward_id = %s
+                    ''', (customer_id, g.store_id, reward_id))
+                    if not cur.fetchone():
+                        can_use = True
+            
+            rewards_list.append({
+                'id': reward_id,
+                'required_stamps': req_stamps,
+                'description': desc,
+                'is_repeatable': is_repeatable,
+                'can_use': can_use,
+                'achieved': card[1] >= req_stamps
+            })
+    
     card_data = {
         'id': card[0],
         'current_stamps': card[1],
@@ -244,7 +288,9 @@ def customer_mypage(store_slug):
         'required_stamps': required_stamps,
         'reward_description': reward_description,
         'card_title': card_title,
-        'can_use_reward': card[1] >= required_stamps
+        'can_use_reward': card[1] >= required_stamps if not use_multi_rewards else False,
+        'use_multi_rewards': use_multi_rewards,
+        'rewards_list': rewards_list
     }
     
     return render_template('stampcard_mypage.html',
@@ -395,6 +441,94 @@ def use_reward(store_slug):
     except Exception as e:
         conn.rollback()
         conn.close()
+        return jsonify({'success': False, 'message': f'特典の利用に失敗しました: {str(e)}'})
+
+@stampcard_bp.route('/use_multi_reward', methods=['POST'])
+@customer_login_required
+def use_multi_reward(store_slug):
+    """複数特典を使用する"""
+    customer_id = session.get('customer_id')
+    data = request.get_json()
+    reward_id = data.get('reward_id')
+    
+    if not reward_id:
+        return jsonify({'success': False, 'message': '特典IDが指定されていません'})
+    
+    conn = store_db.get_db_connection()
+    cur = conn.cursor()
+    
+    try:
+        # 特典設定取得
+        cur.execute('''
+            SELECT required_stamps, reward_description, is_repeatable
+            FROM "T_特典設定"
+            WHERE id = %s AND store_id = %s AND enabled = 1
+        ''', (reward_id, g.store_id))
+        reward = cur.fetchone()
+        
+        if not reward:
+            conn.close()
+            return jsonify({'success': False, 'message': '特典が見つかりません'})
+        
+        required_stamps = reward[0]
+        reward_description = reward[1]
+        is_repeatable = reward[2]
+        
+        # スタンプカード取得
+        cur.execute('''
+            SELECT id, current_stamps
+            FROM "T_スタンプカード"
+            WHERE customer_id = %s AND store_id = %s
+        ''', (customer_id, g.store_id))
+        card = cur.fetchone()
+        
+        if not card:
+            conn.close()
+            return jsonify({'success': False, 'message': 'スタンプカードが見つかりません'})
+        
+        card_id = card[0]
+        current_stamps = card[1]
+        
+        # スタンプが足りるかチェック
+        if current_stamps < required_stamps:
+            conn.close()
+            return jsonify({'success': False, 'message': f'スタンプが足りません（現在: {current_stamps}個、必要: {required_stamps}個）'})
+        
+        # 繰り返し不可の場合、利用済みかチェック
+        if not is_repeatable:
+            cur.execute('''
+                SELECT id FROM "T_特典利用履歴"
+                WHERE customer_id = %s AND store_id = %s AND reward_id = %s
+            ''', (customer_id, g.store_id, reward_id))
+            if cur.fetchone():
+                conn.close()
+                return jsonify({'success': False, 'message': 'この特典は既に利用済みです'})
+        
+        # スタンプを消費（複数特典モードではスタンプを減らさない）
+        # 特典利用履歴を記録
+        cur.execute('''
+            INSERT INTO "T_特典利用履歴" (card_id, customer_id, store_id, stamps_used, reward_description, reward_id, used_by, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, 'customer', CURRENT_TIMESTAMP)
+        ''', (card_id, customer_id, g.store_id, 0, reward_description, reward_id))
+        
+        # 特典利用回数を更新
+        cur.execute('''
+            UPDATE "T_スタンプカード"
+            SET rewards_used = rewards_used + 1,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = %s
+        ''', (card_id,))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': '特典を利用しました！'})
+        
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'message': f'特典の利用に失敗しました: {str(e)}'})
 
 # ===== 店舗用QRコード =====

@@ -593,6 +593,46 @@ def init_database():
         conn.commit()
         print("✓ T_特典利用履歴テーブルを確認しました")
         
+        # 18. T_特典設定テーブル（複数特典機能）
+        if db_type == 'postgresql':
+            cur.execute(f'''
+                CREATE TABLE IF NOT EXISTS "T_特典設定" (
+                    id                  {serial_type},
+                    store_id            INTEGER NOT NULL,
+                    required_stamps     INTEGER NOT NULL,
+                    reward_description  TEXT NOT NULL,
+                    is_repeatable       INTEGER DEFAULT 0,
+                    display_order       INTEGER DEFAULT 0,
+                    enabled             INTEGER DEFAULT 1,
+                    created_at          {timestamp_type},
+                    updated_at          {timestamp_type}
+                )
+            ''')
+        else:
+            cur.execute(f'''
+                CREATE TABLE IF NOT EXISTS "T_特典設定" (
+                    id                  {serial_type},
+                    store_id            INTEGER NOT NULL,
+                    required_stamps     INTEGER NOT NULL,
+                    reward_description  TEXT NOT NULL,
+                    is_repeatable       INTEGER DEFAULT 0,
+                    display_order       INTEGER DEFAULT 0,
+                    enabled             INTEGER DEFAULT 1,
+                    created_at          {timestamp_type},
+                    updated_at          {timestamp_type},
+                    FOREIGN KEY (store_id) REFERENCES T_店舗(id) ON DELETE CASCADE
+                )
+            ''')
+        conn.commit()
+        print("✓ T_特典設定テーブルを確認しました")
+        
+        # 既存テーブルにカラムを追加
+        # T_店舗_スタンプカード設定にuse_multi_rewardsカラムを追加
+        add_column_if_not_exists(cur, conn, 'T_店舗_スタンプカード設定', 'use_multi_rewards', 'INTEGER DEFAULT 0', db_type)
+        
+        # T_特典利用履歴にreward_idカラムを追加
+        add_column_if_not_exists(cur, conn, 'T_特典利用履歴', 'reward_id', 'INTEGER DEFAULT NULL', db_type)
+        
         # ===== 既存テーブルへのカラム追加（アップデート対応） =====
         print("\n" + "-" * 60)
         print("既存テーブルのカラム確認・追加を開始します")

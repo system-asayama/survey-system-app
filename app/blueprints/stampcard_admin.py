@@ -13,12 +13,12 @@ stampcard_admin_bp = Blueprint('stampcard_admin', __name__)
 @stampcard_admin_bp.route('/admin/store/<int:store_id>/stampcard/settings', methods=['GET', 'POST'])
 @require_roles(ROLES["ADMIN"], ROLES["TENANT_ADMIN"], ROLES["SYSTEM_ADMIN"])
 def settings(store_id):
-    """スタンプカード設定"""
+    """スタンプカード設定（複数特典対応）"""
     conn = get_db_connection()
     cur = conn.cursor()
     
     # 店舗情報取得
-    cur.execute('SELECT 名称 FROM "T_店舗" WHERE id = %s', (store_id,))
+    cur.execute(_sql(conn, 'SELECT 名称 FROM "T_店舗" WHERE id = %s'), (store_id,))
     store = cur.fetchone()
     
     if not store:
@@ -29,34 +29,84 @@ def settings(store_id):
     store_name = store[0]
     
     if request.method == 'POST':
-        required_stamps = request.form.get('required_stamps', 10, type=int)
-        reward_description = request.form.get('reward_description', '')
         card_title = request.form.get('card_title', 'スタンプカード')
         enabled = 1 if request.form.get('enabled') == 'on' else 0
+        use_multi_rewards = int(request.form.get('use_multi_rewards', 0))
         
         try:
             # 既存設定を確認
-            cur.execute('SELECT id FROM "T_店舗_スタンプカード設定" WHERE store_id = %s', (store_id,))
+            cur.execute(_sql(conn, 'SELECT id FROM "T_店舗_スタンプカード設定" WHERE store_id = %s'), (store_id,))
             existing = cur.fetchone()
             
-            if existing:
-                # 更新
-                cur.execute('''
-                    UPDATE "T_店舗_スタンプカード設定"
-                    SET required_stamps = %s,
-                        reward_description = %s,
-                        card_title = %s,
-                        enabled = %s,
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE store_id = %s
-                ''', (required_stamps, reward_description, card_title, enabled, store_id))
+            if use_multi_rewards == 0:
+                # シンプルモード
+                required_stamps = request.form.get('required_stamps', 10, type=int)
+                reward_description = request.form.get('reward_description', '')
+                
+                if existing:
+                    cur.execute(_sql(conn, '''
+                        UPDATE "T_店舗_スタンプカード設定"
+                        SET required_stamps = %s,
+                            reward_description = %s,
+                            card_title = %s,
+                            enabled = %s,
+                            use_multi_rewards = %s,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE store_id = %s
+                    '''), (required_stamps, reward_description, card_title, enabled, use_multi_rewards, store_id))
+                else:
+                    cur.execute(_sql(conn, '''
+                        INSERT INTO "T_店舗_スタンプカード設定" 
+                        (store_id, required_stamps, reward_description, card_title, enabled, use_multi_rewards, created_at, updated_at)
+                        VALUES (%s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    '''), (store_id, required_stamps, reward_description, card_title, enabled, use_multi_rewards))
             else:
-                # 新規作成
-                cur.execute('''
-                    INSERT INTO "T_店舗_スタンプカード設定" 
-                    (store_id, required_stamps, reward_description, card_title, enabled, created_at, updated_at)
-                    VALUES (%s, %s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                ''', (store_id, required_stamps, reward_description, card_title, enabled))
+                # 複数特典モード
+                if existing:
+                    cur.execute(_sql(conn, '''
+                        UPDATE "T_店舗_スタンプカード設定"
+                        SET card_title = %s,
+                            enabled = %s,
+                            use_multi_rewards = %s,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE store_id = %s
+                    '''), (card_title, enabled, use_multi_rewards, store_id))
+                else:
+                    cur.execute(_sql(conn, '''
+                        INSERT INTO "T_店舗_スタンプカード設定" 
+                        (store_id, card_title, enabled, use_multi_rewards, created_at, updated_at)
+                        VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    '''), (store_id, card_title, enabled, use_multi_rewards))
+                
+                # 既存の特典を削除
+                cur.execute(_sql(conn, 'DELETE FROM "T_特典設定" WHERE store_id = %s'), (store_id,))
+                
+                # 新しい特典を追加
+                rewards_data = {}
+                for key in request.form:
+                    if key.startswith('rewards['):
+                        # rewards[0][required_stamps] の形式をパース
+                        import re
+                        match = re.match(r'rewards\[(\d+)\]\[(.+)\]', key)
+                        if match:
+                            idx = int(match.group(1))
+                            field = match.group(2)
+                            if idx not in rewards_data:
+                                rewards_data[idx] = {}
+                            rewards_data[idx][field] = request.form[key]
+                
+                # 特典を保存
+                for idx in sorted(rewards_data.keys()):
+                    reward = rewards_data[idx]
+                    required_stamps = int(reward.get('required_stamps', 10))
+                    description = reward.get('description', '')
+                    is_repeatable = 1 if reward.get('repeatable') == 'on' else 0
+                    
+                    cur.execute(_sql(conn, '''
+                        INSERT INTO "T_特典設定"
+                        (store_id, required_stamps, reward_description, is_repeatable, display_order, created_at, updated_at)
+                        VALUES (%s, %s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    '''), (store_id, required_stamps, description, is_repeatable, idx))
             
             conn.commit()
             conn.close()
@@ -67,30 +117,62 @@ def settings(store_id):
             conn.rollback()
             conn.close()
             flash(f'設定の保存に失敗しました: {str(e)}', 'error')
+            import traceback
+            traceback.print_exc()
     
     # 現在の設定を取得
-    cur.execute('''
-        SELECT required_stamps, reward_description, card_title, enabled
+    cur.execute(_sql(conn, '''
+        SELECT required_stamps, reward_description, card_title, enabled, use_multi_rewards
         FROM "T_店舗_スタンプカード設定"
         WHERE store_id = %s
-    ''', (store_id,))
-    settings = cur.fetchone()
+    '''), (store_id,))
+    settings_row = cur.fetchone()
+    
+    # 複数特典を取得
+    cur.execute(_sql(conn, '''
+        SELECT id, required_stamps, reward_description, is_repeatable, display_order
+        FROM "T_特典設定"
+        WHERE store_id = %s
+        ORDER BY display_order, required_stamps
+    '''), (store_id,))
+    rewards_rows = cur.fetchall()
     
     conn.close()
     
     # デフォルト値
-    if not settings:
-        settings = (10, '', 'スタンプカード', 1)
+    if not settings_row:
+        settings = {
+            'required_stamps': 10,
+            'reward_description': '',
+            'card_title': 'スタンプカード',
+            'enabled': 1,
+            'use_multi_rewards': 0
+        }
+    else:
+        settings = {
+            'required_stamps': settings_row[0],
+            'reward_description': settings_row[1],
+            'card_title': settings_row[2],
+            'enabled': settings_row[3],
+            'use_multi_rewards': settings_row[4] if len(settings_row) > 4 else 0
+        }
     
-    return render_template('stampcard_admin_settings.html',
+    # 特典リストを辞書形式に変換
+    rewards = []
+    for row in rewards_rows:
+        rewards.append({
+            'id': row[0],
+            'required_stamps': row[1],
+            'reward_description': row[2],
+            'is_repeatable': row[3],
+            'display_order': row[4]
+        })
+    
+    return render_template('stampcard_admin_settings_new.html',
                          store_id=store_id,
                          store_name=store_name,
-                         settings={
-                             'required_stamps': settings[0],
-                             'reward_description': settings[1],
-                             'card_title': settings[2],
-                             'enabled': settings[3]
-                         })
+                         settings=settings,
+                         rewards=rewards)
 
 # ===== 顧客管理 =====
 
