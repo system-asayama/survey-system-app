@@ -412,7 +412,7 @@ def stats(store_id):
 
 # プレビューページ
 @stampcard_admin_bp.route('/admin/store/<int:store_id>/stampcard/preview')
-@require_roles('admin', 'store_manager', 'owner')
+@require_roles(ROLES["ADMIN"], ROLES["TENANT_ADMIN"], ROLES["SYSTEM_ADMIN"])
 def preview(store_id):
     """スタンプカードのプレビューページ（タブ切り替え式）"""
     conn = get_db_connection()
