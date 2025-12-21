@@ -351,7 +351,7 @@ def stats(store_id):
         SELECT COUNT(*) 
         FROM "T_顧客" 
         WHERE store_id = %s 
-        AND last_login >= datetime('now', '-30 days')
+        AND last_login >= CURRENT_TIMESTAMP - INTERVAL '30 days'
     ''', (store_id,))
     active_customers = cur.fetchone()[0]
     
@@ -377,7 +377,7 @@ def stats(store_id):
         FROM "T_スタンプ履歴"
         WHERE store_id = %s 
         AND action_type = 'add'
-        AND created_at >= datetime('now', '-30 days')
+        AND created_at >= CURRENT_TIMESTAMP - INTERVAL '30 days'
         GROUP BY DATE(created_at)
         ORDER BY date ASC
     ''', (store_id,))
@@ -388,7 +388,7 @@ def stats(store_id):
         SELECT DATE(created_at) as date, COUNT(*) as count
         FROM "T_特典利用履歴"
         WHERE store_id = %s
-        AND created_at >= datetime('now', '-30 days')
+        AND created_at >= CURRENT_TIMESTAMP - INTERVAL '30 days'
         GROUP BY DATE(created_at)
         ORDER BY date ASC
     ''', (store_id,))
