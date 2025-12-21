@@ -874,6 +874,14 @@ except Exception as e:
 
 if __name__ == "__main__":
     import sys
+    # 新しい統合アプリを使用
+    try:
+        from app import create_app
+        app = create_app()
+        print("✅ 統合アプリケーション（app/__init__.py）を使用")
+    except Exception as e:
+        print(f"⚠️ 統合アプリの読み込みに失敗、従来のappを使用: {e}")
+    
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
     print(f"Starting Flask app on port {port}...")
     app.run(host='0.0.0.0', port=port, debug=False)
