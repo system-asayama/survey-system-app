@@ -11,7 +11,7 @@ from db_config import get_db_connection, get_cursor, execute_query
 # ===== 店舗情報取得 =====
 def get_store_by_slug(slug: str) -> Optional[Dict[str, Any]]:
     """
-slugから店舗情報を取得"""
+ slugから店舗情報を取得"""
     conn = get_db_connection()
     cur = get_cursor(conn)
     execute_query(cur, """
@@ -23,7 +23,18 @@ slugから店舗情報を取得"""
     conn.close()
     
     if row:
-        return dict(row)
+        # SQLite Rowオブジェクトを辞書に変換
+        if hasattr(row, 'keys'):
+            return {key: row[key] for key in row.keys()}
+        else:
+            # タプルの場合（フォールバック）
+            return {
+                'id': row[0],
+                'tenant_id': row[1],
+                'name': row[2],
+                'slug': row[3],
+                'active': row[4]
+            }
     return None
 def get_store_by_id(store_id: int) -> Optional[Dict[str, Any]]:
     """IDから店舗情報を取得"""
@@ -38,7 +49,18 @@ def get_store_by_id(store_id: int) -> Optional[Dict[str, Any]]:
     conn.close()
     
     if row:
-        return dict(row)
+        # SQLite Rowオブジェクトを辞書に変換
+        if hasattr(row, 'keys'):
+            return {key: row[key] for key in row.keys()}
+        else:
+            # タプルの場合（フォールバック）
+            return {
+                'id': row[0],
+                'tenant_id': row[1],
+                'name': row[2],
+                'slug': row[3],
+                'active': row[4]
+            }
     return None
 
 # ===== アンケート設定 =====
