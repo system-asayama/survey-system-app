@@ -298,60 +298,68 @@ def edit_reservation(store_id, reservation_id):
 @require_roles(ROLES["ADMIN"], ROLES["EMPLOYEE"], ROLES["SYSTEM_ADMIN"], ROLES["TENANT_ADMIN"])
 def calendar(store_id):
     """予約カレンダー表示"""
-    # 店舗情報を取得
-    store = store_db.get_store_by_id(store_id)
-    if not store:
-        return "店舗が見つかりません", 404
+    try:
+        # 店舗情報を取得
+        store = store_db.get_store_by_id(store_id)
+        if not store:
+            return "店舗が見つかりません", 404
+    except Exception as e:
+        return f"店舗情報取得エラー: {str(e)}", 500
     
-    # 月フィルター（デフォルトは今月）
-    year = int(request.args.get('year', datetime.now().year))
-    month = int(request.args.get('month', datetime.now().month))
-    
-    # 月の最初と最後の日
-    first_day = datetime(year, month, 1)
-    if month == 12:
-        last_day = datetime(year + 1, 1, 1) - timedelta(days=1)
-    else:
-        last_day = datetime(year, month + 1, 1) - timedelta(days=1)
-    
-    conn = get_db_connection()
-    cur = get_cursor(conn)
-    
-    # 月間の予約データを取得
-    execute_query(cur, '''
-        SELECT 予約日, COUNT(*) as count, SUM(人数) as guests
-        FROM "T_予約"
-        WHERE store_id = ? 
-          AND 予約日 >= ? 
-          AND 予約日 <= ?
-          AND ステータス = 'confirmed'
-        GROUP BY 予約日
-    ''', (store_id, first_day.strftime('%Y-%m-%d'), last_day.strftime('%Y-%m-%d')))
-    
-    reservations_by_date = {}
-    for row in cur.fetchall():
-        # Rowオブジェクトを辞書に変換
-        if hasattr(row, 'keys'):
-            row_dict = {key: row[key] for key in row.keys()}
-        else:
-            row_dict = {'予約日': row[0], 'count': row[1], 'guests': row[2]}
+    try:
+        # 月フィルター（デフォルトは今月）
+        year = int(request.args.get('year', datetime.now().year))
+        month = int(request.args.get('month', datetime.now().month))
         
-        reservations_by_date[row_dict['予約日']] = {
-            'count': row_dict['count'],
-            'guests': row_dict['guests']
-        }
-    
-    conn.close()
-    
-    # カレンダーデータを生成
-    cal = calendar.monthcalendar(year, month)
-    first_weekday = calendar.monthrange(year, month)[0]  # 0=月曜日
-    first_weekday = (first_weekday + 1) % 7  # 0=日曜日に変換
-    
-    return render_template('admin_reservation_calendar.html',
-                         store=store,
-                         year=year,
-                         month=month,
-                         calendar_weeks=cal,
-                         first_weekday=first_weekday,
-                         reservations_by_date=reservations_by_date)
+        # 月の最初と最後の日
+        first_day = datetime(year, month, 1)
+        if month == 12:
+            last_day = datetime(year + 1, 1, 1) - timedelta(days=1)
+        else:
+            last_day = datetime(year, month + 1, 1) - timedelta(days=1)
+        
+        conn = get_db_connection()
+        cur = get_cursor(conn)
+        
+        # 月間の予約データを取得
+        execute_query(cur, '''
+            SELECT 予約日, COUNT(*) as count, SUM(人数) as guests
+            FROM "T_予約"
+            WHERE store_id = ? 
+              AND 予約日 >= ? 
+              AND 予約日 <= ?
+              AND ステータス = 'confirmed'
+            GROUP BY 予約日
+        ''', (store_id, first_day.strftime('%Y-%m-%d'), last_day.strftime('%Y-%m-%d')))
+        
+        reservations_by_date = {}
+        for row in cur.fetchall():
+            # Rowオブジェクトを辞書に変換
+            if hasattr(row, 'keys'):
+                row_dict = {key: row[key] for key in row.keys()}
+            else:
+                row_dict = {'予約日': row[0], 'count': row[1], 'guests': row[2]}
+            
+            reservations_by_date[row_dict['予約日']] = {
+                'count': row_dict['count'],
+                'guests': row_dict['guests']
+            }
+        
+        conn.close()
+        
+        # カレンダーデータを生成
+        cal = calendar.monthcalendar(year, month)
+        first_weekday = calendar.monthrange(year, month)[0]  # 0=月曜日
+        first_weekday = (first_weekday + 1) % 7  # 0=日曜日に変換
+        
+        return render_template('admin_reservation_calendar.html',
+                             store=store,
+                             year=year,
+                             month=month,
+                             calendar_weeks=cal,
+                             first_weekday=first_weekday,
+                             reservations_by_date=reservations_by_date)
+    except Exception as e:
+        import traceback
+        error_detail = traceback.format_exc()
+        return f"<h1>カレンダーエラー</h1><pre>{error_detail}</pre>", 500
