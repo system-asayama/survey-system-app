@@ -11,7 +11,7 @@ from app.utils.decorators import require_roles, ROLES
 reservation_admin_bp = Blueprint('reservation_admin', __name__, url_prefix='/admin/store/<int:store_id>/reservation')
 
 @reservation_admin_bp.route('/settings')
-@require_roles(ROLES["ADMIN"], ROLES["EMPLOYEE"])
+@require_roles(ROLES["ADMIN"], ROLES["EMPLOYEE"], ROLES["SYSTEM_ADMIN"], ROLES["TENANT_ADMIN"])
 def settings(store_id):
     """予約設定画面"""
     # 店舗情報を取得
@@ -45,7 +45,7 @@ def settings(store_id):
                          tables=tables)
 
 @reservation_admin_bp.route('/settings/save', methods=['POST'])
-@require_roles(ROLES["ADMIN"], ROLES["EMPLOYEE"])
+@require_roles(ROLES["ADMIN"], ROLES["EMPLOYEE"], ROLES["SYSTEM_ADMIN"], ROLES["TENANT_ADMIN"])
 def save_settings(store_id):
     """予約設定を保存"""
     data = request.form
@@ -111,7 +111,7 @@ def save_settings(store_id):
     return redirect(url_for('reservation_admin.settings', store_id=store_id))
 
 @reservation_admin_bp.route('/tables/add', methods=['POST'])
-@require_roles(ROLES["ADMIN"], ROLES["EMPLOYEE"])
+@require_roles(ROLES["ADMIN"], ROLES["EMPLOYEE"], ROLES["SYSTEM_ADMIN"], ROLES["TENANT_ADMIN"])
 def add_table(store_id):
     """テーブル設定を追加"""
     data = request.form
@@ -139,7 +139,7 @@ def add_table(store_id):
     return redirect(url_for('reservation_admin.settings', store_id=store_id))
 
 @reservation_admin_bp.route('/tables/<int:table_id>/delete', methods=['POST'])
-@require_roles(ROLES["ADMIN"], ROLES["EMPLOYEE"])
+@require_roles(ROLES["ADMIN"], ROLES["EMPLOYEE"], ROLES["SYSTEM_ADMIN"], ROLES["TENANT_ADMIN"])
 def delete_table(store_id, table_id):
     """テーブル設定を削除"""
     conn = get_db_connection()
@@ -157,7 +157,7 @@ def delete_table(store_id, table_id):
     return redirect(url_for('reservation_admin.settings', store_id=store_id))
 
 @reservation_admin_bp.route('/list')
-@require_roles(ROLES["ADMIN"], ROLES["EMPLOYEE"])
+@require_roles(ROLES["ADMIN"], ROLES["EMPLOYEE"], ROLES["SYSTEM_ADMIN"], ROLES["TENANT_ADMIN"])
 def reservation_list(store_id):
     """予約一覧画面"""
     # 店舗情報を取得
@@ -202,7 +202,7 @@ def reservation_list(store_id):
                          filter_date=filter_date)
 
 @reservation_admin_bp.route('/<int:reservation_id>/cancel', methods=['POST'])
-@require_roles(ROLES["ADMIN"], ROLES["EMPLOYEE"])
+@require_roles(ROLES["ADMIN"], ROLES["EMPLOYEE"], ROLES["SYSTEM_ADMIN"], ROLES["TENANT_ADMIN"])
 def cancel_reservation(store_id, reservation_id):
     """予約をキャンセル"""
     conn = get_db_connection()
@@ -223,7 +223,7 @@ def cancel_reservation(store_id, reservation_id):
     return redirect(url_for('reservation_admin.reservation_list', store_id=store_id))
 
 @reservation_admin_bp.route('/<int:reservation_id>/edit', methods=['GET', 'POST'])
-@require_roles(ROLES["ADMIN"], ROLES["EMPLOYEE"])
+@require_roles(ROLES["ADMIN"], ROLES["EMPLOYEE"], ROLES["SYSTEM_ADMIN"], ROLES["TENANT_ADMIN"])
 def edit_reservation(store_id, reservation_id):
     """予約を編集"""
     conn = get_db_connection()
@@ -294,7 +294,7 @@ def edit_reservation(store_id, reservation_id):
                          tables=tables)
 
 @reservation_admin_bp.route('/calendar')
-@require_roles(ROLES["ADMIN"], ROLES["EMPLOYEE"])
+@require_roles(ROLES["ADMIN"], ROLES["EMPLOYEE"], ROLES["SYSTEM_ADMIN"], ROLES["TENANT_ADMIN"])
 def calendar(store_id):
     """予約カレンダー表示"""
     # 店舗情報を取得
