@@ -4,6 +4,7 @@
 """
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash
 from datetime import datetime, timedelta
+import calendar
 import store_db
 from db_config import get_db_connection, get_cursor, execute_query
 from app.utils.decorators import require_roles, ROLES
@@ -329,15 +330,28 @@ def calendar(store_id):
     
     reservations_by_date = {}
     for row in cur.fetchall():
-        reservations_by_date[row['予約日']] = {
-            'count': row['count'],
-            'guests': row['guests']
+        # Rowオブジェクトを辞書に変換
+        if hasattr(row, 'keys'):
+            row_dict = {key: row[key] for key in row.keys()}
+        else:
+            row_dict = {'予約日': row[0], 'count': row[1], 'guests': row[2]}
+        
+        reservations_by_date[row_dict['予約日']] = {
+            'count': row_dict['count'],
+            'guests': row_dict['guests']
         }
     
     conn.close()
+    
+    # カレンダーデータを生成
+    cal = calendar.monthcalendar(year, month)
+    first_weekday = calendar.monthrange(year, month)[0]  # 0=月曜日
+    first_weekday = (first_weekday + 1) % 7  # 0=日曜日に変換
     
     return render_template('admin_reservation_calendar.html',
                          store=store,
                          year=year,
                          month=month,
+                         calendar_weeks=cal,
+                         first_weekday=first_weekday,
                          reservations_by_date=reservations_by_date)
