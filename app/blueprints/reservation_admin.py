@@ -4,7 +4,7 @@
 """
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash
 from datetime import datetime, timedelta
-import calendar
+import calendar as cal_module
 import store_db
 from db_config import get_db_connection, get_cursor, execute_query
 from app.utils.decorators import require_roles, ROLES
@@ -348,8 +348,8 @@ def calendar(store_id):
         conn.close()
         
         # カレンダーデータを生成
-        cal = calendar.monthcalendar(year, month)
-        first_weekday = calendar.monthrange(year, month)[0]  # 0=月曜日
+        cal = cal_module.monthcalendar(year, month)
+        first_weekday = cal_module.monthrange(year, month)[0]  # 0=月曜日
         first_weekday = (first_weekday + 1) % 7  # 0=日曜日に変換
         
         return render_template('admin_reservation_calendar.html',
