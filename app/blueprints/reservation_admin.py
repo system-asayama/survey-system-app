@@ -5,7 +5,7 @@
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash
 from datetime import datetime, timedelta
 import store_db
-from db_config import get_db_connection, get_cursor
+from db_config import get_db_connection, get_cursor, execute_query
 from app.utils.decorators import require_roles, ROLES
 
 reservation_admin_bp = Blueprint('reservation_admin', __name__, url_prefix='/admin/store/<int:store_id>/reservation')
@@ -23,14 +23,14 @@ def settings(store_id):
     cur = get_cursor(conn)
     
     # 予約設定を取得
-    cur.execute('''
+    execute_query(cur, '''
         SELECT * FROM "T_店舗_予約設定"
         WHERE store_id = ?
     ''', (store_id,))
     settings = cur.fetchone()
     
     # テーブル設定を取得
-    cur.execute('''
+    execute_query(cur, '''
         SELECT * FROM "T_テーブル設定"
         WHERE store_id = ?
         ORDER BY 表示順序, 座席数
@@ -54,7 +54,7 @@ def save_settings(store_id):
     cur = get_cursor(conn)
     
     # 既存設定を確認
-    cur.execute('''
+    execute_query(cur, '''
         SELECT id FROM "T_店舗_予約設定"
         WHERE store_id = ?
     ''', (store_id,))
@@ -62,7 +62,7 @@ def save_settings(store_id):
     
     if existing:
         # 更新
-        cur.execute('''
+        execute_query(cur, '''
             UPDATE "T_店舗_予約設定"
             SET 営業開始時刻 = ?,
                 営業終了時刻 = ?,
@@ -87,7 +87,7 @@ def save_settings(store_id):
         ))
     else:
         # 新規作成
-        cur.execute('''
+        execute_query(cur, '''
             INSERT INTO "T_店舗_予約設定" (
                 store_id, 営業開始時刻, 営業終了時刻, 最終入店時刻,
                 予約単位_分, 予約受付日数, 定休日, 予約受付可否, 特記事項
@@ -119,7 +119,7 @@ def add_table(store_id):
     conn = get_db_connection()
     cur = get_cursor(conn)
     
-    cur.execute('''
+    execute_query(cur, '''
         INSERT INTO "T_テーブル設定" (
             store_id, テーブル名, 座席数, テーブル数, 表示順序, 有効
         ) VALUES (?, ?, ?, ?, ?, ?)
@@ -145,7 +145,7 @@ def delete_table(store_id, table_id):
     conn = get_db_connection()
     cur = get_cursor(conn)
     
-    cur.execute('''
+    execute_query(cur, '''
         DELETE FROM "T_テーブル設定"
         WHERE id = ? AND store_id = ?
     ''', (table_id, store_id))
@@ -172,7 +172,7 @@ def reservation_list(store_id):
     cur = get_cursor(conn)
     
     # 予約一覧を取得
-    cur.execute('''
+    execute_query(cur, '''
         SELECT * FROM "T_予約"
         WHERE store_id = ? AND 予約日 = ?
         ORDER BY 予約時刻
@@ -181,7 +181,7 @@ def reservation_list(store_id):
     reservations = cur.fetchall()
     
     # 統計情報を取得
-    cur.execute('''
+    execute_query(cur, '''
         SELECT 
             COUNT(*) as total_count,
             SUM(人数) as total_guests,
@@ -208,7 +208,7 @@ def cancel_reservation(store_id, reservation_id):
     conn = get_db_connection()
     cur = get_cursor(conn)
     
-    cur.execute('''
+    execute_query(cur, '''
         UPDATE "T_予約"
         SET ステータス = 'cancelled',
             cancelled_at = CURRENT_TIMESTAMP,
@@ -232,7 +232,7 @@ def edit_reservation(store_id, reservation_id):
     if request.method == 'POST':
         data = request.form
         
-        cur.execute('''
+        execute_query(cur, '''
             UPDATE "T_予約"
             SET 予約日 = ?,
                 予約時刻 = ?,
@@ -264,7 +264,7 @@ def edit_reservation(store_id, reservation_id):
         return redirect(url_for('reservation_admin.reservation_list', store_id=store_id))
     
     # GET: 編集フォーム表示
-    cur.execute('''
+    execute_query(cur, '''
         SELECT * FROM "T_予約"
         WHERE id = ? AND store_id = ?
     ''', (reservation_id, store_id))
@@ -272,7 +272,7 @@ def edit_reservation(store_id, reservation_id):
     reservation = cur.fetchone()
     
     # テーブル設定を取得
-    cur.execute('''
+    execute_query(cur, '''
         SELECT * FROM "T_テーブル設定"
         WHERE store_id = ? AND 有効 = 1
         ORDER BY 表示順序, 座席数
@@ -317,7 +317,7 @@ def calendar(store_id):
     cur = get_cursor(conn)
     
     # 月間の予約データを取得
-    cur.execute('''
+    execute_query(cur, '''
         SELECT 予約日, COUNT(*) as count, SUM(人数) as guests
         FROM "T_予約"
         WHERE store_id = ? 

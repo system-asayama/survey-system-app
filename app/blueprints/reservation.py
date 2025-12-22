@@ -6,7 +6,7 @@ from flask import Blueprint, render_template, request, jsonify, session
 from datetime import datetime, timedelta
 import secrets
 import store_db
-from db_config import get_db_connection, get_cursor
+from db_config import get_db_connection, get_cursor, execute_query
 
 reservation_bp = Blueprint('reservation', __name__, url_prefix='/store/<store_slug>/reservation')
 
@@ -28,14 +28,14 @@ def index(store_slug):
     conn = get_db_connection()
     cur = get_cursor(conn)
     
-    cur.execute('''
+    execute_query(cur, '''
         SELECT * FROM "T_店舗_予約設定"
         WHERE store_id = ?
     ''', (store['id'],))
     settings = cur.fetchone()
     
     # テーブル設定を取得
-    cur.execute('''
+    execute_query(cur, '''
         SELECT * FROM "T_テーブル設定"
         WHERE store_id = ? AND 有効 = 1
         ORDER BY 表示順序, 座席数
@@ -77,7 +77,7 @@ def check_availability(store_slug):
     cur = get_cursor(conn)
     
     # テーブル設定を取得
-    cur.execute('''
+    execute_query(cur, '''
         SELECT * FROM "T_テーブル設定"
         WHERE store_id = ? AND 有効 = 1 AND 座席数 >= ?
         ORDER BY 座席数
@@ -92,7 +92,7 @@ def check_availability(store_slug):
         })
     
     # 既存の予約を確認
-    cur.execute('''
+    execute_query(cur, '''
         SELECT テーブル割当, COUNT(*) as count
         FROM "T_予約"
         WHERE store_id = ? 
@@ -144,7 +144,7 @@ def get_time_slots(store_slug):
     cur = get_cursor(conn)
     
     # 予約設定を取得
-    cur.execute('''
+    execute_query(cur, '''
         SELECT * FROM "T_店舗_予約設定"
         WHERE store_id = ?
     ''', (store['id'],))
@@ -195,7 +195,7 @@ def check_availability_internal(store_id, reservation_date, reservation_time, pa
     cur = get_cursor(conn)
     
     # テーブル設定を取得
-    cur.execute('''
+    execute_query(cur, '''
         SELECT * FROM "T_テーブル設定"
         WHERE store_id = ? AND 有効 = 1 AND 座席数 >= ?
         ORDER BY 座席数
@@ -207,7 +207,7 @@ def check_availability_internal(store_id, reservation_date, reservation_time, pa
         return {'available': False}
     
     # 既存の予約を確認
-    cur.execute('''
+    execute_query(cur, '''
         SELECT テーブル割当, COUNT(*) as count
         FROM "T_予約"
         WHERE store_id = ? 
@@ -277,7 +277,7 @@ def submit_reservation(store_slug):
     conn = get_db_connection()
     cur = get_cursor(conn)
     
-    cur.execute('''
+    execute_query(cur, '''
         INSERT INTO "T_予約" (
             store_id, 予約番号, 予約日, 予約時刻, 人数,
             顧客名, 顧客電話番号, 顧客メール, 特記事項,
@@ -319,7 +319,7 @@ def confirmation(store_slug, reservation_number):
     conn = get_db_connection()
     cur = get_cursor(conn)
     
-    cur.execute('''
+    execute_query(cur, '''
         SELECT * FROM "T_予約"
         WHERE store_id = ? AND 予約番号 = ?
     ''', (store['id'], reservation_number))
