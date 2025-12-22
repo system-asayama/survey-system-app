@@ -16,7 +16,7 @@
     <form method="GET" class="date-filter-form">
       <label>表示日:</label>
       <input type="date" name="date" value="{{ filter_date }}" onchange="this.form.submit()">
-      <button type="button" onclick="location.href='?date={{ (filter_date | default('') | replace('-', '') | string + '1' if filter_date else '') | strftime('%Y-%m-%d') }}'">今日</button>
+      <button type="button" id="today-btn">今日</button>
     </form>
     
     <div class="action-buttons">
@@ -326,7 +326,7 @@
 <script>
   // 今日の日付を設定するボタン
   document.addEventListener('DOMContentLoaded', function() {
-    const todayBtn = document.querySelector('button[onclick*="今日"]');
+    const todayBtn = document.getElementById('today-btn');
     if (todayBtn) {
       todayBtn.onclick = function() {
         const today = new Date().toISOString().split('T')[0];
