@@ -330,38 +330,29 @@ def submit_survey():
         sys.stderr.flush()
         store_db.save_survey_response(g.store_id, body)
         
-        # 星4以上の場合のAI投稿文を生成（OpenAI APIキーが必要）
+        # 全ての評価でAI投稿文を生成（OpenAI APIキーが必要）
         generated_review = ''
-        sys.stderr.write(f"DEBUG: rating = {rating}, AI生成実行判定 = {rating >= 4}\n")
+        sys.stderr.write(f"DEBUG: rating = {rating}, AI生成を実行します\n")
         sys.stderr.flush()
-        if rating >= 4:
-            sys.stderr.write("DEBUG: AIレビュー生成を開始します\n")
+        sys.stderr.write("DEBUG: AIレビュー生成を開始します\n")
+        sys.stderr.flush()
+        try:
+            generated_review = _generate_review_text(body, g.store_id)
+            sys.stderr.write(f"DEBUG: AIレビュー生成成功: {generated_review[:100]}...\n")
             sys.stderr.flush()
-            try:
-                generated_review = _generate_review_text(body, g.store_id)
-                sys.stderr.write(f"DEBUG: AIレビュー生成成功: {generated_review[:100]}...\n")
-                sys.stderr.flush()
-            except Exception as e:
-                sys.stderr.write(f"ERROR: AIレビュー生成失敗: {e}\n")
-                import traceback
-                sys.stderr.write(traceback.format_exc())
-                sys.stderr.flush()
-                print(f"Error generating review: {e}")
+        except Exception as e:
+            sys.stderr.write(f"ERROR: AIレビュー生成失敗: {e}\n")
+            import traceback
+            sys.stderr.write(traceback.format_exc())
+            sys.stderr.flush()
+            print(f"Error generating review: {e}")
         
         # セッションにアンケート完了フラグと評価を設定
         session[f'survey_completed_{g.store_id}'] = True
         session[f'survey_rating_{g.store_id}'] = rating
         session[f'generated_review_{g.store_id}'] = generated_review
         
-        # 星3以下の場合はメッセージを表示
-        if rating <= 3:
-            return jsonify({
-                "ok": True, 
-                "message": "貴重なご意見をありがとうございます。社内で改善に活用させていただきます。",
-                "rating": rating
-            })
-        
-        # 星4以上の場合は口コミ投稿文を表示
+        # 全ての評価で口コミ確認ページにリダイレクト
         return jsonify({
             "ok": True, 
             "message": "アンケートにご協力いただきありがとうございます！",
