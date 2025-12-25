@@ -391,14 +391,22 @@ def reset_survey():
 @require_store
 def review_confirm():
     """口コミ確認ページ"""
-    from review_prompt_settings import should_show_review_button
+    from review_prompt_settings import should_show_review_button, get_review_prompt_mode
+    import sys
     
     generated_review = session.get(f'generated_review_{g.store_id}', '')
     google_review_url = store_db.get_google_review_url(g.store_id)
     rating = session.get(f'survey_rating_{g.store_id}', 0)
     
+    # デバッグログ
+    mode = get_review_prompt_mode(g.store_id)
+    sys.stderr.write(f"DEBUG review_confirm: store_id={g.store_id}, rating={rating}, mode={mode}\n")
+    sys.stderr.flush()
+    
     # 設定に基づいてレビューボタンを表示するか判定
     show_review_button = should_show_review_button(g.store_id, rating)
+    sys.stderr.write(f"DEBUG review_confirm: show_review_button={show_review_button}\n")
+    sys.stderr.flush()
     
     return render_template("review_confirm.html",
         store=g.store,
