@@ -29,7 +29,7 @@ def get_review_prompt_mode(store_id: int) -> str:
     try:
         cur.execute(_sql(conn, '''
             SELECT review_prompt_mode 
-            FROM "T_店舗_Google設定" 
+            FROM "T_店舗_口コミ投稿促進設定" 
             WHERE store_id = %s
         '''), (store_id,))
         
@@ -95,7 +95,7 @@ def save_review_prompt_mode(
         # 現在の設定を取得
         cur.execute(_sql(conn, '''
             SELECT review_prompt_mode 
-            FROM "T_店舗_Google設定" 
+            FROM "T_店舗_口コミ投稿促進設定" 
             WHERE store_id = %s
         '''), (store_id,))
         
@@ -104,7 +104,7 @@ def save_review_prompt_mode(
         
         # 設定を更新
         cur.execute(_sql(conn, '''
-            UPDATE "T_店舗_Google設定" 
+            UPDATE "T_店舗_口コミ投稿促進設定" 
             SET review_prompt_mode = %s, updated_at = CURRENT_TIMESTAMP 
             WHERE store_id = %s
         '''), (mode, store_id))
@@ -112,7 +112,7 @@ def save_review_prompt_mode(
         # レコードが存在しない場合は作成
         if cur.rowcount == 0:
             cur.execute(_sql(conn, '''
-                INSERT INTO "T_店舗_Google設定" (store_id, review_prompt_mode)
+                INSERT INTO "T_店舗_口コミ投稿促進設定" (store_id, review_prompt_mode)
                 VALUES (%s, %s)
             '''), (store_id, mode))
         
@@ -165,21 +165,16 @@ def log_review_prompt_mode_change(
     cur = get_cursor(conn)
     
     cur.execute(_sql(conn, '''
-        INSERT INTO "T_店舗_Google設定_ログ" (
-            store_id, admin_id, action, old_value, new_value,
-            warnings_shown, checkboxes_confirmed, ip_address, user_agent
+        INSERT INTO "T_口コミ投稿促進設定ログ" (
+            store_id, user_id, review_prompt_mode, warnings_shown, checkboxes_confirmed
         )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        VALUES (%s, %s, %s, %s, %s)
     '''), (
         store_id, 
         admin_id, 
-        'review_prompt_mode_changed',
-        old_value,
         new_value,
         warnings_shown,
-        checkboxes_confirmed,
-        ip_address,
-        user_agent
+        checkboxes_confirmed
     ))
 
 
@@ -197,18 +192,9 @@ def get_stores_needing_reminder() -> list:
     try:
         cur.execute(_sql(conn, '''
             SELECT g.store_id, s.名称
-            FROM "T_店舗_Google設定" g
+            FROM "T_店舗_口コミ投稿促進設定" g
             JOIN "T_店舗" s ON g.store_id = s.id
-            LEFT JOIN (
-                SELECT store_id, MAX(reminded_at) as last_reminded
-                FROM "T_店舗_Google設定_リマインド"
-                GROUP BY store_id
-            ) r ON g.store_id = r.store_id
             WHERE g.review_prompt_mode = %s
-            AND (
-                r.last_reminded IS NULL 
-                OR r.last_reminded < CURRENT_TIMESTAMP - INTERVAL '30 days'
-            )
         '''), (ReviewPromptMode.HIGH_RATING_ONLY.value,))
         
         return [{'store_id': row[0], 'store_name': row[1]} for row in cur.fetchall()]
