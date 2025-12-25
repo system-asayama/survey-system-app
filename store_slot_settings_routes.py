@@ -183,9 +183,10 @@ def register_store_slot_settings_routes(app):
         }
         
         # Google設定を取得
-        cur.execute(_sql(conn, 'SELECT review_url FROM "T_店舗_Google設定" WHERE store_id = %s'), (store_id,))
+        cur.execute(_sql(conn, 'SELECT review_url, slot_spin_count FROM "T_店舗_Google設定" WHERE store_id = %s'), (store_id,))
         google_row = cur.fetchone()
         google_review_url = google_row[0] if google_row and google_row[0] else ''
+        slot_spin_count = google_row[1] if google_row and len(google_row) > 1 and google_row[1] else 1
         
         # 口コミ投稿促進設定を取得
         cur.execute(_sql(conn, 'SELECT review_prompt_mode FROM "T_店舗_口コミ投稿促進設定" WHERE store_id = %s'), (store_id,))
@@ -244,6 +245,7 @@ def register_store_slot_settings_routes(app):
             google_url = request.form.get("google_review_url", "").strip()
             survey_message = request.form.get("survey_complete_message", "").strip()
             review_prompt_mode_input = request.form.get("review_prompt_mode", "all")
+            slot_spin_count = int(request.form.get("slot_spin_count", "1"))
             
             # Google設定を保存
             conn = get_db_connection()
@@ -253,14 +255,14 @@ def register_store_slot_settings_routes(app):
             if cur.fetchone():
                 cur.execute(_sql(conn, '''
                     UPDATE "T_店舗_Google設定"
-                    SET review_url = %s, updated_at = CURRENT_TIMESTAMP
+                    SET review_url = %s, slot_spin_count = %s, updated_at = CURRENT_TIMESTAMP
                     WHERE store_id = %s
-                '''), (google_url, store_id))
+                '''), (google_url, slot_spin_count, store_id))
             else:
                 cur.execute(_sql(conn, '''
-                    INSERT INTO "T_店舗_Google設定" (store_id, review_url)
-                    VALUES (%s, %s)
-                '''), (store_id, google_url))
+                    INSERT INTO "T_店舗_Google設定" (store_id, review_url, slot_spin_count)
+                    VALUES (%s, %s, %s)
+                '''), (store_id, google_url, slot_spin_count))
             
             # 口コミ投稿促進設定を保存（テーブルがなければ自動作成）
             try:
@@ -364,6 +366,7 @@ def register_store_slot_settings_routes(app):
                              slot_app=slot_app,
                              google_review_url=google_review_url,
                              review_prompt_mode=review_prompt_mode,
+                             slot_spin_count=slot_spin_count,
                              survey_complete_message="アンケートにご協力いただきありがとうございます！スロットをお楽しみください。",
                              prizes=prizes,
                              slot_config=asdict(slot_config))

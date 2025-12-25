@@ -588,6 +588,23 @@
         </div>
 
         <div class="form-group">
+          <label for="slot_spin_count">プレイ可能セット数</label>
+          <input 
+            type="number" 
+            id="slot_spin_count" 
+            name="slot_spin_count" 
+            value="{{ slot_spin_count|default(1) }}"
+            min="1"
+            max="5"
+            step="1"
+            style="width: 200px;"
+          >
+          <div class="help-text">
+            アンケート完了後に5回スピンのワンセットを何回プレイできるかを設定します（1～5セット）。
+          </div>
+        </div>
+
+        <div class="form-group">
           <label>⭐ 口コミ投稿促進設定</label>
           <div style="margin-top: 12px;">
             <label style="display: flex; align-items: center; cursor: pointer; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; margin-bottom: 12px; background: #f9fafb;">

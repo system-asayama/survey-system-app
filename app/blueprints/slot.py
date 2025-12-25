@@ -60,6 +60,21 @@ def slot_page():
     settings_path = os.path.join(DATA_DIR, "settings.json")
     survey_complete_message = "アンケートにご協力いただきありがとうございます！スロットをお楽しみください。"
     prizes = []
+    slot_spin_count = 1  # デフォルト値
+    
+    # データベースからslot_spin_countを取得
+    if store_id:
+        try:
+            from app.utils.db import _sql
+            conn = store_db.get_db_connection()
+            cursor = store_db.get_cursor(conn)
+            cursor.execute(_sql(conn, 'SELECT slot_spin_count FROM "T_店舗_Google設定" WHERE store_id = %s'), (store_id,))
+            result = cursor.fetchone()
+            if result and result[0]:
+                slot_spin_count = result[0]
+            conn.close()
+        except Exception as e:
+            print(f"Error getting slot_spin_count: {e}")
     
     if os.path.exists(settings_path):
         with open(settings_path, "r", encoding="utf-8") as f:
@@ -67,9 +82,9 @@ def slot_page():
             survey_complete_message = settings.get("survey_complete_message", survey_complete_message)
             prizes = settings.get("prizes", [])
     
-    sys.stderr.write(f"DEBUG slot_page: rendering with store_slug={store_slug}\n")
+    sys.stderr.write(f"DEBUG slot_page: rendering with store_slug={store_slug}, slot_spin_count={slot_spin_count}\n")
     sys.stderr.flush()
-    return render_template('slot.html', survey_complete_message=survey_complete_message, prizes=prizes, store_slug=store_slug)
+    return render_template('slot.html', survey_complete_message=survey_complete_message, prizes=prizes, store_slug=store_slug, slot_spin_count=slot_spin_count)
 
 
 @bp.get("/store/<slug>/slot")
@@ -109,12 +124,21 @@ def slot_page_with_slug(slug):
     # 店舗固有の景品設定をデータベースから読み込み
     survey_complete_message = "ご来店ありがとうございます！アンケートに回答いただいた感謝を込めて、スロットゲームをプレゼント🎁"
     prizes = []
+    slot_spin_count = 1  # デフォルト値
     
-    # 店舗IDが取得できた場合、データベースから景品設定を読み込む
+    # 店舗IDが取得できた場合、データベースから景品設定とslot_spin_countを読み込む
     if store_id:
         try:
             conn = store_db.get_db_connection()
             cursor = conn.cursor()
+            
+            # slot_spin_countを取得
+            cursor.execute('SELECT slot_spin_count FROM "T_店舗_Google設定" WHERE store_id = %s', (store_id,))
+            spin_count_row = cursor.fetchone()
+            if spin_count_row and spin_count_row[0]:
+                slot_spin_count = spin_count_row[0]
+            
+            # 景品設定を取得
             cursor.execute('SELECT prizes_json FROM "T_店舗_景品設定" WHERE store_id = %s', (store_id,))
             prizes_row = cursor.fetchone()
             
@@ -147,9 +171,9 @@ def slot_page_with_slug(slug):
                 {"min_score": 0, "max_score": 49, "rank": "🏆 5等", "name": "ドリンクまたはアイス"}
             ]
     
-    sys.stderr.write(f"DEBUG slot_page_with_slug: rendering with slug={slug}\n")
+    sys.stderr.write(f"DEBUG slot_page_with_slug: rendering with slug={slug}, slot_spin_count={slot_spin_count}\n")
     sys.stderr.flush()
-    return render_template('slot.html', survey_complete_message=survey_complete_message, prizes=prizes, store_slug=slug, is_demo=is_demo)
+    return render_template('slot.html', survey_complete_message=survey_complete_message, prizes=prizes, store_slug=slug, is_demo=is_demo, slot_spin_count=slot_spin_count)
 
 @bp.get("/config")
 def get_config():

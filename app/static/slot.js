@@ -607,8 +607,38 @@ async function animateFiveSpins(spins){
 }
 
 /* ===== メイン操作 ===== */
+// セット数管理
+let currentSet = 0;
+let maxSets = window.MAX_PLAY_SETS || 1;
+let setScores = [];
+
+// ボタン表示を更新
+function updateSpinButton() {
+  const btn = $('#btn-spin');
+  if (!btn) return;
+  
+  if (currentSet >= maxSets) {
+    btn.textContent = 'プレイ終了';
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+    btn.style.cursor = 'not-allowed';
+  } else {
+    btn.textContent = `5回スピン (セット${currentSet + 1}/${maxSets})`;
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.style.cursor = 'pointer';
+  }
+}
+
 async function play(){
   if(spinning) return;
+  
+  // セット数制限チェック
+  if (currentSet >= maxSets) {
+    alert(`プレイ可能回数に達しました（${maxSets}セット）`);
+    return;
+  }
+  
   spinning = true;
   
   // AudioContextを再開（ブラウザのAutoplay Policy対策）
@@ -626,7 +656,13 @@ async function play(){
 
   const total = await animateFiveSpins(data.spins);
 
-  $('#status').textContent = `合計: ${total}`;
+  // セット番号を更新
+  currentSet++;
+  setScores.push(total);
+  
+  // ステータス表示を更新
+  const totalScore = setScores.reduce((a, b) => a + b, 0);
+  $('#status').textContent = `セット${currentSet}/${maxSets} 合計: ${total} (総計: ${totalScore})`;
   playSoundResult(total); // 結果発表音
   
   // 景品判定と表示
@@ -648,7 +684,7 @@ async function play(){
     }
   }).join(' ');
   
-  li.innerHTML = spinResults + ` <span class="muted">${ts}</span> / 合計: ${total}`;
+  li.innerHTML = `[セット${currentSet}] ` + spinResults + ` <span class="muted">${ts}</span> / 合計: ${total}`;
   $('#history').insertBefore(li, $('#history').firstChild);
 
   // 設定ダイアログが存在する場合のみ呼び出し
@@ -657,6 +693,10 @@ async function play(){
   } else {
     renderPayoutTableFromSymbols();
   }
+  
+  // ボタン表示を更新
+  updateSpinButton();
+  
   spinning = false;
 }
 
@@ -719,4 +759,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
   });
 
   loadConfig();
+  
+  // ボタン表示を初期化
+  updateSpinButton();
 });

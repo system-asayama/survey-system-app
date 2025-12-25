@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>スロットマシン（5スピン合計）</title>
+  <title>スロットマシン（５スピン×{{ slot_spin_count|default(1) }}セット）</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='slot.css') }}">
 </head>
 <body>
   <header class="bar">
-    <h1>🎰 スロットマシン（5スピン合計）</h1>
+    <h1>🎰 スロットマシン（５スピン×{{ slot_spin_count|default(1) }}セット）</h1>
     <div class="spacer"></div>
   </header>
 
@@ -167,8 +167,9 @@
   </script>
 
   <script>
-    // グローバル変数としてstore_slugを設定
+    // グローバル変数としてstore_slugとslot_spin_countを設定
     window.STORE_SLUG = "{{ store_slug or '' }}";
+    window.MAX_PLAY_SETS = {{ slot_spin_count|default(1) }};
   </script>
   <script src="{{ url_for('static', filename='slot.js') }}?v={{ range(1, 1000000) | random }}"></script>
 </body>
