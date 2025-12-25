@@ -678,6 +678,50 @@ def init_database():
             add_column_if_not_exists(cur, conn, 'T_アンケート回答', 'recommend', 'TEXT', db_type)
             add_column_if_not_exists(cur, conn, 'T_アンケート回答', 'comment', 'TEXT', db_type)
         
+        # 口コミ投稿促進設定テーブルを作成
+        print("\n" + "-" * 60)
+        print("口コミ投稿促進設定テーブルの作成を開始します")
+        print("-" * 60)
+        
+        # 1. T_店舗_口コミ投稿促進設定テーブル
+        if not table_exists(cur, 'T_店舗_口コミ投稿促進設定', db_type):
+            print("\n✓ T_店舗_口コミ投稿促進設定テーブルを作成します")
+            cur.execute(f'''
+                CREATE TABLE "T_店舗_口コミ投稿促進設定" (
+                    id                  {serial_type},
+                    store_id            INTEGER NOT NULL UNIQUE,
+                    review_prompt_mode  TEXT DEFAULT 'all',
+                    created_at          {timestamp_type},
+                    updated_at          TIMESTAMP DEFAULT NULL,
+                    FOREIGN KEY (store_id) REFERENCES "T_店舗"(id) ON DELETE CASCADE
+                )
+            ''')
+            conn.commit()
+            print("✅ T_店舗_口コミ投稿促進設定テーブルは既に存在します")
+        else:
+            print("✅ T_店舗_口コミ投稿促進設定テーブルは既に存在します")
+        
+        # 2. T_口コミ投稿促進設定ログテーブル
+        if not table_exists(cur, 'T_口コミ投稿促進設定ログ', db_type):
+            print("\n✓ T_口コミ投稿促進設定ログテーブルを作成します")
+            cur.execute(f'''
+                CREATE TABLE "T_口コミ投稿促進設定ログ" (
+                    id                      {serial_type},
+                    store_id                INTEGER NOT NULL,
+                    user_id                 INTEGER,
+                    review_prompt_mode      TEXT NOT NULL,
+                    warnings_shown          INTEGER DEFAULT 0,
+                    checkboxes_confirmed    INTEGER DEFAULT 0,
+                    created_at              {timestamp_type},
+                    FOREIGN KEY (store_id) REFERENCES "T_店舗"(id) ON DELETE CASCADE,
+                    FOREIGN KEY (user_id) REFERENCES "T_管理者"(id) ON DELETE SET NULL
+                )
+            ''')
+            conn.commit()
+            print("✅ T_口コミ投稿促進設定ログテーブルを作成しました")
+        else:
+            print("✅ T_口コミ投稿促進設定ログテーブルは既に存在します")
+        
         # 予約システムのテーブルを作成
         print("\n" + "-" * 60)
         print("予約システム用テーブルの作成を開始します")
