@@ -262,15 +262,61 @@ def register_store_slot_settings_routes(app):
                     VALUES (%s, %s)
                 '''), (store_id, google_url))
             
-            # 口コミ投稿促進設定を保存
-            cur.execute(_sql(conn, 'SELECT id FROM "T_店舗_口コミ投稿促進設定" WHERE store_id = %s'), (store_id,))
-            if cur.fetchone():
-                cur.execute(_sql(conn, '''
-                    UPDATE "T_店舗_口コミ投稿促進設定"
-                    SET review_prompt_mode = %s, updated_at = CURRENT_TIMESTAMP
-                    WHERE store_id = %s
-                '''), (review_prompt_mode_input, store_id))
-            else:
+            # 口コミ投稿促進設定を保存（テーブルがなければ自動作成）
+            try:
+                cur.execute(_sql(conn, 'SELECT id FROM "T_店舗_口コミ投稿促進設定" WHERE store_id = %s'), (store_id,))
+                if cur.fetchone():
+                    cur.execute(_sql(conn, '''
+                        UPDATE "T_店舗_口コミ投稿促進設定"
+                        SET review_prompt_mode = %s, updated_at = CURRENT_TIMESTAMP
+                        WHERE store_id = %s
+                    '''), (review_prompt_mode_input, store_id))
+                else:
+                    cur.execute(_sql(conn, '''
+                        INSERT INTO "T_店舗_口コミ投稿促進設定" (store_id, review_prompt_mode)
+                        VALUES (%s, %s)
+                    '''), (store_id, review_prompt_mode_input))
+            except Exception as e:
+                # テーブルが存在しない場合は作成
+                print(f"[INFO] T_店舗_口コミ投稿促進設定テーブルが存在しないため作成します: {e}")
+                from db_config import get_db_type
+                db_type = get_db_type()
+                if db_type == 'postgresql':
+                    serial_type = 'SERIAL PRIMARY KEY'
+                    timestamp_type = 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP'
+                else:
+                    serial_type = 'INTEGER PRIMARY KEY AUTOINCREMENT'
+                    timestamp_type = 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP'
+                
+                # T_店舗_口コミ投稿促進設定テーブルを作成
+                cur.execute(f'''
+                    CREATE TABLE IF NOT EXISTS "T_店舗_口コミ投稿促進設定" (
+                        id                  {serial_type},
+                        store_id            INTEGER NOT NULL UNIQUE,
+                        review_prompt_mode  TEXT DEFAULT 'all',
+                        created_at          {timestamp_type},
+                        updated_at          TIMESTAMP DEFAULT NULL,
+                        FOREIGN KEY (store_id) REFERENCES "T_店舗"(id) ON DELETE CASCADE
+                    )
+                ''')
+                
+                # T_口コミ投稿促進設定ログテーブルを作成
+                cur.execute(f'''
+                    CREATE TABLE IF NOT EXISTS "T_口コミ投稿促進設定ログ" (
+                        id                      {serial_type},
+                        store_id                INTEGER NOT NULL,
+                        user_id                 INTEGER,
+                        review_prompt_mode      TEXT NOT NULL,
+                        warnings_shown          INTEGER DEFAULT 0,
+                        checkboxes_confirmed    INTEGER DEFAULT 0,
+                        created_at              {timestamp_type},
+                        FOREIGN KEY (store_id) REFERENCES "T_店舗"(id) ON DELETE CASCADE,
+                        FOREIGN KEY (user_id) REFERENCES "T_管理者"(id) ON DELETE SET NULL
+                    )
+                ''')
+                conn.commit()
+                
+                # 再度INSERTを実行
                 cur.execute(_sql(conn, '''
                     INSERT INTO "T_店舗_口コミ投稿促進設定" (store_id, review_prompt_mode)
                     VALUES (%s, %s)
