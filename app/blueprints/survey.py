@@ -311,16 +311,27 @@ def submit_survey():
         # 最初の質問の回答を評価として使用（５段階評価の場合）
         rating = 3  # デフォルト
         first_answer = body.get('q1', '')
-        if '非常に満足' in first_answer or '強く思う' in first_answer or '非常に良い' in first_answer:
-            rating = 5
-        elif '満足' in first_answer or '思う' in first_answer or '良い' in first_answer:
-            rating = 4
-        elif '普通' in first_answer or 'どちらとも' in first_answer:
-            rating = 3
-        elif 'やや' in first_answer:
-            rating = 2
-        else:
-            rating = 1
+        
+        # 星評価の場合は数値が直接入っている
+        try:
+            rating = int(first_answer)
+            # 1-5の範囲内に制限
+            if rating < 1:
+                rating = 1
+            elif rating > 5:
+                rating = 5
+        except (ValueError, TypeError):
+            # 数値でない場合はテキストから推測
+            if '非常に満足' in first_answer or '強く思う' in first_answer or '非常に良い' in first_answer:
+                rating = 5
+            elif '満足' in first_answer or '思う' in first_answer or '良い' in first_answer:
+                rating = 4
+            elif '普通' in first_answer or 'どちらとも' in first_answer:
+                rating = 3
+            elif 'やや' in first_answer:
+                rating = 2
+            else:
+                rating = 1
         
         # ratingをbodyに追加
         body['rating'] = rating
