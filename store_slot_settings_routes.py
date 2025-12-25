@@ -279,6 +279,8 @@ def register_store_slot_settings_routes(app):
             except Exception as e:
                 # テーブルが存在しない場合は作成
                 print(f"[INFO] T_店舗_口コミ投稿促進設定テーブルが存在しないため作成します: {e}")
+                import traceback
+                traceback.print_exc()
                 from db_config import get_db_type
                 db_type = get_db_type()
                 if db_type == 'postgresql':
@@ -323,12 +325,16 @@ def register_store_slot_settings_routes(app):
                 '''), (store_id, review_prompt_mode_input))
             
             # ログを保存
-            user_id = session.get('user_id')
-            cur.execute(_sql(conn, '''
-                INSERT INTO "T_口コミ投稿促進設定ログ" 
-                (store_id, user_id, review_prompt_mode, warnings_shown, checkboxes_confirmed)
-                VALUES (%s, %s, %s, %s, %s)
-            '''), (store_id, user_id, review_prompt_mode_input, True, True))
+            try:
+                user_id = session.get('user_id')
+                cur.execute(_sql(conn, '''
+                    INSERT INTO "T_口コミ投稿促進設定ログ" 
+                    (store_id, user_id, review_prompt_mode, warnings_shown, checkboxes_confirmed)
+                    VALUES (%s, %s, %s, %s, %s)
+                '''), (store_id, user_id, review_prompt_mode_input, True, True))
+            except Exception as e:
+                print(f"[WARNING] ログ保存に失敗しました: {e}")
+                # ログ保存の失敗は無視して続行
             
             conn.commit()
             conn.close()
