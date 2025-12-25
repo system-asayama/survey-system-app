@@ -648,6 +648,10 @@ def init_database():
             add_column_if_not_exists(cur, conn, 'T_店舗', 'openai_api_key', 'TEXT DEFAULT NULL', db_type)
             add_column_if_not_exists(cur, conn, 'T_店舗', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP', db_type)
         
+        # T_店舗_Google設定テーブルのカラム追加
+        if table_exists(cur, 'T_店舗_Google設定', db_type):
+            add_column_if_not_exists(cur, conn, 'T_店舗_Google設定', 'slot_spin_count', 'INTEGER DEFAULT 1', db_type)
+        
         # T_管理者テーブルのカラム追加
         if table_exists(cur, 'T_管理者', db_type):
             add_column_if_not_exists(cur, conn, 'T_管理者', 'email', 'TEXT', db_type)
