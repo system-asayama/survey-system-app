@@ -341,35 +341,63 @@ def submit_survey():
         sys.stderr.flush()
         store_db.save_survey_response(g.store_id, body)
         
-        # 全ての評価でAI投稿文を生成（OpenAI APIキーが必要）
+        # 口コミ投稿促進設定を取得
+        from review_prompt_settings import get_review_prompt_mode
+        review_mode = get_review_prompt_mode(g.store_id)
+        sys.stderr.write(f"DEBUG: rating = {rating}, review_mode = {review_mode}\n")
+        sys.stderr.flush()
+        
+        # 設定に応じてAIレビュー生成とリダイレクト先を制御
         generated_review = ''
-        sys.stderr.write(f"DEBUG: rating = {rating}, AI生成を実行します\n")
-        sys.stderr.flush()
-        sys.stderr.write("DEBUG: AIレビュー生成を開始します\n")
-        sys.stderr.flush()
-        try:
-            generated_review = _generate_review_text(body, g.store_id)
-            sys.stderr.write(f"DEBUG: AIレビュー生成成功: {generated_review[:100]}...\n")
+        redirect_url = f"/store/{g.store_slug}/slot"  # デフォルトはスロットページ
+        
+        # 「星4以上のみ投稿を促す」設定の場合
+        if review_mode == 'high_rating_only':
+            if rating >= 4:
+                # 星4以上のAIレビュー生成
+                sys.stderr.write("DEBUG: AIレビュー生成を開始します（星4以上）\n")
+                sys.stderr.flush()
+                try:
+                    generated_review = _generate_review_text(body, g.store_id)
+                    sys.stderr.write(f"DEBUG: AIレビュー生成成功: {generated_review[:100]}...\n")
+                    sys.stderr.flush()
+                except Exception as e:
+                    sys.stderr.write(f"ERROR: AIレビュー生成失敗: {e}\n")
+                    import traceback
+                    sys.stderr.write(traceback.format_exc())
+                    sys.stderr.flush()
+                redirect_url = f"/store/{g.store_slug}/review_confirm"
+            else:
+                # 星3以下はスロットページに直接遷移
+                sys.stderr.write("DEBUG: 星3以下のためスロットページに遷移\n")
+                sys.stderr.flush()
+                redirect_url = f"/store/{g.store_slug}/slot"
+        else:
+            # 「全ての評価に投稿を促す」設定の場合
+            sys.stderr.write("DEBUG: AIレビュー生成を開始します（全ての評価）\n")
             sys.stderr.flush()
-        except Exception as e:
-            sys.stderr.write(f"ERROR: AIレビュー生成失敗: {e}\n")
-            import traceback
-            sys.stderr.write(traceback.format_exc())
-            sys.stderr.flush()
-            print(f"Error generating review: {e}")
+            try:
+                generated_review = _generate_review_text(body, g.store_id)
+                sys.stderr.write(f"DEBUG: AIレビュー生成成功: {generated_review[:100]}...\n")
+                sys.stderr.flush()
+            except Exception as e:
+                sys.stderr.write(f"ERROR: AIレビュー生成失敗: {e}\n")
+                import traceback
+                sys.stderr.write(traceback.format_exc())
+                sys.stderr.flush()
+            redirect_url = f"/store/{g.store_slug}/review_confirm"
         
         # セッションにアンケート完了フラグと評価を設定
         session[f'survey_completed_{g.store_id}'] = True
         session[f'survey_rating_{g.store_id}'] = rating
         session[f'generated_review_{g.store_id}'] = generated_review
         
-        # 全ての評価で口コミ確認ページにリダイレクト
         return jsonify({
             "ok": True, 
             "message": "アンケートにご協力いただきありがとうございます！",
             "rating": rating,
             "generated_review": generated_review,
-            "redirect_url": f"/store/{g.store_slug}/review_confirm"
+            "redirect_url": redirect_url
         })
     except Exception as e:
         import sys
