@@ -187,6 +187,11 @@ def register_store_slot_settings_routes(app):
         google_row = cur.fetchone()
         google_review_url = google_row[0] if google_row and google_row[0] else ''
         
+        # 口コミ投稿促進設定を取得
+        cur.execute(_sql(conn, 'SELECT review_prompt_mode FROM "T_店舗_口コミ投稿促進設定" WHERE store_id = %s'), (store_id,))
+        review_prompt_row = cur.fetchone()
+        review_prompt_mode = review_prompt_row[0] if review_prompt_row else 'all'
+        
         # 景品設定を取得
         cur.execute(_sql(conn, 'SELECT prizes_json FROM "T_店舗_景品設定" WHERE store_id = %s'), (store_id,))
         prizes_row = cur.fetchone()
@@ -238,6 +243,7 @@ def register_store_slot_settings_routes(app):
             # フォームデータを処理
             google_url = request.form.get("google_review_url", "").strip()
             survey_message = request.form.get("survey_complete_message", "").strip()
+            review_prompt_mode_input = request.form.get("review_prompt_mode", "all")
             
             # Google設定を保存
             conn = get_db_connection()
@@ -255,6 +261,28 @@ def register_store_slot_settings_routes(app):
                     INSERT INTO "T_店舗_Google設定" (store_id, review_url)
                     VALUES (%s, %s)
                 '''), (store_id, google_url))
+            
+            # 口コミ投稿促進設定を保存
+            cur.execute(_sql(conn, 'SELECT id FROM "T_店舗_口コミ投稿促進設定" WHERE store_id = %s'), (store_id,))
+            if cur.fetchone():
+                cur.execute(_sql(conn, '''
+                    UPDATE "T_店舗_口コミ投稿促進設定"
+                    SET review_prompt_mode = %s, updated_at = CURRENT_TIMESTAMP
+                    WHERE store_id = %s
+                '''), (review_prompt_mode_input, store_id))
+            else:
+                cur.execute(_sql(conn, '''
+                    INSERT INTO "T_店舗_口コミ投稿促進設定" (store_id, review_prompt_mode)
+                    VALUES (%s, %s)
+                '''), (store_id, review_prompt_mode_input))
+            
+            # ログを保存
+            user_id = session.get('user_id')
+            cur.execute(_sql(conn, '''
+                INSERT INTO "T_口コミ投稿促進設定ログ" 
+                (store_id, user_id, review_prompt_mode, warnings_shown, checkboxes_confirmed)
+                VALUES (%s, %s, %s, %s, %s)
+            '''), (store_id, user_id, review_prompt_mode_input, True, True))
             
             conn.commit()
             conn.close()
@@ -283,6 +311,7 @@ def register_store_slot_settings_routes(app):
                              admin=admin,
                              slot_app=slot_app,
                              google_review_url=google_review_url,
+                             review_prompt_mode=review_prompt_mode,
                              survey_complete_message="アンケートにご協力いただきありがとうございます！スロットをお楽しみください。",
                              prizes=prizes,
                              slot_config=asdict(slot_config))
