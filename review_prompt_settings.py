@@ -5,7 +5,7 @@ from enum import Enum
 from datetime import datetime
 from typing import Optional
 from db_config import get_db_connection, get_cursor
-from utils import _sql
+from app.utils.db import _sql
 
 class ReviewPromptMode(Enum):
     """口コミ投稿促進モード"""
@@ -39,6 +39,10 @@ def get_review_prompt_mode(store_id: int) -> str:
         else:
             # デフォルトは 'all'
             return ReviewPromptMode.ALL.value
+    except Exception as e:
+        # テーブルが存在しない場合やその他のエラーの場合はデフォルト値を返す
+        print(f"Warning: Error getting review prompt mode: {e}")
+        return ReviewPromptMode.ALL.value
     finally:
         conn.close()
 
