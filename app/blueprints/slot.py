@@ -36,9 +36,10 @@ def slot_page():
     store_id = None
     if store_slug:
         try:
+            from app.utils.db import _sql
             conn = store_db.get_db_connection()
-            cursor = conn.cursor()
-            cursor.execute("SELECT id FROM T_店舗 WHERE slug = %s", (store_slug,))
+            cursor = store_db.get_cursor(conn)
+            cursor.execute(_sql(conn, 'SELECT id FROM "T_店舗" WHERE slug = %s'), (store_slug,))
             result = cursor.fetchone()
             if result:
                 store_id = result[0]
@@ -51,7 +52,7 @@ def slot_page():
     survey_completed = session.get(f'survey_completed_{store_id}') if store_id else session.get('survey_completed')
     if not survey_completed:
         if store_slug:
-            return redirect(url_for('survey', store_slug=store_slug))
+            return redirect(url_for('survey.survey', store_slug=store_slug))
         return redirect('/')  # store_slugがない場合はトップへ
     
     # 設定ファイルからメッセージと景品データを読み込み
