@@ -127,14 +127,23 @@
         <div class="review-text" id="review-text">{{ generated_review }}</div>
       </div>
 
-      {% if rating >= 4 %}
-        <!-- 星4以上の場合：Google口コミへの誘導 -->
-        <div class="info-box">
-          <p style="margin:0;font-weight:600;color:#1f2937">
-            ⭐ 高評価をありがとうございます！<br>
-            よろしければGoogle口コミへの投稿にご協力ください。
-          </p>
-        </div>
+      {% if show_review_button %}
+        <!-- 設定に基づいてGoogle口コミへの誘導を表示 -->
+        {% if rating >= 4 %}
+          <div class="info-box">
+            <p style="margin:0;font-weight:600;color:#1f2937">
+              ⭐ 高評価をありがとうございます！<br>
+              よろしければGoogle口コミへの投稿にご協力ください。
+            </p>
+          </div>
+        {% else %}
+          <div class="info-box">
+            <p style="margin:0;font-weight:600;color:#1f2937">
+              💬 貴重なご意見ありがとうございます！<br>
+              よろしければGoogle口コミへの投稿にもご協力ください。
+            </p>
+          </div>
+        {% endif %}
 
         <div class="action-buttons">
           <button class="primary big" onclick="goToGoogleReview()">
@@ -150,7 +159,7 @@
         </p>
 
       {% else %}
-        <!-- 星3以下の場合：内部保存のみ -->
+        <!-- 設定によりGoogle口コミへの誘導を表示しない -->
         <div class="info-box success">
           <p style="margin:0;font-weight:600;color:#1f2937">
             ✅ 貴重なご意見ありがとうございます！<br>
@@ -200,10 +209,7 @@
         } else {
           alert('Google口コミのURLが設定されていません。管理者にお問い合わせください。');
         }
-        // その後スロットページへ
-        setTimeout(() => {
-          window.location.href = '/store/{{ store_slug }}/slot';
-        }, 1000);
+        // 自動遷移を削除：お客様が自分で「スロットへ進む」ボタンを押すまで待つ
       }, 500);
     }
 

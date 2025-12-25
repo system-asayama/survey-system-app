@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>口コミ投稿促進設定 - {{ store.name }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #2196F3;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .flash-messages {
+            margin-bottom: 20px;
+        }
+        .flash {
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        .flash.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .flash.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .setting-section {
+            margin-bottom: 30px;
+        }
+        .setting-item {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .setting-item:hover {
+            border-color: #2196F3;
+        }
+        .setting-item.selected {
+            border-color: #4CAF50;
+            background: #f0f8f0;
+        }
+        .setting-item.risky {
+            border-color: #ff9800;
+        }
+        .setting-item.risky.selected {
+            border-color: #f44336;
+            background: #fff3f3;
+        }
+        .setting-item input[type="radio"] {
+            margin-right: 10px;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        .setting-item label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        .badge-success {
+            background: #4CAF50;
+            color: white;
+        }
+        .badge-danger {
+            background: #f44336;
+            color: white;
+        }
+        .setting-description {
+            margin-top: 15px;
+            padding-left: 30px;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+        .setting-description.text-success {
+            color: #2e7d32;
+        }
+        .setting-description.text-danger {
+            color: #c62828;
+        }
+        .info-box {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        .info-box h3 {
+            color: #0066cc;
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        .info-box ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        .info-box li {
+            padding: 8px 0;
+            color: #333;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .info-box li:before {
+            content: "✅ ";
+            margin-right: 8px;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.2s;
+            font-weight: 600;
+        }
+        .btn-primary {
+            background: #4CAF50;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #45a049;
+        }
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        /* 警告モーダル */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 700px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .modal-header {
+            background: #f44336;
+            color: white;
+            padding: 20px 30px;
+            border-radius: 8px 8px 0 0;
+        }
+        .modal-header h2 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .modal-body {
+            padding: 30px;
+        }
+        .modal-body p {
+            font-size: 16px;
+            line-height: 1.8;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .modal-body strong {
+            color: #f44336;
+        }
+        .risk-list {
+            margin: 20px 0;
+        }
+        .risk-list h4 {
+            color: #f44336;
+            font-size: 18px;
+            margin: 20px 0 10px 0;
+        }
+        .risk-list ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        .risk-list li {
+            padding: 8px 0 8px 25px;
+            position: relative;
+            color: #333;
+            font-size: 15px;
+        }
+        .risk-list li:before {
+            content: "❌";
+            position: absolute;
+            left: 0;
+        }
+        .warning-note {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #856404;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+        .checkbox-group {
+            margin: 25px 0;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 4px;
+        }
+        .checkbox-group label {
+            display: block;
+            padding: 12px 0;
+            cursor: pointer;
+            font-size: 15px;
+        }
+        .checkbox-group input[type="checkbox"] {
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 25px;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #da190b;
+        }
+        .btn-danger:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .separator {
+            border-top: 2px solid #ddd;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="{{ url_for('store_settings_index') }}" class="back-link">← 店舗設定に戻る</a>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        <h1>口コミ投稿促進設定</h1>
+        <div class="subtitle">{{ store.name }}</div>
+        
+        <div class="info-box">
+            <h3>📌 この設定について</h3>
+            <p style="color: #333; margin-bottom: 15px;">
+                アンケート回答後、どの評価のお客様に対してGoogle口コミ投稿を促すかを設定します。
+            </p>
+            <ul>
+                <li>Googleポリシーに準拠</li>
+                <li>ステマ規制法に準拠</li>
+                <li>お客様のビジネスを守るため</li>
+                <li>長期的に信頼されるシステムを提供するため</li>
+            </ul>
+        </div>
+        
+        <form method="POST" action="{{ url_for('store_settings_save_review_prompt', store_id=store.id) }}" id="settingsForm">
+            <div class="setting-section">
+                <div class="setting-item {% if review_prompt_mode == 'all' %}selected{% endif %}" onclick="selectOption('all')">
+                    <label>
+                        <input type="radio" name="review_prompt_mode" value="all" {% if review_prompt_mode == 'all' %}checked{% endif %}>
+                        全ての評価に対して投稿を促す
+                        <span class="badge badge-success">推奨</span>
+                    </label>
+                    <div class="setting-description text-success">
+                        ✅ Googleポリシーに準拠<br>
+                        ✅ ステマ規制法に準拠<br>
+                        ✅ リスクなし<br>
+                        ✅ 持続可能<br>
+                        ✅ 低評価は改善の機会
+                    </div>
+                </div>
+                
+                <div class="setting-item risky {% if review_prompt_mode == 'high_rating_only' %}selected{% endif %}" onclick="selectOption('high_rating_only')">
+                    <label>
+                        <input type="radio" name="review_prompt_mode" value="high_rating_only" {% if review_prompt_mode == 'high_rating_only' %}checked{% endif %}>
+                        星4以上のみ投稿を促す
+                        <span class="badge badge-danger">⚠️ 非推奨・リスクあり</span>
+                    </label>
+                    <div class="setting-description text-danger">
+                        ❌ Googleポリシー違反<br>
+                        ❌ ペナルティのリスク<br>
+                        ❌ ステマ規制法違反の可能性<br>
+                        ❌ 社会的信用の失墜リスク
+                    </div>
+                </div>
+            </div>
+            
+            <button type="button" class="btn btn-primary" onclick="saveSettings()">設定を保存</button>
+        </form>
+    </div>
+    
+    <!-- 警告モーダル -->
+    <div id="warningModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>⚠️ 重要な警告</h2>
+            </div>
+            <div class="modal-body">
+                <p>「星4以上のみ投稿を促す」設定は、<br>
+                <strong>Googleのポリシーに明確に違反します。</strong></p>
+                
+                <div class="separator"></div>
+                
+                <h3 style="color: #333; font-size: 20px; margin-bottom: 15px;">以下のリスクがあることを理解してください：</h3>
+                
+                <div class="risk-list">
+                    <h4>1. Googleによるペナルティ</h4>
+                    <ul>
+                        <li>全レビューの非公開化</li>
+                        <li>新規レビュー受付停止</li>
+                        <li>警告メッセージの表示「このビジネスは不正をしています」</li>
+                        <li>ビジネスプロフィールの削除</li>
+                    </ul>
+                    
+                    <h4>2. ステマ規制法違反</h4>
+                    <ul>
+                        <li>措置命令</li>
+                        <li>罰金（最大300万円）</li>
+                        <li>社名公表</li>
+                        <li>メディア報道</li>
+                    </ul>
+                    
+                    <h4>3. 社会的信用の失墜</h4>
+                    <ul>
+                        <li>メディアで報道される</li>
+                        <li>SNSで拡散される</li>
+                        <li>顧客が離れる</li>
+                        <li>売上が減少する</li>
+                    </ul>
+                </div>
+                
+                <div class="separator"></div>
+                
+                <p class="warning-note">
+                    <strong>【重要】</strong><br>
+                    これらのリスクは「可能性」ではなく、<strong>実際に発生しています</strong>。<br>
+                    <br>
+                    2024年6月、東京都内の医療法人が「星4以上で割引」で景品表示法違反により措置命令を受けました。<br>
+                    <br>
+                    多くのシステムが同様の機能を提供していますが、それは「安全」を意味しません。<br>
+                    規制は後から強化されます。「今は大丈夫」でも「将来は危険」です。
+                </p>
+                
+                <div class="separator"></div>
+                
+                <div class="checkbox-group">
+                    <p style="margin-bottom: 15px; font-weight: 600; color: #333;">以下を確認してください：</p>
+                    <label>
+                        <input type="checkbox" id="understand1">
+                        上記のリスクを十分に理解しました
+                    </label>
+                    <label>
+                        <input type="checkbox" id="understand2">
+                        全ての責任を自分で負います
+                    </label>
+                    <label>
+                        <input type="checkbox" id="understand3">
+                        システム提供者に一切の責任を求めません
+                    </label>
+                </div>
+                
+                <div class="modal-buttons">
+                    <button class="btn btn-secondary" onclick="cancelRiskySettings()">
+                        安全な設定に戻る
+                    </button>
+                    <button class="btn btn-danger" id="confirmRiskyBtn" disabled onclick="confirmRiskySettings()">
+                        それでも使用する
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function selectOption(value) {
+            document.querySelectorAll('input[name="review_prompt_mode"]').forEach(radio => {
+                radio.checked = (radio.value === value);
+            });
+            updateSelectedStyles();
+        }
+        
+        function updateSelectedStyles() {
+            document.querySelectorAll('.setting-item').forEach(item => {
+                const radio = item.querySelector('input[type="radio"]');
+                if (radio.checked) {
+                    item.classList.add('selected');
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
+        }
+        
+        function saveSettings() {
+            const mode = document.querySelector('input[name="review_prompt_mode"]:checked').value;
+            
+            if (mode === 'high_rating_only') {
+                // 警告モーダルを表示
+                document.getElementById('warningModal').style.display = 'block';
+            } else {
+                // 安全な設定なので即座に保存
+                document.getElementById('settingsForm').submit();
+            }
+        }
+        
+        // チェックボックスの監視
+        document.querySelectorAll('#warningModal input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', () => {
+                const allChecked = 
+                    document.getElementById('understand1').checked &&
+                    document.getElementById('understand2').checked &&
+                    document.getElementById('understand3').checked;
+                
+                document.getElementById('confirmRiskyBtn').disabled = !allChecked;
+            });
+        });
+        
+        function confirmRiskySettings() {
+            // フォームに警告確認フラグを追加
+            const form = document.getElementById('settingsForm');
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'warnings_confirmed';
+            input.value = 'true';
+            form.appendChild(input);
+            
+            // フォームを送信
+            form.submit();
+        }
+        
+        function cancelRiskySettings() {
+            // 安全な設定に戻す
+            selectOption('all');
+            
+            // モーダルを閉じる
+            document.getElementById('warningModal').style.display = 'none';
+            
+            // チェックボックスをリセット
+            document.getElementById('understand1').checked = false;
+            document.getElementById('understand2').checked = false;
+            document.getElementById('understand3').checked = false;
+        }
+        
+        // モーダル外クリックで閉じる
+        window.onclick = function(event) {
+            const modal = document.getElementById('warningModal');
+            if (event.target == modal) {
+                cancelRiskySettings();
+            }
+        }
+        
+        // 初期化
+        updateSelectedStyles();
+    </script>
+</body>
+</html>

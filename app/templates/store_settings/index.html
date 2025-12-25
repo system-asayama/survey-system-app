@@ -137,6 +137,7 @@
                 <div class="store-actions">
                     <a href="{{ url_for('store_settings_prizes', store_id=store.id) }}" class="btn btn-primary">景品設定</a>
                     <a href="{{ url_for('store_settings_google_review', store_id=store.id) }}" class="btn btn-secondary">Google口コミURL設定</a>
+                    <a href="{{ url_for('store_settings_review_prompt', store_id=store.id) }}" class="btn btn-secondary">口コミ投稿促進設定</a>
                 </div>
             </div>
             {% endfor %}

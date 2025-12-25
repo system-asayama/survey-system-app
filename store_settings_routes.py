@@ -247,3 +247,69 @@ def register_store_settings_routes(app):
         
         flash('Google口コミURLを保存しました', 'success')
         return redirect(url_for('store_settings_google_review', store_id=store_id))
+    
+    
+    @app.route('/admin/store_settings/<int:store_id>/review_prompt')
+    @require_roles(ROLES["ADMIN"], ROLES["TENANT_ADMIN"], ROLES["SYSTEM_ADMIN"])
+    def store_settings_review_prompt(store_id):
+        """口コミ投稿促進設定ページ"""
+        from review_prompt_settings import get_review_prompt_mode
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # 店舗情報を取得
+        cur.execute(_sql(conn, 'SELECT id, 名称, slug FROM "T_店舗" WHERE id = %s'), (store_id,))
+        store_row = cur.fetchone()
+        
+        if not store_row:
+            flash('店舗が見つかりません', 'error')
+            conn.close()
+            return redirect(url_for('store_settings_index'))
+        
+        store = {
+            'id': store_row[0],
+            'name': store_row[1],
+            'slug': store_row[2]
+        }
+        
+        # 現在の設定を取得
+        review_prompt_mode = get_review_prompt_mode(store_id)
+        
+        conn.close()
+        return render_template('store_settings/review_prompt.html', 
+                             store=store, 
+                             review_prompt_mode=review_prompt_mode)
+    
+    
+    @app.route('/admin/store_settings/<int:store_id>/review_prompt/save', methods=['POST'])
+    @require_roles(ROLES["ADMIN"], ROLES["TENANT_ADMIN"], ROLES["SYSTEM_ADMIN"])
+    def store_settings_save_review_prompt(store_id):
+        """口コミ投稿促進設定保存"""
+        from review_prompt_settings import save_review_prompt_mode, ReviewPromptMode
+        
+        mode = request.form.get('review_prompt_mode', ReviewPromptMode.ALL.value)
+        warnings_confirmed = request.form.get('warnings_confirmed') == 'true'
+        
+        # IPアドレスとユーザーエージェントを取得
+        ip_address = request.remote_addr
+        user_agent = request.headers.get('User-Agent', '')
+        admin_id = session.get('user_id')
+        
+        # 設定を保存
+        save_review_prompt_mode(
+            store_id=store_id,
+            mode=mode,
+            admin_id=admin_id,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            warnings_shown=(mode == ReviewPromptMode.HIGH_RATING_ONLY.value),
+            checkboxes_confirmed=warnings_confirmed
+        )
+        
+        if mode == ReviewPromptMode.HIGH_RATING_ONLY.value:
+            flash('⚠️ リスクある設定を保存しました。定期的にリマインドが表示されます。', 'error')
+        else:
+            flash('✅ 安全な設定を保存しました', 'success')
+        
+        return redirect(url_for('store_settings_review_prompt', store_id=store_id))
