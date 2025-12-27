@@ -1345,7 +1345,7 @@ AVAILABLE_APPS = [
 ]
 
 @bp.route('/app_management', methods=['GET', 'POST'])
-@tenant_admin_required
+@require_roles(ROLES["TENANT_ADMIN"], ROLES["SYSTEM_ADMIN"])
 def app_management():
     """店舗別アプリ設定（テナント管理者用）"""
     user_id = session.get('user_id')

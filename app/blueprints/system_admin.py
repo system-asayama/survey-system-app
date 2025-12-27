@@ -991,13 +991,13 @@ AVAILABLE_APPS = [
 ]
 
 @bp.route('/app_management')
-@system_admin_required
+@require_roles(ROLES["SYSTEM_ADMIN"])
 def app_management():
     """アプリ管理トップページ"""
     return render_template('sys_app_management.html')
 
 @bp.route('/app_management/tenant', methods=['GET', 'POST'])
-@system_admin_required
+@require_roles(ROLES["SYSTEM_ADMIN"])
 def app_management_tenant():
     """テナント別アプリ設定"""
     conn = get_db_connection()
@@ -1100,7 +1100,7 @@ def app_management_tenant():
                          tenant_apps=tenant_apps)
 
 @bp.route('/app_management/store', methods=['GET', 'POST'])
-@system_admin_required
+@require_roles(ROLES["SYSTEM_ADMIN"])
 def app_management_store():
     """店舗別アプリ設定"""
     conn = get_db_connection()
