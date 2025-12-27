@@ -149,7 +149,8 @@ def init_database():
                     can_manage_admins INTEGER DEFAULT 0,
                     created_at       {timestamp_type},
                     updated_at       {timestamp_type},
-                    email            TEXT
+                    email            TEXT,
+                    openai_api_key   TEXT DEFAULT NULL
                 )
             ''')
         else:
@@ -166,7 +167,8 @@ def init_database():
                     can_manage_admins INTEGER DEFAULT 0,
                     created_at       {timestamp_type},
                     updated_at       {timestamp_type},
-                    email            TEXT
+                    email            TEXT,
+                    openai_api_key   TEXT DEFAULT NULL
                 )
             ''')
         conn.commit()
@@ -659,6 +661,7 @@ def init_database():
             add_column_if_not_exists(cur, conn, 'T_管理者', 'can_manage_admins', 'INTEGER DEFAULT 0', db_type)
             add_column_if_not_exists(cur, conn, 'T_管理者', 'active', 'INTEGER DEFAULT 1', db_type)
             add_column_if_not_exists(cur, conn, 'T_管理者', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP', db_type)
+            add_column_if_not_exists(cur, conn, 'T_管理者', 'openai_api_key', 'TEXT DEFAULT NULL', db_type)
         
         # T_従業員テーブルのカラム追加
         if table_exists(cur, 'T_従業員', db_type):
