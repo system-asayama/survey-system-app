@@ -342,7 +342,10 @@ def admins():
     conn.close()
     
     user_id = session.get('user_id')
-    return render_template('tenant_admins.html', admins=admins_list, current_user_id=user_id, is_owner=True)
+    role = session.get('role')
+    is_system_admin = role == 'system_admin'
+    is_tenant_admin = role == 'tenant_admin'
+    return render_template('tenant_admins.html', admins=admins_list, current_user_id=user_id, is_owner=True, is_system_admin=is_system_admin, is_tenant_admin=is_tenant_admin)
 
 
 @bp.route('/admins/new', methods=['GET', 'POST'])
