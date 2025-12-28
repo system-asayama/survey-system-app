@@ -570,6 +570,66 @@ def toggle_admin_manage_permission(admin_id):
     return redirect(url_for('admin.admins'))
 
 
+@bp.route('/admins/<int:admin_id>/toggle_active', methods=['POST'])
+@require_roles(ROLES["ADMIN"], ROLES["TENANT_ADMIN"], ROLES["SYSTEM_ADMIN"])
+def admin_toggle_active(admin_id):
+    """管理者の有効/無効切り替え"""
+    tenant_id = session.get('tenant_id')
+    user_id = session.get('user_id')
+    role = session.get('role')
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # 権限チェック（システム管理者とテナント管理者は無条件で許可）
+    if role != 'system_admin' and role != 'tenant_admin':
+        # 店舗管理者の場合はオーナー権限チェック
+        cur.execute(_sql(conn, 'SELECT is_owner FROM "T_管理者" WHERE id = %s'), (user_id,))
+        row = cur.fetchone()
+        if not row or row[0] != 1:
+            flash('管理者の有効/無効を変更する権限がありません', 'error')
+            conn.close()
+            return redirect(url_for('admin.admins'))
+    
+    # 自分自身は切り替え不可
+    if admin_id == user_id:
+        flash('自分自身の有効/無効は変更できません', 'error')
+        conn.close()
+        return redirect(url_for('admin.admins'))
+    
+    # 現在の状態を取得
+    cur.execute(_sql(conn, '''
+        SELECT active, name
+        FROM "T_管理者" 
+        WHERE id = %s AND tenant_id = %s AND role = %s
+    '''), (admin_id, tenant_id, ROLES["ADMIN"]))
+    row = cur.fetchone()
+    
+    if not row:
+        flash('管理者が見つかりません', 'error')
+        conn.close()
+        return redirect(url_for('admin.admins'))
+    
+    current_active = row[0]
+    admin_name = row[1]
+    new_active = 0 if current_active == 1 else 1
+    
+    # 有効/無効を切り替え
+    cur.execute(_sql(conn, '''
+        UPDATE "T_管理者"
+        SET active = %s
+        WHERE id = %s
+    '''), (new_active, admin_id))
+    conn.commit()
+    conn.close()
+    
+    if new_active == 1:
+        flash(f'{admin_name} を有効にしました', 'success')
+    else:
+        flash(f'{admin_name} を無効にしました', 'success')
+    
+    return redirect(url_for('admin.admins'))
+
+
 # ========================================
 # 従業員管理
 # ========================================

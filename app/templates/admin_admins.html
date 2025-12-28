@@ -119,10 +119,26 @@
         {% endif %}
       </td>
       <td style="padding:8px;white-space:nowrap">
-        {% if admin.active == 1 %}
-          <span style="color:green">✓ 有効</span>
+        {% if admin.id == current_user_id %}
+          {% if admin.active == 1 %}
+            <span style="color:green">✓ 有効</span>
+          {% else %}
+            <span style="color:#999">無効</span>
+          {% endif %}
+        {% elif is_system_admin or is_tenant_admin or is_owner %}
+          <form method="post" action="{{ url_for('admin.admin_toggle_active', admin_id=admin.id) }}" style="display:inline">
+            {% if admin.active == 1 %}
+              <button type="submit" class="btn small" style="background:#4caf50; color:white; border:none; cursor:pointer; font-size:0.9em; padding:4px 8px">✓ 有効</button>
+            {% else %}
+              <button type="submit" class="btn small" style="background:#999; color:white; border:none; cursor:pointer; font-size:0.9em; padding:4px 8px">無効</button>
+            {% endif %}
+          </form>
         {% else %}
-          <span style="color:#999">無効</span>
+          {% if admin.active == 1 %}
+            <span style="color:green">✓ 有効</span>
+          {% else %}
+            <span style="color:#999">無効</span>
+          {% endif %}
         {% endif %}
       </td>
       <td style="padding:8px;white-space:nowrap;color:#666">{{ admin.created_at }}</td>
@@ -223,10 +239,26 @@
     <div class="admin-card-row">
       <span class="admin-card-label">有効:</span>
       <span class="admin-card-value">
-        {% if admin.active == 1 %}
-          <span style="color:green">✓ 有効</span>
+        {% if admin.id == current_user_id %}
+          {% if admin.active == 1 %}
+            <span style="color:green">✓ 有効</span>
+          {% else %}
+            <span style="color:#999">無効</span>
+          {% endif %}
+        {% elif is_system_admin or is_tenant_admin or is_owner %}
+          <form method="post" action="{{ url_for('admin.admin_toggle_active', admin_id=admin.id) }}" style="display:inline">
+            {% if admin.active == 1 %}
+              <button type="submit" class="btn small" style="background:#4caf50; color:white; border:none; cursor:pointer">✓ 有効</button>
+            {% else %}
+              <button type="submit" class="btn small" style="background:#999; color:white; border:none; cursor:pointer">無効</button>
+            {% endif %}
+          </form>
         {% else %}
-          <span style="color:#999">無効</span>
+          {% if admin.active == 1 %}
+            <span style="color:green">✓ 有効</span>
+          {% else %}
+            <span style="color:#999">無効</span>
+          {% endif %}
         {% endif %}
       </span>
     </div>
