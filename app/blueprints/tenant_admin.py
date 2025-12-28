@@ -322,7 +322,7 @@ def admins():
     cur = conn.cursor()
     
     cur.execute(_sql(conn, '''
-        SELECT id, login_id, name, active, created_at, can_manage_admins 
+        SELECT id, login_id, name, active, created_at, can_manage_admins, is_owner 
         FROM "T_管理者" 
         WHERE tenant_id = %s AND role = %s 
         ORDER BY can_manage_admins DESC, id
@@ -336,11 +336,13 @@ def admins():
             'name': row[2],
             'active': row[3],
             'created_at': row[4],
-            'can_manage_admins': row[5]
+            'can_manage_admins': row[5],
+            'is_owner': row[6]
         })
     conn.close()
     
-    return render_template('tenant_admins.html', admins=admins_list)
+    user_id = session.get('user_id')
+    return render_template('tenant_admins.html', admins=admins_list, current_user_id=user_id, is_owner=True)
 
 
 @bp.route('/admins/new', methods=['GET', 'POST'])
