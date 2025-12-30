@@ -196,8 +196,14 @@
         }
         
         @media print {
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+            
             body {
-                background: white;
+                background: white !important;
                 padding: 0;
             }
             
@@ -205,10 +211,18 @@
                 box-shadow: none;
                 padding: 20px;
                 max-width: 100%;
+                background: white !important;
             }
             
             .back-button, .print-button {
-                display: none;
+                display: none !important;
+            }
+            
+            .prize-card {
+                break-inside: avoid;
+                page-break-inside: avoid;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
             
             .prize-card:hover {
@@ -217,11 +231,6 @@
             
             .prizes-grid {
                 gap: 15px;
-            }
-            
-            .prize-card {
-                break-inside: avoid;
-                page-break-inside: avoid;
             }
             
             @page {
