@@ -148,7 +148,7 @@
     </style>
 </head>
 <body>
-    <a href="{{ url_for('store_slot_settings', store_id=store.id) }}" class="back-button no-print">戻る</a>
+    <a href="/admin/store/{{ store.id }}/settings" class="back-button no-print">戻る</a>
     <button onclick="window.print()" class="print-button no-print">印刷</button>
     
     <div class="header">
