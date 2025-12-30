@@ -168,6 +168,14 @@ def create_app() -> Flask:
     except Exception as e:
         print(f"⚠️ QR印刷ルート登録エラー: {e}")
 
+    # 景品一覧印刷ルート
+    try:
+        from prize_print_routes import register_prize_print_routes
+        register_prize_print_routes(app)
+        print("✅ 景品一覧印刷ルート登録完了")
+    except Exception as e:
+        print(f"⚠️ 景品一覧印刷ルート登録エラー: {e}")
+
     # エラーハンドラ
     @app.errorhandler(404)
     def not_found(error):
