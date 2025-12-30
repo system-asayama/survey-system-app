@@ -661,7 +661,7 @@ def register_store_slot_settings_routes(app):
     
     @app.route('/admin/store/<int:store_id>/print_prizes')
     @require_roles(ROLES["ADMIN"], ROLES["TENANT_ADMIN"], ROLES["SYSTEM_ADMIN"])
-    def print_prizes(store_id):
+    def store_print_prizes(store_id):
         """景品一覧印刷ページ"""
         tenant_id = session.get('tenant_id')
         conn = get_db_connection()
