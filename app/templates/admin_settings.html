@@ -530,6 +530,7 @@
     {% if store %}
     <div style="display: flex; gap: 10px;">
       <a href="/admin/store/{{ store.id }}/qr_print" target="_blank" style="padding: 8px 16px; background: #10b981; color: white; text-decoration: none; border-radius: 6px; font-size: 14px;">📱 QR印刷</a>
+      <a href="/admin/store/{{ store.id }}/print_prizes" target="_blank" style="padding: 8px 16px; background: #f59e0b; color: white; text-decoration: none; border-radius: 6px; font-size: 14px;">🎁 景品一覧印刷</a>
       <a href="/store/{{ store.slug }}/slot?demo=true" target="_blank" style="padding: 8px 16px; background: #3b82f6; color: white; text-decoration: none; border-radius: 6px; font-size: 14px;">🎰 デモプレイ</a>
     </div>
     {% endif %}

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>景品一覧 - {{ store.name }}</title>
+    <style>
+        @media print {
+            @page {
+                size: A4;
+                margin: 15mm;
+            }
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+        
+        body {
+            font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #333;
+            padding-bottom: 20px;
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        
+        .header .store-name {
+            font-size: 20px;
+            color: #666;
+            margin: 5px 0;
+        }
+        
+        .prizes-container {
+            margin-top: 30px;
+        }
+        
+        .prize-item {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: linear-gradient(to right, #f9f9f9, #fff);
+            page-break-inside: avoid;
+        }
+        
+        .prize-item.special {
+            border-color: #ff6b6b;
+            background: linear-gradient(to right, #fff5f5, #fff);
+        }
+        
+        .prize-item.first {
+            border-color: #ffd700;
+            background: linear-gradient(to right, #fffbeb, #fff);
+        }
+        
+        .prize-item.second {
+            border-color: #c0c0c0;
+            background: linear-gradient(to right, #f5f5f5, #fff);
+        }
+        
+        .prize-item.third {
+            border-color: #cd7f32;
+            background: linear-gradient(to right, #fff8f0, #fff);
+        }
+        
+        .prize-rank {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .prize-name {
+            font-size: 22px;
+            color: #555;
+            margin-bottom: 10px;
+        }
+        
+        .prize-score {
+            font-size: 16px;
+            color: #888;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+        
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 30px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .print-button:hover {
+            background-color: #45a049;
+        }
+        
+        .back-button {
+            position: fixed;
+            top: 20px;
+            right: 180px;
+            padding: 15px 30px;
+            background-color: #666;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .back-button:hover {
+            background-color: #555;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #ddd;
+            color: #888;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <a href="{{ url_for('store_slot_settings', store_id=store.id) }}" class="back-button no-print">戻る</a>
+    <button onclick="window.print()" class="print-button no-print">印刷</button>
+    
+    <div class="header">
+        <h1>🎁 景品一覧</h1>
+        <div class="store-name">{{ store.name }}</div>
+    </div>
+    
+    <div class="prizes-container">
+        {% if prizes %}
+            {% for prize in prizes %}
+            <div class="prize-item {% if '特賞' in prize.rank %}special{% elif '1等' in prize.rank %}first{% elif '2等' in prize.rank %}second{% elif '3等' in prize.rank %}third{% endif %}">
+                <div class="prize-rank">{{ prize.rank }}</div>
+                <div class="prize-name">{{ prize.name }}</div>
+                <div class="prize-score">
+                    {% if prize.max_score %}
+                        必要得点: {{ prize.min_score }}点 〜 {{ prize.max_score }}点
+                    {% else %}
+                        必要得点: {{ prize.min_score }}点以上
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="prize-item">
+                <div class="prize-name">景品が設定されていません</div>
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="footer">
+        <p>スロットゲームで合計得点を獲得して、素敵な景品をゲットしよう！</p>
+    </div>
+</body>
+</html>
