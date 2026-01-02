@@ -147,9 +147,20 @@ def slot_result_page(slug):
     # Google口コミURLを取得
     google_review_url = store_db.get_google_review_url(store['id'])
     
-    # スロット結果ページでGoogle口コミボタンを表示するかどうかを取得
-    from get_show_slot_review_button import get_show_slot_review_button
-    show_slot_review_button = get_show_slot_review_button(store['id'])
+    # 口コミ投稿促進設定を取得
+    conn = store_db.get_db_connection()
+    cur = store_db.get_cursor(conn)
+    store_db.execute_query(cur, '''
+        SELECT review_prompt_mode
+        FROM "T_店舗_口コミ投稿促進設定"
+        WHERE store_id = ?
+    ''', (store['id'],))
+    review_prompt_row = cur.fetchone()
+    conn.close()
+    review_prompt_mode = review_prompt_row['review_prompt_mode'] if review_prompt_row else 'all'
+    
+    # 'all'の場合のみGoogle口コミボタンを表示
+    show_slot_review_button = (review_prompt_mode == 'all')
     
     return render_template('slot_result.html', 
                          total_score=total_score, 
