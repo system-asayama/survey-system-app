@@ -144,12 +144,16 @@ def slot_result_page(slug):
         sys.stderr.flush()
         return f"店舗が見つかりません (slug: {slug})", 404
     
+    # Google口コミURLを取得
+    google_review_url = store_db.get_google_review_url(store['id'])
+    
     return render_template('slot_result.html', 
                          total_score=total_score, 
                          prize=prize, 
                          store=store,
                          history=history,
-                         set_scores=set_scores)
+                         set_scores=set_scores,
+                         google_review_url=google_review_url)
 
 
 @bp.get("/store/<slug>/slot")

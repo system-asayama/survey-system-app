@@ -149,6 +149,24 @@
             background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
         }
         
+        .button-review {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .review-button-section {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .review-message {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #666;
+            line-height: 1.6;
+        }
+        
         .history-section {
             background: #f8f9fa;
             border-radius: 15px;
@@ -265,7 +283,14 @@
         </div>
         {% endif %}
         
-
+        {% if google_review_url and google_review_url != '#' %}
+        <div class="review-button-section">
+            <a href="{{ google_review_url }}" target="_blank" class="button button-review">
+                ⭐ Google口コミを書く
+            </a>
+            <p class="review-message">ご来店いただきありがとうございました！<br>よろしければ口コミをお寄せください。</p>
+        </div>
+        {% endif %}
         
         <div class="store-info">
             {{ store.name }}
