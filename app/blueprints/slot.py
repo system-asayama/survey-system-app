@@ -147,13 +147,18 @@ def slot_result_page(slug):
     # Google口コミURLを取得
     google_review_url = store_db.get_google_review_url(store['id'])
     
+    # スロット結果ページでGoogle口コミボタンを表示するかどうかを取得
+    from get_show_slot_review_button import get_show_slot_review_button
+    show_slot_review_button = get_show_slot_review_button(store['id'])
+    
     return render_template('slot_result.html', 
                          total_score=total_score, 
                          prize=prize, 
                          store=store,
                          history=history,
                          set_scores=set_scores,
-                         google_review_url=google_review_url)
+                         google_review_url=google_review_url,
+                         show_slot_review_button=show_slot_review_button)
 
 
 @bp.get("/store/<slug>/slot")

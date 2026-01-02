@@ -653,6 +653,7 @@ def init_database():
         # T_店舗_Google設定テーブルのカラム追加
         if table_exists(cur, 'T_店舗_Google設定', db_type):
             add_column_if_not_exists(cur, conn, 'T_店舗_Google設定', 'slot_spin_count', 'INTEGER DEFAULT 1', db_type)
+            add_column_if_not_exists(cur, conn, 'T_店舗_Google設定', 'show_slot_review_button', 'INTEGER DEFAULT 1', db_type)
         
         # T_管理者テーブルのカラム追加
         if table_exists(cur, 'T_管理者', db_type):
