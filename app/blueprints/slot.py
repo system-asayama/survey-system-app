@@ -98,26 +98,13 @@ def slot_result_page(slug):
     prize = session.get('slot_prize')
     
     # store_slugからstore情報を取得
-    store = None
-    try:
-        conn = store_db.get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute('SELECT "id", "名称", "slug" FROM "T_店舗" WHERE "slug" = %s', (slug,))
-        result = cursor.fetchone()
-        if result:
-            store = {
-                'id': result[0],
-                'name': result[1],
-                'slug': result[2]
-            }
-            sys.stderr.write(f"DEBUG: Store found - id: {store['id']}, name: {store['name']}, slug: {store['slug']}\n")
-            sys.stderr.flush()
-        else:
-            sys.stderr.write(f"DEBUG: No store found for slug: {slug}\n")
-            sys.stderr.flush()
-        conn.close()
-    except Exception as e:
-        sys.stderr.write(f"Error getting store info: {e}\n")
+    store = store_db.get_store_by_slug(slug)
+    
+    if store:
+        sys.stderr.write(f"DEBUG: Store found - id: {store['id']}, name: {store['name']}, slug: {store['slug']}\n")
+        sys.stderr.flush()
+    else:
+        sys.stderr.write(f"DEBUG: No store found for slug: {slug}\n")
         sys.stderr.flush()
     
     # 結果データをクリア
