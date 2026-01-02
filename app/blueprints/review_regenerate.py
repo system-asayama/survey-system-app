@@ -303,9 +303,13 @@ def _generate_review_with_taste(survey_data, store_id, taste='balanced'):
         
         return generated_text
     except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
         sys.stderr.write(f"ERROR: 口コミ生成失敗: {e}\n")
+        sys.stderr.write(f"Traceback:\n{error_details}\n")
         sys.stderr.flush()
-        return "口コミ投稿文の生成に失敗しました。"
+        # デバッグ用に詳細なエラーを返す
+        return f"口コミ投稿文の生成に失敗しました。エラー: {str(e)}"
 
 
 @bp.post("/store/<store_slug>/regenerate_review")
