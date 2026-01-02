@@ -341,11 +341,14 @@ def regenerate_review():
             survey_data = json.loads(result[0])
             
         except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
             sys.stderr.write(f"ERROR: アンケートデータ取得失敗: {e}\n")
+            sys.stderr.write(f"Traceback:\n{error_details}\n")
             sys.stderr.flush()
             return jsonify({
                 "ok": False,
-                "error": "アンケートデータの取得に失敗しました"
+                "error": f"アンケートデータの取得に失敗しました: {str(e)}"
             }), 500
         
         # 口コミを再生成
