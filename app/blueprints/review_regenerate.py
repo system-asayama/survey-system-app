@@ -58,9 +58,8 @@ def get_openai_client(app_type='survey', app_id=None, store_id=None):
     if app_id:
         try:
             conn = store_db.get_db_connection()
-            cursor = conn.cursor()
-            if app_type == 'survey':
-                from db_config import execute_query
+            cursor = store_db.get_cursor(conn)
+            from db_config import execute_query
             execute_query(cursor, "SELECT openai_api_key FROM T_店舗_アンケート設定 WHERE id = ?", (app_id,))
             result = cursor.fetchone()
             if result and result[0]:
