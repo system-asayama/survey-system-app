@@ -97,8 +97,32 @@ def slot_result_page(slug):
     total_score = session.get('slot_total_score', 0)
     prize = session.get('slot_prize')
     
-    # store_slugからstore情報を取得
-    store = store_db.get_store_by_slug(slug)
+    # store_slugからstore情報を取得（有効フラグをチェックしない）
+    from db_config import get_db_connection, get_cursor, execute_query
+    conn = get_db_connection()
+    cur = get_cursor(conn)
+    execute_query(cur, """
+        SELECT id, tenant_id, 名称 as name, slug, 有効 as active
+        FROM "T_店舗"
+        WHERE slug = ?
+    """, (slug,))
+    row = cur.fetchone()
+    conn.close()
+    
+    store = None
+    if row:
+        # SQLite Rowオブジェクトを辞書に変換
+        if hasattr(row, 'keys'):
+            store = {key: row[key] for key in row.keys()}
+        else:
+            # タプルの場合（フォールバック）
+            store = {
+                'id': row[0],
+                'tenant_id': row[1],
+                'name': row[2],
+                'slug': row[3],
+                'active': row[4]
+            }
     
     if store:
         sys.stderr.write(f"DEBUG: Store found - id: {store['id']}, name: {store['name']}, slug: {store['slug']}\n")
