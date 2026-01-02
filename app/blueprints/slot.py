@@ -102,7 +102,8 @@ def slot_result_page(slug):
     try:
         conn = store_db.get_db_connection()
         cursor = conn.cursor()
-        cursor.execute('SELECT "id", "名称", "slug" FROM "T_店舗" WHERE "slug" = %s', (slug,))
+        from app.utils.db import _sql
+        cursor.execute(_sql(conn, 'SELECT id, 名称, slug FROM T_店舗 WHERE slug = %s'), (slug,))
         result = cursor.fetchone()
         if result:
             store = {
