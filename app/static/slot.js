@@ -697,6 +697,28 @@ async function play(){
   // ボタン表示を更新
   updateSpinButton();
   
+  // 全セット完了時に結果ページにリダイレクト
+  if (currentSet >= maxSets) {
+    // 結果をセッションに保存するためにサーバーに送信
+    try {
+      const storeSlug = window.location.pathname.split('/')[2];
+      await fetchJSON(`/store/${storeSlug}/slot/save_result`, {
+        method: 'POST',
+        body: JSON.stringify({
+          total_score: totalScore,
+          prize: data.prize || null
+        })
+      });
+      
+      // 結果ページにリダイレクト
+      setTimeout(() => {
+        window.location.href = `/store/${storeSlug}/slot/result`;
+      }, 1500); // 1.5秒後にリダイレクト（結果を見せるため）
+    } catch (e) {
+      console.error('結果保存エラー:', e);
+    }
+  }
+  
   spinning = false;
 }
 

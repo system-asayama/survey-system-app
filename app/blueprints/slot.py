@@ -87,6 +87,47 @@ def slot_page():
     return render_template('slot.html', survey_complete_message=survey_complete_message, prizes=prizes, store_slug=store_slug, slot_spin_count=slot_spin_count)
 
 
+@bp.get("/store/<slug>/slot/result")
+def slot_result_page(slug):
+    """スロット結果表示ページ"""
+    import store_db
+    import sys
+    
+    # セッションから結果データを取得
+    total_score = session.get('slot_total_score', 0)
+    prize = session.get('slot_prize')
+    
+    # store_slugからstore情報を取得
+    store = None
+    try:
+        conn = store_db.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT "id", "名称", "slug" FROM "T_店舗" WHERE "slug" = %s', (slug,))
+        result = cursor.fetchone()
+        if result:
+            store = {
+                'id': result[0],
+                'name': result[1],
+                'slug': result[2]
+            }
+        conn.close()
+    except Exception as e:
+        sys.stderr.write(f"Error getting store info: {e}\n")
+        sys.stderr.flush()
+    
+    # 結果データをクリア
+    session.pop('slot_total_score', None)
+    session.pop('slot_prize', None)
+    
+    if not store:
+        return "店舗が見つかりません", 404
+    
+    return render_template('slot_result.html', 
+                         total_score=total_score, 
+                         prize=prize, 
+                         store=store)
+
+
 @bp.get("/store/<slug>/slot")
 def slot_page_with_slug(slug):
     """店舗別スロットページ (デモプレイ用)"""
@@ -630,3 +671,27 @@ def calc_prob_with_slug(slug):
     """店舗別確率計算"""
     # 既存の calc_prob() 関数と同じロジックを使用
     return calc_prob()
+
+
+@bp.post("/store/<slug>/slot/save_result")
+def save_slot_result(slug):
+    """スロット結果をセッションに保存"""
+    import sys
+    
+    try:
+        data = request.get_json()
+        total_score = data.get('total_score', 0)
+        prize = data.get('prize')
+        
+        # セッションに保存
+        session['slot_total_score'] = total_score
+        session['slot_prize'] = prize
+        
+        sys.stderr.write(f"DEBUG: Saved slot result - score: {total_score}, prize: {prize}\n")
+        sys.stderr.flush()
+        
+        return jsonify({"ok": True})
+    except Exception as e:
+        sys.stderr.write(f"Error saving slot result: {e}\n")
+        sys.stderr.flush()
+        return jsonify({"ok": False, "error": str(e)}), 500
