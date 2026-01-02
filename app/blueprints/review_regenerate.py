@@ -60,7 +60,7 @@ def get_openai_client(app_type='survey', app_id=None, store_id=None):
             conn = store_db.get_db_connection()
             cursor = store_db.get_cursor(conn)
             from db_config import execute_query
-            execute_query(cursor, "SELECT openai_api_key FROM T_店舗_アンケート設定 WHERE id = ?", (app_id,))
+            execute_query(cursor, "SELECT openai_api_key FROM \"T_店舗_アンケート設定\" WHERE id = ?", (app_id,))
             result = cursor.fetchone()
             if result and result[0]:
                 api_key = result[0]
@@ -74,7 +74,7 @@ def get_openai_client(app_type='survey', app_id=None, store_id=None):
             conn = store_db.get_db_connection()
             cursor = store_db.get_cursor(conn)
             from db_config import execute_query
-            execute_query(cursor, "SELECT openai_api_key FROM T_店舗 WHERE id = ?", (store_id,))
+            execute_query(cursor, "SELECT openai_api_key FROM \"T_店舗\" WHERE id = ?", (store_id,))
             result = cursor.fetchone()
             if result and result[0]:
                 api_key = result[0]
@@ -90,8 +90,8 @@ def get_openai_client(app_type='survey', app_id=None, store_id=None):
             from db_config import execute_query
             execute_query(cursor, """
                 SELECT t.openai_api_key 
-                FROM T_テナント t
-                JOIN T_店舗 s ON s.tenant_id = t.id
+                FROM "T_テナント" t
+                JOIN "T_店舗" s ON s.tenant_id = t.id
                 WHERE s.id = ?
             """, (store_id,))
             result = cursor.fetchone()
@@ -177,7 +177,7 @@ def _generate_review_with_taste(survey_data, store_id, taste='balanced'):
         conn = store_db.get_db_connection()
         cursor = store_db.get_cursor(conn)
         from db_config import execute_query
-        execute_query(cursor, "SELECT id FROM T_店舗_アンケート設定 WHERE store_id = ?", (store_id,))
+        execute_query(cursor, "SELECT id FROM \"T_店舗_アンケート設定\" WHERE store_id = ?", (store_id,))
         result = cursor.fetchone()
         if result:
             survey_app_id = result[0]
@@ -202,7 +202,7 @@ def _generate_review_with_taste(survey_data, store_id, taste='balanced'):
         conn = store_db.get_db_connection()
         cursor = store_db.get_cursor(conn)
         from db_config import execute_query
-        execute_query(cursor, "SELECT config_json FROM T_店舗_アンケート設定 WHERE store_id = ?", (store_id,))
+        execute_query(cursor, "SELECT config_json FROM \"T_店舗_アンケート設定\" WHERE store_id = ?", (store_id,))
         result = cursor.fetchone()
         if result and result[0]:
             import json
