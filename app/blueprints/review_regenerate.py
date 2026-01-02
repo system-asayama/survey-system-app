@@ -2,12 +2,49 @@
 口コミ再生成API
 """
 from flask import Blueprint, request, jsonify, session, g
-from app.utils.decorators import require_store
-from app.utils import store_db
-from openai import OpenAI
+from functools import wraps
+import os
 import sys
 
+# store_dbをインポート
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+import store_db
+from openai import OpenAI
+
 bp = Blueprint('review_regenerate', __name__)
+
+# ===== 店舗識別ミドルウェア =====
+@bp.url_value_preprocessor
+def pull_store_slug(endpoint, values):
+    """からURLから店舗slugを取得してgに保存"""
+    store_slug = None
+    if values and 'store_slug' in values:
+        store_slug = values.pop('store_slug')
+    elif hasattr(request, 'view_args') and request.view_args and 'store_slug' in request.view_args:
+        store_slug = request.view_args.get('store_slug')
+    
+    if store_slug:
+        g.store_slug = store_slug
+        store = store_db.get_store_by_slug(g.store_slug)
+        if store:
+            g.store = store
+            g.store_id = store['id']
+        else:
+            g.store = None
+            g.store_id = None
+    else:
+        g.store_slug = None
+        g.store = None
+        g.store_id = None
+
+def require_store(f):
+    """店舗情報が必要なエンドポイント用デコレータ"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not hasattr(g, 'store') or g.store is None:
+            return jsonify({"ok": False, "error": "店舗が見つかりません"}), 404
+        return f(*args, **kwargs)
+    return decorated_function
 
 
 def get_openai_client(app_type='survey', app_id=None, store_id=None):
