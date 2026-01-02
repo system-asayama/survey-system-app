@@ -44,6 +44,68 @@
     .copy-btn.copied {
       background: #10b981;
     }
+    .regenerate-section {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: #fef3c7;
+      border-radius: 8px;
+      border: 1px solid #fbbf24;
+    }
+    .taste-selector {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin: 0.75rem 0;
+    }
+    .taste-btn {
+      padding: 0.5rem 1rem;
+      background: white;
+      border: 2px solid #d1d5db;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+    .taste-btn:hover {
+      border-color: #6366f1;
+      background: #f0f0ff;
+    }
+    .taste-btn.active {
+      background: #6366f1;
+      color: white;
+      border-color: #6366f1;
+    }
+    .regenerate-btn {
+      padding: 0.75rem 1.5rem;
+      background: #f59e0b;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      transition: background 0.2s;
+      width: 100%;
+    }
+    .regenerate-btn:hover {
+      background: #d97706;
+    }
+    .regenerate-btn:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+    .loading-spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #ffffff;
+      border-radius: 50%;
+      border-top-color: transparent;
+      animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
     .rating-display {
       display: flex;
       align-items: center;
@@ -127,6 +189,26 @@
         <div class="review-text" id="review-text">{{ generated_review }}</div>
       </div>
 
+      <!-- 口コミ再生成セクション -->
+      <div class="regenerate-section">
+        <p style="margin:0 0 0.5rem 0;font-weight:600;color:#92400e">
+          🔄 口コミを再作成する
+        </p>
+        <p style="margin:0 0 0.75rem 0;font-size:0.9rem;color:#78350f">
+          お好みのテイストを選んで、口コミを再生成できます
+        </p>
+        <div class="taste-selector">
+          <button class="taste-btn" data-taste="polite" onclick="selectTaste('polite')">丁寧</button>
+          <button class="taste-btn" data-taste="casual" onclick="selectTaste('casual')">カジュアル</button>
+          <button class="taste-btn active" data-taste="balanced" onclick="selectTaste('balanced')">バランス型</button>
+          <button class="taste-btn" data-taste="enthusiastic" onclick="selectTaste('enthusiastic')">熱量高め</button>
+          <button class="taste-btn" data-taste="concise" onclick="selectTaste('concise')">簡潔</button>
+        </div>
+        <button class="regenerate-btn" id="regenerate-btn" onclick="regenerateReview()">
+          <span id="regenerate-text">口コミを再作成</span>
+        </button>
+      </div>
+
       {% if show_review_button %}
         <!-- 設定に基づいてGoogle口コミへの誘導を表示 -->
         {% if rating >= 4 %}
@@ -179,9 +261,12 @@
   <script>
     const generatedReview = {{ generated_review|tojson }};
     const rating = {{ rating }};
+    const storeSlug = "{{ store_slug }}";
     // Google口コミのURL（実際のお店のPlace IDに置き換える必要があります）
     // 例: https://search.google.com/local/writereview?placeid=YOUR_PLACE_ID
     const googleReviewUrl = "{{ google_review_url }}";
+    
+    let selectedTaste = 'balanced';
 
     function copyReview() {
       const reviewText = document.getElementById('review-text').innerText;
@@ -221,6 +306,59 @@
       setTimeout(() => {
         window.location.href = '/store/{{ store_slug }}/slot';
       }, 500);
+    }
+
+    function selectTaste(taste) {
+      selectedTaste = taste;
+      // すべてのボタンからactiveクラスを削除
+      document.querySelectorAll('.taste-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      // 選択されたボタンにactiveクラスを追加
+      document.querySelector(`[data-taste="${taste}"]`).classList.add('active');
+    }
+
+    async function regenerateReview() {
+      const btn = document.getElementById('regenerate-btn');
+      const btnText = document.getElementById('regenerate-text');
+      
+      // ボタンを無効化してローディング表示
+      btn.disabled = true;
+      btnText.innerHTML = '<span class="loading-spinner"></span> 生成中...';
+      
+      try {
+        const response = await fetch(`/store/${storeSlug}/regenerate_review`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            taste: selectedTaste
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.ok) {
+          // 口コミテキストを更新
+          document.getElementById('review-text').innerText = data.generated_review;
+          
+          // 成功メッセージを表示
+          btnText.textContent = '再作成完了！';
+          setTimeout(() => {
+            btnText.textContent = '口コミを再作成';
+          }, 2000);
+        } else {
+          alert('口コミの再生成に失敗しました: ' + (data.error || '不明なエラー'));
+          btnText.textContent = '口コミを再作成';
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('口コミの再生成に失敗しました: ' + error.message);
+        btnText.textContent = '口コミを再作成';
+      } finally {
+        btn.disabled = false;
+      }
     }
   </script>
 </body>

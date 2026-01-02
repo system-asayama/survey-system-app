@@ -118,6 +118,12 @@ def create_app() -> Flask:
     except Exception as e:
         print(f"⚠️ survey_admin blueprint 登録エラー: {e}")
 
+    try:
+        from .blueprints.review_regenerate import bp as review_regenerate_bp
+        app.register_blueprint(review_regenerate_bp)
+    except Exception as e:
+        print(f"⚠️ review_regenerate blueprint 登録エラー: {e}")
+
     # スタンプカード機能
     try:
         from .blueprints.stampcard import stampcard_bp
