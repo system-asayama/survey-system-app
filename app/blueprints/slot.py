@@ -102,8 +102,7 @@ def slot_result_page(slug):
     try:
         conn = store_db.get_db_connection()
         cursor = conn.cursor()
-        from app.utils.db import _sql
-        cursor.execute(_sql(conn, 'SELECT id, 名称, slug FROM T_店舗 WHERE slug = %s'), (slug,))
+        cursor.execute('SELECT "id", "名称", "slug" FROM "T_店舗" WHERE "slug" = %s', (slug,))
         result = cursor.fetchone()
         if result:
             store = {
@@ -111,6 +110,11 @@ def slot_result_page(slug):
                 'name': result[1],
                 'slug': result[2]
             }
+            sys.stderr.write(f"DEBUG: Store found - id: {store['id']}, name: {store['name']}, slug: {store['slug']}\n")
+            sys.stderr.flush()
+        else:
+            sys.stderr.write(f"DEBUG: No store found for slug: {slug}\n")
+            sys.stderr.flush()
         conn.close()
     except Exception as e:
         sys.stderr.write(f"Error getting store info: {e}\n")
@@ -121,7 +125,9 @@ def slot_result_page(slug):
     session.pop('slot_prize', None)
     
     if not store:
-        return "店舗が見つかりません", 404
+        sys.stderr.write(f"ERROR: Store not found for slug '{slug}', redirecting to 404\n")
+        sys.stderr.flush()
+        return f"店舗が見つかりません (slug: {slug})", 404
     
     return render_template('slot_result.html', 
                          total_score=total_score, 
