@@ -96,6 +96,8 @@ def slot_result_page(slug):
     # セッションから結果データを取得
     total_score = session.get('slot_total_score', 0)
     prize = session.get('slot_prize')
+    history = session.get('slot_history', [])
+    set_scores = session.get('slot_set_scores', [])
     
     # store_slugからstore情報を取得（有効フラグをチェックしない）
     from db_config import get_db_connection, get_cursor, execute_query
@@ -134,6 +136,8 @@ def slot_result_page(slug):
     # 結果データをクリア
     session.pop('slot_total_score', None)
     session.pop('slot_prize', None)
+    session.pop('slot_history', None)
+    session.pop('slot_set_scores', None)
     
     if not store:
         sys.stderr.write(f"ERROR: Store not found for slug '{slug}', redirecting to 404\n")
@@ -143,7 +147,9 @@ def slot_result_page(slug):
     return render_template('slot_result.html', 
                          total_score=total_score, 
                          prize=prize, 
-                         store=store)
+                         store=store,
+                         history=history,
+                         set_scores=set_scores)
 
 
 @bp.get("/store/<slug>/slot")
@@ -700,10 +706,14 @@ def save_slot_result(slug):
         data = request.get_json()
         total_score = data.get('total_score', 0)
         prize = data.get('prize')
+        history = data.get('history', [])
+        set_scores = data.get('set_scores', [])
         
         # セッションに保存
         session['slot_total_score'] = total_score
         session['slot_prize'] = prize
+        session['slot_history'] = history
+        session['slot_set_scores'] = set_scores
         
         sys.stderr.write(f"DEBUG: Saved slot result - score: {total_score}, prize: {prize}\n")
         sys.stderr.flush()

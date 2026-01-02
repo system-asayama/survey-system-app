@@ -699,6 +699,9 @@ async function play(){
   
   // 全セット完了時に結果ページにリダイレクト
   if (currentSet >= maxSets) {
+    // 履歴を収集
+    const historyItems = Array.from($('#history').children).reverse().map(li => li.textContent.trim());
+    
     // 結果をセッションに保存するためにサーバーに送信
     try {
       const storeSlug = window.location.pathname.split('/')[2];
@@ -706,7 +709,9 @@ async function play(){
         method: 'POST',
         body: JSON.stringify({
           total_score: totalScore,
-          prize: data.prize || null
+          prize: data.prize || null,
+          history: historyItems,
+          set_scores: setScores
         })
       });
       
