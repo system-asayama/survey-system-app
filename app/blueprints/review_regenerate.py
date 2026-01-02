@@ -73,7 +73,7 @@ def get_openai_client(app_type='survey', app_id=None, store_id=None):
     if not api_key and store_id:
         try:
             conn = store_db.get_db_connection()
-            cursor = conn.cursor()
+            cursor = store_db.get_cursor(conn)
             from db_config import execute_query
             execute_query(cursor, "SELECT openai_api_key FROM T_店舗 WHERE id = ?", (store_id,))
             result = cursor.fetchone()
@@ -87,7 +87,7 @@ def get_openai_client(app_type='survey', app_id=None, store_id=None):
     if not api_key and store_id:
         try:
             conn = store_db.get_db_connection()
-            cursor = conn.cursor()
+            cursor = store_db.get_cursor(conn)
             from db_config import execute_query
             execute_query(cursor, """
                 SELECT t.openai_api_key 
@@ -176,7 +176,7 @@ def _generate_review_with_taste(survey_data, store_id, taste='balanced'):
     survey_app_id = None
     try:
         conn = store_db.get_db_connection()
-        cursor = conn.cursor()
+        cursor = store_db.get_cursor(conn)
         from db_config import execute_query
         execute_query(cursor, "SELECT id FROM T_店舗_アンケート設定 WHERE store_id = ?", (store_id,))
         result = cursor.fetchone()
@@ -201,7 +201,7 @@ def _generate_review_with_taste(survey_data, store_id, taste='balanced'):
     survey_config = None
     try:
         conn = store_db.get_db_connection()
-        cursor = conn.cursor()
+        cursor = store_db.get_cursor(conn)
         from db_config import execute_query
         execute_query(cursor, "SELECT config_json FROM T_店舗_アンケート設定 WHERE store_id = ?", (store_id,))
         result = cursor.fetchone()
@@ -319,7 +319,7 @@ def regenerate_review():
         # アンケート回答をデータベースから取得
         try:
             conn = store_db.get_db_connection()
-            cursor = conn.cursor()
+            cursor = store_db.get_cursor(conn)
             from db_config import execute_query
             execute_query(cursor, """
                 SELECT response_json 
