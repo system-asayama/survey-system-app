@@ -311,47 +311,44 @@ def regenerate_review():
         data = request.get_json() or {}
         taste = data.get('taste', 'balanced')
         
-        # セッションからアンケートデータを取得
-        # 実際のアンケートデータはセッションに保存されていないため、
-        # 評価のみを使用して再生成
-        rating = session.get(f'survey_rating_{g.store_id}', 0)
+        # アンケート回答を取得（セッションから取得、なければ最新の回答を取得）
+        survey_data = None
         
-        if rating < 4:
-            return jsonify({
-                "ok": False,
-                "error": "星4以上の評価でのみ口コミを生成できます"
-            }), 400
+        # まずセッションから取得を試みる
+        if f'survey_data_{g.store_id}' in session:
+            survey_data = session.get(f'survey_data_{g.store_id}')
         
-        # アンケート回答を取得（最新の回答を取得）
-        try:
-            conn = store_db.get_db_connection()
-            cursor = conn.cursor()
-            cursor.execute("""
-                SELECT response_json 
-                FROM T_アンケート回答 
-                WHERE store_id = %s 
-                ORDER BY created_at DESC 
-                LIMIT 1
-            """, (g.store_id,))
-            result = cursor.fetchone()
-            conn.close()
-            
-            if not result or not result[0]:
+        # セッションにない場合は最新の回答を取得
+        if not survey_data:
+            try:
+                conn = store_db.get_db_connection()
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT response_json 
+                    FROM T_アンケート回答 
+                    WHERE store_id = %s 
+                    ORDER BY created_at DESC 
+                    LIMIT 1
+                """, (g.store_id,))
+                result = cursor.fetchone()
+                conn.close()
+                
+                if not result or not result[0]:
+                    return jsonify({
+                        "ok": False,
+                        "error": "アンケートデータが見つかりません"
+                    }), 404
+                
+                import json
+                survey_data = json.loads(result[0])
+                
+            except Exception as e:
+                sys.stderr.write(f"ERROR: アンケートデータ取得失敗: {e}\n")
+                sys.stderr.flush()
                 return jsonify({
                     "ok": False,
-                    "error": "アンケートデータが見つかりません"
-                }), 404
-            
-            import json
-            survey_data = json.loads(result[0])
-            
-        except Exception as e:
-            sys.stderr.write(f"ERROR: アンケートデータ取得失敗: {e}\n")
-            sys.stderr.flush()
-            return jsonify({
-                "ok": False,
-                "error": "アンケートデータの取得に失敗しました"
-            }), 500
+                    "error": "アンケートデータの取得に失敗しました"
+                }), 500
         
         # 口コミを再生成
         generated_review = _generate_review_with_taste(survey_data, g.store_id, taste)
