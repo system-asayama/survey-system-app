@@ -159,8 +159,16 @@ def slot_result_page(slug):
     conn.close()
     review_prompt_mode = review_prompt_row['review_prompt_mode'] if review_prompt_row else 'all'
     
-    # 'all'の場合のみGoogle口コミボタンを表示
-    show_slot_review_button = (review_prompt_mode == 'all')
+    # アンケートの星評価を取得
+    survey_rating = session.get(f'survey_rating_{store["id"]}', 0)
+    
+    # Google口コミボタンを表示するかどうかを判定
+    show_slot_review_button = False
+    if google_review_url:
+        if review_prompt_mode == 'all':
+            show_slot_review_button = True
+        elif review_prompt_mode == 'high_rating_only' and survey_rating >= 4:
+            show_slot_review_button = True
     
     return render_template('slot_result.html', 
                          total_score=total_score, 
