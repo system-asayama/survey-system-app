@@ -214,7 +214,13 @@
     }
 
     function goToSlot() {
-      window.location.href = '/store/{{ store_slug }}/slot';
+      // 投稿文を自動コピー
+      copyReview();
+      
+      // 少し待ってからスロットページに遷移
+      setTimeout(() => {
+        window.location.href = '/store/{{ store_slug }}/slot';
+      }, 500);
     }
   </script>
 </body>
