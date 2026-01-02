@@ -404,6 +404,7 @@ def submit_survey():
         session[f'survey_completed_{g.store_id}'] = True
         session[f'survey_rating_{g.store_id}'] = rating
         session[f'generated_review_{g.store_id}'] = generated_review
+        session[f'survey_data_{g.store_id}'] = body  # アンケートデータも保存
         
         return jsonify({
             "ok": True, 

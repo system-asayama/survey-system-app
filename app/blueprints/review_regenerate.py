@@ -316,40 +316,14 @@ def regenerate_review():
         data = request.get_json() or {}
         taste = data.get('taste', 'balanced')
         
-        # アンケート回答をデータベースから取得
-        try:
-            conn = store_db.get_db_connection()
-            cursor = store_db.get_cursor(conn)
-            from db_config import execute_query
-            execute_query(cursor, """
-                SELECT response_json 
-                FROM T_アンケート回答 
-                WHERE store_id = ? 
-                ORDER BY created_at DESC 
-                LIMIT 1
-            """, (g.store_id,))
-            result = cursor.fetchone()
-            conn.close()
-            
-            if not result or not result[0]:
-                return jsonify({
-                    "ok": False,
-                    "error": "アンケートデータが見つかりません"
-                }), 404
-            
-            import json
-            survey_data = json.loads(result[0])
-            
-        except Exception as e:
-            import traceback
-            error_details = traceback.format_exc()
-            sys.stderr.write(f"ERROR: アンケートデータ取得失敗: {e}\n")
-            sys.stderr.write(f"Traceback:\n{error_details}\n")
-            sys.stderr.flush()
+        # アンケート回答をセッションから取得
+        survey_data = session.get(f'survey_data_{g.store_id}')
+        
+        if not survey_data:
             return jsonify({
                 "ok": False,
-                "error": f"アンケートデータの取得に失敗しました: {str(e)}"
-            }), 500
+                "error": "アンケートデータが見つかりません。再度アンケートを送信してください。"
+            }), 404
         
         # 口コミを再生成
         generated_review = _generate_review_with_taste(survey_data, g.store_id, taste)
