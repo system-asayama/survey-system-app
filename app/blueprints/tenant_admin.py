@@ -66,18 +66,24 @@ def me_edit():
     if request.method == 'POST':
         name = request.form.get('名称', '').strip()
         slug = request.form.get('slug', '').strip()
+        openai_api_key = request.form.get('openai_api_key', '').strip()
         
         if not name or not slug:
             flash('名称とslugは必須です', 'error')
         else:
-            cur.execute(_sql(conn, 'UPDATE "T_テナント" SET 名称 = %s, slug = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s'),
-                       (name, slug, tenant_id))
+            # OpenAI APIキーが入力されている場合は更新、空の場合はNULLに設定
+            if openai_api_key:
+                cur.execute(_sql(conn, 'UPDATE "T_テナント" SET 名称 = %s, slug = %s, openai_api_key = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s'),
+                           (name, slug, openai_api_key, tenant_id))
+            else:
+                cur.execute(_sql(conn, 'UPDATE "T_テナント" SET 名称 = %s, slug = %s, openai_api_key = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = %s'),
+                           (name, slug, tenant_id))
             conn.commit()
             flash('テナント情報を更新しました', 'success')
             conn.close()
             return redirect(url_for('tenant_admin.dashboard'))
     
-    cur.execute(_sql(conn, 'SELECT id, 名称, slug FROM "T_テナント" WHERE id = %s'), (tenant_id,))
+    cur.execute(_sql(conn, 'SELECT id, 名称, slug, openai_api_key FROM "T_テナント" WHERE id = %s'), (tenant_id,))
     row = cur.fetchone()
     conn.close()
     
@@ -85,7 +91,7 @@ def me_edit():
         flash('テナント情報が見つかりません', 'error')
         return redirect(url_for('tenant_admin.dashboard'))
     
-    tenant = {'id': row[0], '名称': row[1], 'slug': row[2]}
+    tenant = {'id': row[0], '名称': row[1], 'slug': row[2], 'openai_api_key': row[3] if len(row) > 3 else None}
     return render_template('tenant_me_edit.html', t=tenant, back_url=url_for('tenant_admin.dashboard'))
 
 
