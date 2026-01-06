@@ -102,8 +102,8 @@ def tenant_new():
         # テナント作成
         cur.execute(_sql(conn, '''
             INSERT INTO "T_テナント" (名称, slug, 有効)
-            VALUES (?, ?, 1)
-        '''), (name, slug))
+            VALUES (?, ?, ?)
+        '''), (name, slug, 1))
         conn.commit()
         conn.close()
         
