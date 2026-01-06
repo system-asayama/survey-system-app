@@ -369,7 +369,7 @@ def admin_optimize_probabilities():
 
 
 @bp.route("/save_openai_key", methods=["POST"])
-@require_roles(ROLES["ADMIN"])
+@require_roles([ROLES["SYSTEM_ADMIN"], ROLES["ADMIN"]])
 def admin_save_openai_key():
     """店舗別OpenAI APIキーを保存"""
     store_id = session.get('store_id')
