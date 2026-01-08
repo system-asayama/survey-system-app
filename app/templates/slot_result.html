@@ -272,6 +272,15 @@
         </div>
         {% endif %}
         
+        {% if show_slot_review_button and google_review_url and google_review_url != '#' %}
+        <div class="review-button-section">
+            <a href="{{ google_review_url }}" target="_blank" class="button button-review">
+                ⭐ Google口コミを書く
+            </a>
+            <p class="review-message">ご来店いただきありがとうございました！<br>よろしければ口コミをお寄せください。</p>
+        </div>
+        {% endif %}
+        
         {% if history %}
         <div class="history-section">
             <h2 class="history-title">📊 スピン履歴</h2>
@@ -280,15 +289,6 @@
                 <div class="history-item">{{ item }}</div>
                 {% endfor %}
             </div>
-        </div>
-        {% endif %}
-        
-        {% if show_slot_review_button and google_review_url and google_review_url != '#' %}
-        <div class="review-button-section">
-            <a href="{{ google_review_url }}" target="_blank" class="button button-review">
-                ⭐ Google口コミを書く
-            </a>
-            <p class="review-message">ご来店いただきありがとうございました！<br>よろしければ口コミをお寄せください。</p>
         </div>
         {% endif %}
         
