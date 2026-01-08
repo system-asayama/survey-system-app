@@ -210,6 +210,33 @@
             font-size: 13px;
         }
         
+        .history-toggle-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .history-toggle-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        
+        .history-section {
+            display: none;
+        }
+        
+        .history-section.show {
+            display: block;
+        }
+        
         @media (max-width: 600px) {
             .container {
                 padding: 30px 20px;
@@ -281,9 +308,11 @@
         </div>
         {% endif %}
         
-        {# スピン履歴セクションを非表示にしてスクロールなしで全体を表示
         {% if history %}
-        <div class="history-section">
+        <button class="history-toggle-button" onclick="toggleHistory()">
+            📊 履歴を見る
+        </button>
+        <div class="history-section" id="historySection">
             <h2 class="history-title">📊 スピン履歴</h2>
             <div class="history-list">
                 {% for item in history %}
@@ -292,11 +321,25 @@
             </div>
         </div>
         {% endif %}
-        #}
         
         <div class="store-info">
             {{ store.name }}
         </div>
     </div>
+    
+    <script>
+        function toggleHistory() {
+            const historySection = document.getElementById('historySection');
+            const button = document.querySelector('.history-toggle-button');
+            
+            if (historySection.classList.contains('show')) {
+                historySection.classList.remove('show');
+                button.textContent = '📊 履歴を見る';
+            } else {
+                historySection.classList.add('show');
+                button.textContent = '📊 履歴を閉じる';
+            }
+        }
+    </script>
 </body>
 </html>
