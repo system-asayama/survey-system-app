@@ -51,11 +51,12 @@ def first_admin_setup():
         else:
             name = (request.form.get('name') or '').strip()
             login_id = (request.form.get('login_id') or '').strip()
+            email = (request.form.get('email') or '').strip()
             password = request.form.get('password') or ''
             confirm = request.form.get('confirm') or ''
 
             # --- 入力バリデーション ---
-            if not name or not login_id or not password or not confirm:
+            if not name or not login_id or not email or not password or not confirm:
                 error = "すべての項目を入力してください。"
             elif len(password) < 8:
                 error = "パスワードは8文字以上にしてください。"
@@ -76,10 +77,10 @@ def first_admin_setup():
                     else:
                         ph = generate_password_hash(password)
                         sql_ins = _sql(conn, '''
-                            INSERT INTO "T_管理者"(login_id, name, password_hash, role, tenant_id, is_owner, can_manage_admins)
-                            VALUES (%s, %s, %s, %s, %s, %s, %s)
+                            INSERT INTO "T_管理者"(login_id, name, email, password_hash, role, tenant_id, is_owner, can_manage_admins)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                         ''')
-                        cur.execute(sql_ins, (login_id, name, ph, ROLES["SYSTEM_ADMIN"], None, 1, 1))
+                        cur.execute(sql_ins, (login_id, name, email, ph, ROLES["SYSTEM_ADMIN"], None, 1, 1))
                         from ..utils.db import _is_pg
                         if not _is_pg(conn):
                             conn.commit()
