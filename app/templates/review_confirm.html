@@ -136,17 +136,28 @@
       margin-top: 2rem;
       flex-wrap: wrap;
     }
-    .action-buttons button {
+    .action-buttons button,
+    .action-buttons a.primary {
       flex: 1;
       min-width: 200px;
       padding: 1rem;
       font-size: 1.1rem;
     }
+    .action-buttons a.primary {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
     @media (max-width: 640px) {
       .action-buttons {
         flex-direction: column;
       }
-      .action-buttons button {
+      .action-buttons button,
+      .action-buttons a.primary {
         width: 100%;
       }
       .review-header {
@@ -228,9 +239,9 @@
         {% endif %}
 
         <div class="action-buttons">
-          <button class="primary big" onclick="goToGoogleReview()">
+          <a class="primary big" href="{{ google_review_url }}" target="_blank" onclick="copyReview()">
             🌐 Google口コミに投稿する
-          </button>
+          </a>
           <button class="sub big" onclick="goToSlot()">
             🎰 スロットへ進む
           </button>
