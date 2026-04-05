@@ -26,9 +26,10 @@
             {{ question.text }}
           </label>
           
-          {% if question.type == 'radio' %}
+          {% if question.type == 'comment_rating' or question.type == 'radio' %}
           <div class="radio-group">
-            {% for option in question.options %}
+            {% set opts = question.options if question.options else ['非常に満足', '満足', '普通', 'やや不満', '非常に不満'] %}
+            {% for option in opts %}
             <label class="radio-label">
               <input type="radio" name="q{{ question.id }}" value="{{ option }}" {% if question.required %}required{% endif %}>
               <span>{{ option }}</span>
@@ -36,7 +37,7 @@
             {% endfor %}
           </div>
           <span class="error-message" id="q{{ question.id }}-error"></span>
-          
+
           {% elif question.type == 'checkbox' %}
           <div class="checkbox-group">
             {% for option in question.options %}
@@ -47,11 +48,11 @@
             {% endfor %}
           </div>
           <span class="error-message" id="q{{ question.id }}-error"></span>
-          
+
           {% elif question.type == 'text' %}
           <textarea name="q{{ question.id }}" rows="4" placeholder="{{ question.placeholder or '' }}" {% if question.required %}required{% endif %}></textarea>
           <span class="error-message" id="q{{ question.id }}-error"></span>
-          
+
           {% elif question.type == 'rating' %}
           <div class="star-rating" data-question-id="{{ question.id }}">
             <span class="star" data-value="1">★</span>

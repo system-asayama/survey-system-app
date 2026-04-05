@@ -283,9 +283,7 @@
               <label>質問タイプ</label>
               <select name="questions[{{ loop.index0 }}][type]" onchange="updateQuestionType(this)">
                 <option value="rating" {% if question.type == 'rating' %}selected{% endif %}>星評価（1-5）</option>
-                <option value="radio" {% if question.type == 'radio' %}selected{% endif %}>単一選択</option>
-                <option value="checkbox" {% if question.type == 'checkbox' %}selected{% endif %}>複数選択</option>
-                <option value="text" {% if question.type == 'text' %}selected{% endif %}>自由記述</option>
+                <option value="comment_rating" {% if question.type == 'comment_rating' or question.type in ['radio','checkbox','text'] %}selected{% endif %}>コメント（5段階評価）</option>
               </select>
 
             </div>
@@ -304,12 +302,14 @@
 
             </div>
 
-            {% if question.type in ['radio', 'checkbox'] %}
+            {% if question.type == 'comment_rating' or question.type in ['radio', 'checkbox'] %}
             <div class="form-group options-group">
-              <label>選択肢</label>
+              <label>選択肢（5項目固定）</label>
               <div class="options-container">
                 {% set question_index = loop.index0 %}
-                {% for option in question.options %}
+                {% set default_options = ['非常に満足', '満足', '普通', 'やや不満', '非常に不満'] %}
+                {% set opts = question.options if question.options else default_options %}
+                {% for option in opts %}
                 <div class="option-item">
                   <input 
                     type="text" 
@@ -371,9 +371,7 @@
           <label>質問タイプ</label>
           <select name="questions[${questionIndex}][type]" onchange="updateQuestionType(this)">
             <option value="rating">星評価（1-5）</option>
-            <option value="radio">単一選択</option>
-            <option value="checkbox">複数選択</option>
-            <option value="text">自由記述</option>
+            <option value="comment_rating">コメント（5段階評価）</option>
           </select>
         </div>
 
@@ -455,21 +453,19 @@
         existingOptionsGroup.remove();
       }
 
-      if (type === 'radio' || type === 'checkbox') {
+      if (type === 'comment_rating') {
         const questionIndex = questionCard.getAttribute('data-question-index');
+        const defaultOptions = ['非常に満足', '満足', '普通', 'やや不満', '非常に不満'];
         const optionsGroup = document.createElement('div');
         optionsGroup.className = 'form-group options-group';
+        const optionItems = defaultOptions.map(opt => `
+          <div class="option-item">
+            <input type="text" name="questions[${questionIndex}][options][]" value="${opt}" placeholder="選択肢を入力">
+            <button type="button" onclick="removeOption(this)">削除</button>
+          </div>`).join('');
         optionsGroup.innerHTML = `
-          <label>選択肢</label>
-          <div class="options-container">
-            <div class="option-item">
-              <input 
-                type="text" 
-                name="questions[${questionIndex}][options][]" 
-                placeholder="選択肢を入力"
-              >
-              <button type="button" onclick="removeOption(this)">削除</button>
-            </div>
+          <label>選択肢（5項目固定）</label>
+          <div class="options-container">${optionItems}
           </div>
           <button type="button" class="btn-add" onclick="addOption(this)">+ 選択肢を追加</button>
         `;

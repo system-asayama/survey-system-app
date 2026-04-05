@@ -180,6 +180,9 @@ def _generate_review_text(survey_data, store_id):
                     answer_text = '、'.join(answer)
                 elif question.get('type') == 'rating':
                     answer_text = f"{answer}点（5点満点）"
+                elif question.get('type') == 'comment_rating':
+                    # コメント（5段階）は選択肢のラベルをそのまま使用
+                    answer_text = str(answer)
                 else:
                     answer_text = str(answer)
                 
@@ -320,31 +323,62 @@ def submit_survey():
         import sys
         sys.stderr.write(f"DEBUG submit_survey: body = {body}\n")
         sys.stderr.flush()
-    
-        # 最初の質問の回答を評価として使用（５段階評価の場合）
+        # 最初の質問の回答を評価として使用（5段階評価の場合）
         rating = 3  # デフォルト
         first_answer = body.get('q1', '')
-        
-        # 星評価の場合は数値が直接入っている
+
+        # アンケート設定を取得して最初の質問タイプを確認
+        survey_config_for_type = None
         try:
-            rating = int(first_answer)
-            # 1-5の範囲内に制限
-            if rating < 1:
-                rating = 1
-            elif rating > 5:
-                rating = 5
-        except (ValueError, TypeError):
-            # 数値でない場合はテキストから推測
-            if '非常に満足' in first_answer or '強く思う' in first_answer or '非常に良い' in first_answer:
-                rating = 5
-            elif '満足' in first_answer or '思う' in first_answer or '良い' in first_answer:
-                rating = 4
-            elif '普通' in first_answer or 'どちらとも' in first_answer:
+            survey_config_for_type = store_db.get_survey_config(g.store_id)
+        except Exception:
+            pass
+        first_question_type = 'rating'
+        first_question_options = []
+        if survey_config_for_type and survey_config_for_type.get('questions'):
+            first_q = survey_config_for_type['questions'][0]
+            first_question_type = first_q.get('type', 'rating')
+            first_question_options = first_q.get('options', [])
+
+        if first_question_type == 'rating':
+            # 星評価：数値が直接入っている
+            try:
+                rating = int(first_answer)
+                if rating < 1:
+                    rating = 1
+                elif rating > 5:
+                    rating = 5
+            except (ValueError, TypeError):
                 rating = 3
-            elif 'やや' in first_answer:
-                rating = 2
-            else:
-                rating = 1
+        elif first_question_type in ('comment_rating', 'radio', 'checkbox'):
+            # コメント（5段階）：選択肢の位置を数値に変換（1番目=5点、最後=1点）
+            opts = first_question_options if first_question_options else ['非常に満足', '満足', '普通', 'やや不満', '非常に不満']
+            try:
+                idx = opts.index(first_answer)
+                # 先頭の選択肢の方が高評価（例: 非常に満足=5、非常に不満=1）
+                rating = len(opts) - idx
+            except ValueError:
+                # 選択肢にない場合はテキストマッチングで推測
+                if '非常に満足' in first_answer or '強く思う' in first_answer or '非常に良い' in first_answer:
+                    rating = 5
+                elif '満足' in first_answer or '思う' in first_answer or '良い' in first_answer:
+                    rating = 4
+                elif '普通' in first_answer or 'どちらとも' in first_answer:
+                    rating = 3
+                elif 'やや' in first_answer:
+                    rating = 2
+                else:
+                    rating = 1
+        else:
+            # その他のタイプ：数値変換を試みる
+            try:
+                rating = int(first_answer)
+                if rating < 1:
+                    rating = 1
+                elif rating > 5:
+                    rating = 5
+            except (ValueError, TypeError):
+                rating = 3
         
         # ratingをbodyに追加
         body['rating'] = rating

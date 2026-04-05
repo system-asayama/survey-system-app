@@ -453,7 +453,7 @@ def admin_survey_editor():
             }
             
             # 選択肢がある場合
-            if question_type in ["radio", "checkbox"]:
+            if question_type in ["radio", "checkbox", "comment_rating"]:
                 options = request.form.getlist(f"questions[{idx}][options][]")
                 question["options"] = [opt.strip() for opt in options if opt.strip()]
             
