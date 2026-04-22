@@ -750,6 +750,48 @@
     </div>
 
     <div class="section">
+      <h2>🏢 業種・AIコメント設定</h2>
+      <p class="help-text" style="margin-bottom: 20px;">業種を設定すると、AIが生成する口コミ文章をその業種に合わせた内容に調整します。追加の指示文でさらに細かくカスタマイズできます。</p>
+      <form method="post" action="/admin/save_ai_review_settings">
+        <input type="hidden" name="store_id" value="{{ store.id if store else '' }}">
+        <div class="form-group">
+          <label for="business_type">業種</label>
+          <select id="business_type" name="business_type" style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 16px; box-sizing: border-box; background: white;">
+            <option value="" {% if not ai_review_settings.business_type %}selected{% endif %}>未設定（汎用）</option>
+            <option value="飲食店（レストラン）" {% if ai_review_settings.business_type == '飲食店（レストラン）' %}selected{% endif %}>飲食店（レストラン）</option>
+            <option value="カフェ・喫茶店" {% if ai_review_settings.business_type == 'カフェ・喫茶店' %}selected{% endif %}>カフェ・喫茶店</option>
+            <option value="居酒屋・バー" {% if ai_review_settings.business_type == '居酒屋・バー' %}selected{% endif %}>居酒屋・バー</option>
+            <option value="美容室・美容院" {% if ai_review_settings.business_type == '美容室・美容院' %}selected{% endif %}>美容室・美容院</option>
+            <option value="美容室（ヘアサロン）" {% if ai_review_settings.business_type == '美容室（ヘアサロン）' %}selected{% endif %}>美容室（ヘアサロン）</option>
+            <option value="エステ・マッサージサロン" {% if ai_review_settings.business_type == 'エステ・マッサージサロン' %}selected{% endif %}>エステ・マッサージサロン</option>
+            <option value="小売店・ショップ" {% if ai_review_settings.business_type == '小売店・ショップ' %}selected{% endif %}>小売店・ショップ</option>
+            <option value="医院・クリニック" {% if ai_review_settings.business_type == '医院・クリニック' %}selected{% endif %}>医院・クリニック</option>
+            <option value="歯科医院" {% if ai_review_settings.business_type == '歯科医院' %}selected{% endif %}>歯科医院</option>
+            <option value="フィットネスジム・スポーツクラブ" {% if ai_review_settings.business_type == 'フィットネスジム・スポーツクラブ' %}selected{% endif %}>フィットネスジム・スポーツクラブ</option>
+            <option value="学習塔・教育施設" {% if ai_review_settings.business_type == '学習塔・教育施設' %}selected{% endif %}>学習塔・教育施設</option>
+            <option value="宿泊施設・ホテル" {% if ai_review_settings.business_type == '宿泊施設・ホテル' %}selected{% endif %}>宿泊施設・ホテル</option>
+            <option value="自動車・バイク関連" {% if ai_review_settings.business_type == '自動車・バイク関連' %}selected{% endif %}>自動車・バイク関連</option>
+            <option value="ペットショップ・トリミング" {% if ai_review_settings.business_type == 'ペットショップ・トリミング' %}selected{% endif %}>ペットショップ・トリミング</option>
+            <option value="その他" {% if ai_review_settings.business_type == 'その他' %}selected{% endif %}>その他</option>
+          </select>
+          <p class="help-text">業種を選択すると、AIがその業種に合った口コミ文章を生成します。</p>
+        </div>
+        <div class="form-group">
+          <label for="ai_instruction">AIへの追加指示文（任意）</label>
+          <textarea
+            id="ai_instruction"
+            name="ai_instruction"
+            rows="4"
+            placeholder="例：カジュアルで親しみやすい雰囲気を強調してください。スタッフの丁寧な対応をアピールしてください。"
+            style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 15px; box-sizing: border-box; resize: vertical;"
+          >{{ ai_review_settings.ai_instruction or '' }}</textarea>
+          <p class="help-text">AIが口コミを生成する際の追加指示を自由に入力できます。強調したいポイントや雰囲気などを記載してください。</p>
+        </div>
+        <button type="submit" class="btn-primary">💾 業種・AI指示文を保存</button>
+      </form>
+    </div>
+
+    <div class="section">
       <h2>🤖 OpenAI API設定（アプリ個別）</h2>
       <p class="help-text" style="margin-bottom: 20px;">このアプリ専用のOpenAI APIキーを設定できます。未設定の場合は店舗設定またはテナント設定のキーが使用されます。</p>
       <form method="post" action="/admin/save_openai_key">

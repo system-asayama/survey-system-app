@@ -264,6 +264,16 @@ def admin_settings():
         sys.stderr.write("DEBUG admin_settings: store_id is None, cannot fetch store\n")
         sys.stderr.flush()
     
+    # AIレビュー設定（業種・指示文）を取得
+    ai_review_settings = {'business_type': '', 'ai_instruction': ''}
+    if store_id:
+        try:
+            import store_db as _store_db
+            ai_review_settings = _store_db.get_ai_review_settings(store_id)
+        except Exception as e:
+            sys.stderr.write(f"DEBUG admin_settings: ai_review_settings error = {e}\n")
+            sys.stderr.flush()
+
     return render_template("admin_settings.html",
                          admin=admin,
                          store=store,
@@ -271,7 +281,8 @@ def admin_settings():
                          google_review_url=settings.get("google_review_url", "#"),
                          survey_complete_message=settings.get("survey_complete_message", "アンケートにご協力いただきありがとうございます！スロットをお楽しみください。"),
                          prizes=settings.get("prizes", default_prizes),
-                         slot_config=asdict(slot_config))
+                         slot_config=asdict(slot_config),
+                         ai_review_settings=ai_review_settings)
 
 
 # 以下のルートはstore_slot_settings_routes.pyで定義されているためコメントアウト
@@ -398,6 +409,28 @@ def admin_save_openai_key():
     finally:
         db.close()
         
+    return redirect(url_for("survey_admin.admin_settings"))
+
+
+@bp.route("/save_ai_review_settings", methods=["POST"])
+@require_roles([ROLES["SYSTEM_ADMIN"], ROLES["ADMIN"]])
+def admin_save_ai_review_settings():
+    """業種・AI指示文を保存"""
+    store_id = session.get('store_id')
+    if not store_id:
+        flash("店舗情報がセッションにありません", "error")
+        return redirect(url_for("survey_admin.admin_settings"))
+
+    business_type = request.form.get("business_type", "").strip()
+    ai_instruction = request.form.get("ai_instruction", "").strip()
+
+    try:
+        import store_db as _store_db
+        _store_db.save_ai_review_settings(store_id, business_type, ai_instruction)
+        flash("業種・AI指示文を保存しました", "success")
+    except Exception as e:
+        flash(f"保存に失敗しました: {e}", "error")
+
     return redirect(url_for("survey_admin.admin_settings"))
 
 

@@ -197,7 +197,29 @@ def _generate_review_text(survey_data, store_id):
                     qa_pairs.append(str(value))
     
     qa_text = '\n\n'.join(qa_pairs)
-    
+
+    # 業種・AI指示文を取得
+    ai_review_settings = {'business_type': '', 'ai_instruction': ''}
+    try:
+        import store_db as _store_db_ai
+        ai_review_settings = _store_db_ai.get_ai_review_settings(store_id)
+    except Exception as e:
+        print(f"Error getting ai_review_settings: {e}")
+
+    business_type = ai_review_settings.get('business_type', '')
+    ai_instruction = ai_review_settings.get('ai_instruction', '')
+
+    # 業種・指示文をプロンプトに展開
+    business_type_line = f"\n\u3010業種】{business_type}" if business_type else ""
+    ai_instruction_block = f"\n\n\u3010追加指示】\n{ai_instruction}" if ai_instruction else ""
+
+    # 業種別のシステムプロンプト追加文
+    business_system_hint = ""
+    if business_type:
+        business_system_hint = f"\n\u3053の口コミは「{business_type}」向けです。その業種に合った表現・用語を使い、その業種の顧客目線で自然な口コミを書いてください。"
+    if ai_instruction:
+        business_system_hint += f"\n追加指示: {ai_instruction}"
+
     # デバッグ：AIに渡されるデータをログ出力
     import sys
     sys.stderr.write("=" * 80 + "\n")
@@ -216,10 +238,10 @@ def _generate_review_text(survey_data, store_id):
     sys.stderr.write("DEBUG: OpenAIに送信するプロンプト\n")
     sys.stderr.write("=" * 80 + "\n")
     
-    prompt = f"""以下のアンケート回答から、実際の人間が書いたような自然な口コミ投稿文を日本語で作成してください。
+    prompt = f"""以下のアンケート回答から、実際の人間が書いたような自然な口コミ投稿文を日本語で作成してください。{business_type_line}
 
 【アンケート回答】
-{qa_text}
+{qa_text}{ai_instruction_block}
 
 【絶対に守るべきルール】
 1. 上記のすべての質問と回答を考慮してください
@@ -252,16 +274,16 @@ def _generate_review_text(survey_data, store_id):
         response = openai_client.chat.completions.create(
             model="gpt-4.1-mini",
             messages=[
-                {"role": "system", "content": """あなたは実際の人間が書いたような自然な口コミ投稿文を作成する専門家です。
+                {"role": "system", "content": f"""あなたは実際の人間が書いたような自然な口コミ投稿文を作成する専門家です。{business_system_hint}
 
 絶対に守るべきルール:
 1. すべてのアンケート回答を考慮してください
-2. 「○○がおいしい」「特に○○が印象的」「おすすめの一品」のような曖昧な表現は絶対に使わないでください
+2. 「○○がおいしい」「特に○○が印象的」「おすすめの一品」のような曘昧な表現は絶対に使わないでください
 3. 料理やメニューについて言及する場合は、必ず具体的な名前（例：ハラミ、ホルモン、カルビ）を使ってください
-4. 回答に具体的な料理名が含まれている場合は、それを曖昧な表現に置き換えず、そのまま使ってください
+4. 回答に具体的な料理名が含まれている場合は、それを曘昧な表現に置き換えず、そのまま使ってください
 5. 例：「ハラミ」と回答→「ハラミが美味しかった」（「おすすめの一品」と書かない）
 6. 自由記入欄に肯定的な文言があれば積極的に活用してください
-7. 自由記入欄に「○○」のような曖昧な表現があれば、他の質問の回答から具体的な名前を探して使ってください
+7. 自由記入欄に「○○」のような曘昧な表現があれば、他の質問の回答から具体的な名前を探して使ってください
 8. AIが書いたと分からないよう、自然な言い回しや表現を使ってください
 9. 言い回しのトーンをランダムに変化させてください：
    - 柔らかい表現：「めっちゃ」「すごく」「とても」「かなり」「本当に」「さすが」

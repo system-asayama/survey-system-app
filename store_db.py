@@ -111,6 +111,53 @@ def save_survey_config(store_id: int, config: Dict[str, Any]) -> None:
     conn.commit()
     conn.close()
 
+# ===== AIレビュー設定（業種・指示文） =====
+def get_ai_review_settings(store_id: int) -> Dict[str, Any]:
+    """店舗のAIレビュー設定（業種・指示文）を取得"""
+    conn = get_db_connection()
+    cur = get_cursor(conn)
+    execute_query(cur, """
+        SELECT business_type, ai_instruction
+        FROM "T_店舗_アンケート設定"
+        WHERE store_id = ?
+    """, (store_id,))
+    row = cur.fetchone()
+    conn.close()
+    if row:
+        if hasattr(row, 'keys'):
+            return {
+                'business_type': row['business_type'] or '',
+                'ai_instruction': row['ai_instruction'] or ''
+            }
+        else:
+            return {
+                'business_type': row[0] or '',
+                'ai_instruction': row[1] or ''
+            }
+    return {'business_type': '', 'ai_instruction': ''}
+
+
+def save_ai_review_settings(store_id: int, business_type: str, ai_instruction: str) -> None:
+    """店舗のAIレビュー設定（業種・指示文）を保存"""
+    conn = get_db_connection()
+    cur = get_cursor(conn)
+    execute_query(cur, 'SELECT id FROM "T_店舗_アンケート設定" WHERE store_id = ?', (store_id,))
+    existing = cur.fetchone()
+    if existing:
+        execute_query(cur, """
+            UPDATE "T_店舗_アンケート設定"
+            SET business_type = ?, ai_instruction = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE store_id = ?
+        """, (business_type, ai_instruction, store_id))
+    else:
+        execute_query(cur, """
+            INSERT INTO "T_店舗_アンケート設定" (store_id, business_type, ai_instruction)
+            VALUES (?, ?, ?)
+        """, (store_id, business_type, ai_instruction))
+    conn.commit()
+    conn.close()
+
+
 # ===== スロット設定 =====
 def get_slot_config(store_id: int) -> Dict[str, Any]:
     """店舗のスロット設定を取得"""
