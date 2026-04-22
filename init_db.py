@@ -672,6 +672,8 @@ def init_database():
         if table_exists(cur, 'T_店舗_アンケート設定', db_type):
             add_column_if_not_exists(cur, conn, 'T_店舗_アンケート設定', 'openai_api_key', 'TEXT DEFAULT NULL', db_type)
             add_column_if_not_exists(cur, conn, 'T_店舗_アンケート設定', 'title', "TEXT DEFAULT 'お店アンケート'", db_type)
+            add_column_if_not_exists(cur, conn, 'T_店舗_アンケート設定', 'business_type', "TEXT DEFAULT ''", db_type)
+            add_column_if_not_exists(cur, conn, 'T_店舗_アンケート設定', 'ai_instruction', "TEXT DEFAULT ''", db_type)
         
         # T_店舗_スロット設定テーブルのカラム追加
         if table_exists(cur, 'T_店舗_スロット設定', db_type):
