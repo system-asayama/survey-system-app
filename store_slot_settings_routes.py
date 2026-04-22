@@ -360,6 +360,14 @@ def register_store_slot_settings_routes(app):
             'last_login': ''
         }
         
+        # AIレビュー設定（業種・指示文）を取得
+        ai_review_settings = {'business_type': '', 'ai_instruction': ''}
+        try:
+            import store_db as _store_db_ai
+            ai_review_settings = _store_db_ai.get_ai_review_settings(store_id)
+        except Exception as _e:
+            print(f"Warning: get_ai_review_settings error: {_e}")
+
         return render_template('admin_settings.html',
                              store=store,
                              admin=admin,
@@ -369,7 +377,8 @@ def register_store_slot_settings_routes(app):
                              slot_spin_count=slot_spin_count,
                              survey_complete_message="アンケートにご協力いただきありがとうございます！スロットをお楽しみください。",
                              prizes=prizes,
-                             slot_config=asdict(slot_config))
+                             slot_config=asdict(slot_config),
+                             ai_review_settings=ai_review_settings)
     
     
     @app.route('/admin/save_prizes', methods=['POST'])

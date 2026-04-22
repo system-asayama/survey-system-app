@@ -226,7 +226,8 @@ def admin_settings():
                          google_review_url=settings.get("google_review_url", "#"),
                          survey_complete_message=settings.get("survey_complete_message", "アンケートにご協力いただきありがとうございます！スロットをお楽しみください。"),
                          prizes=settings.get("prizes", default_prizes),
-                         slot_config=asdict(slot_config))
+                         slot_config=asdict(slot_config),
+                         ai_review_settings={'business_type': '', 'ai_instruction': ''})
 
 
 @bp.route("/save_prizes", methods=["POST"])
