@@ -772,10 +772,52 @@
             <option value="宿泊施設・ホテル" {% if ai_review_settings.business_type == '宿泊施設・ホテル' %}selected{% endif %}>宿泊施設・ホテル</option>
             <option value="自動車・バイク関連" {% if ai_review_settings.business_type == '自動車・バイク関連' %}selected{% endif %}>自動車・バイク関連</option>
             <option value="ペットショップ・トリミング" {% if ai_review_settings.business_type == 'ペットショップ・トリミング' %}selected{% endif %}>ペットショップ・トリミング</option>
-            <option value="その他" {% if ai_review_settings.business_type == 'その他' %}selected{% endif %}>その他</option>
+            <option value="その他" {% if ai_review_settings.business_type == 'その他' or (ai_review_settings.business_type and ai_review_settings.business_type not in ['', '飲食店（レストラン）', 'カフェ・喫茶店', '居酒屋・バー', '美容室・美容院', '美容室（ヘアサロン）', 'エステ・マッサージサロン', '小売店・ショップ', '医院・クリニック', '歯科医院', 'フィットネスジム・スポーツクラブ', '学習塔・教育施設', '宿泊施設・ホテル', '自動車・バイク関連', 'ペットショップ・トリミング']) %}selected{% endif %}>その他（自由入力）</option>
           </select>
+          {# 「その他」選択時の自由入力欄 #}
+          {% set _known = ['', '飲食店（レストラン）', 'カフェ・喫茶店', '居酒屋・バー', '美容室・美容院', '美容室（ヘアサロン）', 'エステ・マッサージサロン', '小売店・ショップ', '医院・クリニック', '歯科医院', 'フィットネスジム・スポーツクラブ', '学習塔・教育施設', '宿泊施設・ホテル', '自動車・バイク関連', 'ペットショップ・トリミング', 'その他'] %}
+          <div id="business_type_custom_wrap" style="margin-top: 10px; display: {% if ai_review_settings.business_type and ai_review_settings.business_type not in _known %}block{% else %}none{% endif %};">
+            <input
+              type="text"
+              id="business_type_custom"
+              name="business_type_custom"
+              value="{{ ai_review_settings.business_type if ai_review_settings.business_type and ai_review_settings.business_type not in _known else '' }}"
+              placeholder="業種を自由に入力してください（例：フラワーショップ、写真館など）"
+              style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 15px; box-sizing: border-box;"
+            >
+          </div>
           <p class="help-text">業種を選択すると、AIがその業種に合った口コミ文章を生成します。</p>
         </div>
+        <script>
+        (function() {
+          var sel = document.getElementById('business_type');
+          var wrap = document.getElementById('business_type_custom_wrap');
+          var customInput = document.getElementById('business_type_custom');
+          function toggleCustom() {
+            if (sel.value === 'その他') {
+              wrap.style.display = 'block';
+              customInput.focus();
+            } else {
+              wrap.style.display = 'none';
+            }
+          }
+          sel.addEventListener('change', toggleCustom);
+
+          // フォーム送信時に「その他」の場合は自由入力値をbusiness_typeにセット
+          var form = sel.closest('form');
+          form.addEventListener('submit', function() {
+            if (sel.value === 'その他' && customInput.value.trim()) {
+              // hiddenフィールドで上書き
+              var hidden = document.createElement('input');
+              hidden.type = 'hidden';
+              hidden.name = 'business_type';
+              hidden.value = customInput.value.trim();
+              form.appendChild(hidden);
+              sel.removeAttribute('name'); // 元のselectのnameを無効化
+            }
+          });
+        })();
+        </script>
         <div class="form-group">
           <label for="ai_instruction">AIへの追加指示文（任意）</label>
           <textarea
