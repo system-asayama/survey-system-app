@@ -4,9 +4,12 @@
 
 {% block content %}
 <div class="container">
-  <div class="header">
-    <h1>スタンプカード設定</h1>
-    <p class="store-name">{{ store_name }}</p>
+  <div class="header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+    <div>
+      <h1>スタンプカード設定</h1>
+      <p class="store-name">{{ store_name }}</p>
+    </div>
+    <a href="{{ url_for('admin.store_apps', store_id=store_id) }}" style="padding: 8px 16px; background: #6366f1; color: white; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: bold; white-space: nowrap;">🏠 店舗アプリ一覧</a>
   </div>
   
   {% with messages = get_flashed_messages(with_categories=true) %}

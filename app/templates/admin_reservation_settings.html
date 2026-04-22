@@ -4,8 +4,11 @@
 
 {% block content %}
 <div class="container">
-  <h1>予約設定</h1>
-  
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
+    <h1 style="margin: 0;">予約設定</h1>
+    <a href="{{ url_for('admin.store_apps', store_id=store.id) }}" style="padding: 8px 16px; background: #6366f1; color: white; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: bold; white-space: nowrap;">🏠 店舗アプリ一覧</a>
+  </div>
+
   <div class="store-info-card">
     <h2>{{ store.name }}</h2>
     <p><strong>店舗ID:</strong> {{ store.id }}</p>
